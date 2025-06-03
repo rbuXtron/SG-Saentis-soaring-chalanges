@@ -81,8 +81,12 @@ class WeGlideApiClient {
 
   // VEREINFACHTE Methoden - nutzen IMMER Proxy
   async fetchClubData() {
-    return this.fetchData(API_ENDPOINTS.CLUB_DATA);
-  }
+  // Keine zusätzlichen Parameter nötig, da contest=free in vercel.json definiert ist
+  return this.fetchData(API_ENDPOINTS.CLUB_DATA, {}, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  });
+}
 
   async fetchClubFlights(year = new Date().getFullYear(), limit = 100) {
     return this.fetchData(API_ENDPOINTS.SEASON_FLIGHTS, {
