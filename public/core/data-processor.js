@@ -8,10 +8,11 @@
 
 import { apiClient } from '../services/weglide-api-service.js';
 // ÄNDERN: Importiere die enhanced Version
-import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
+//import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
 // Entferne die alten Imports:
 // import { calculateSeasonBadges } from '../services/badge-season-calculator.js';
 // import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
+import { calculateSeasonBadgesFinal } from '../services/badge-season-calculator-final.js';
 
 import {
   APP_CONFIG,
@@ -146,7 +147,7 @@ export async function fetchAllWeGlideData() {
           // Badge-Berechnung
           //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
           // NEU:
-          const badgeAnalysis = await calculateSeasonBadgesReverse(userId, member.name);
+          const badgeAnalysis = await calculateSeasonBadgesFinal(userId, member.name);
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(
