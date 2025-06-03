@@ -17,7 +17,7 @@ import {
 } from '../config/constants.js';
 import { formatISODateTime, formatDateForDisplay } from '../utils/utils.js';
 import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
-import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
+import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide

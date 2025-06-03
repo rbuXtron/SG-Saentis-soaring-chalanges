@@ -94,16 +94,16 @@ class WeGlideApiClient {
   // NEUE METHODE: Alle Club-Flüge laden
   async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
     // Spezial-Cache für Club-Flüge (30 Minuten)
-    const cacheValid = this._clubFlightsCacheTime && 
-                      (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
-    
+    const cacheValid = this._clubFlightsCacheTime &&
+      (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
+
     if (!forceRefresh && cacheValid && this._clubFlightsCache) {
       console.log('[API] Verwende Cache für Club-Flüge');
       return this._clubFlightsCache;
     }
 
     console.log('[API] Lade alle Club-Flüge neu...');
-    
+
     try {
       const response = await this.fetchData('/api/club-flights-complete', {
         startDate: startDate
@@ -130,12 +130,12 @@ class WeGlideApiClient {
     // Wenn Club-Flüge gecacht sind, daraus filtern
     if (this._clubFlightsCache && this._clubFlightsCache.flights) {
       console.log(`[API] Filtere User ${userId} Flüge aus Cache`);
-      
+
       const userFlights = this._clubFlightsCache.flights.filter(flight => {
         const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
         return flight.user?.id === userId && flightYear === year;
       });
-      
+
       return userFlights;
     }
 
@@ -184,13 +184,25 @@ class WeGlideApiClient {
     this._clubFlightsCacheTime = null;
     console.log("[API] Club-Flüge-Cache geleert");
   }
+  // In deiner weglide-api-service.js
+  async fetchUserDetails(userId) {
+    return this.fetchData(`/api/user/${userId}`, {}, {
+      cacheTime: 5 * 60 * 1000 // 5 Minuten
+    });
+  }
+  // Flug-Details mit korrektem Endpunkt
+  async fetchFlightDetails(flightId) {
+    return this.fetchData(`/api/flightdetail/${flightId}`, {}, {
+      cacheTime: 24 * 60 * 60 * 1000 // 24 Stunden Cache
+    });
+  }
 
   // Cache-Statistiken
   getCacheStats() {
     const cacheEntries = Object.keys(this._cache).length;
     const clubFlightsCached = !!this._clubFlightsCache;
-    const clubFlightsAge = this._clubFlightsCacheTime 
-      ? Math.floor((Date.now() - this._clubFlightsCacheTime) / 1000 / 60) 
+    const clubFlightsAge = this._clubFlightsCacheTime
+      ? Math.floor((Date.now() - this._clubFlightsCacheTime) / 1000 / 60)
       : null;
 
     return {
