@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="SG Säntis Soaring Challenge 2025 - Streckenflüge & Ranglisten der Segelfluggruppe Säntis">
+    <meta name="keywords" content="Segelflug, SG Säntis, Ranking, WeGlide, Streckenflug, Altenrhein">
+    <meta name="author" content="XTRON Roman Buehler">
+
+    <title>SG Säntis Soaring Challenge 2025</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./styles.css">
+
+    <!-- External Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+
+    <!-- Tab-Funktionalität laden -->
+    <!--<script src="js/tab-functionality.js"></script> -->
+
+    <!-- Module imports -->
+    <script type="module">
+        import { SGSaentisCupApp } from './main-app.js';
+
+        // Anwendung initialisieren, wenn das DOM bereit ist
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // Hauptanwendung initialisieren - dies lädt die Flugdaten
+                new SGSaentisCupApp().init();
+
+                console.log('SG Säntis Soaring Challenge App erfolgreich initialisiert');
+            } catch (e) {
+                console.error('Fehler beim Initialisieren der App:', e);
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>SG Säntis Soaring Challenge 2025</h1>
+            <div class="subtitle">Streckenflüge & Ranglisten der Segelfluggruppe Säntis</div>
+        </header>
+
+        <main>
+            <!-- Statistik-Karten -->
+            <section class="stats-grid" aria-label="Statistik-Übersicht">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-pilots" aria-label="Anzahl Teilnehmer">0</div>
+                    <div class="stat-label">Teilnehmer</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-flights" aria-label="Gesamtanzahl Flüge">0</div>
+                    <div class="stat-label">Flüge gesamt</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-km" aria-label="Gesamte geflogene Kilometer">0</div>
+                    <div class="stat-label">Kilometer gesamt</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="longest-flight" aria-label="Längster Einzelflug">
+                        0 km
+                        <div class="stat-pilot" id="longest-flight-pilot">-</div>
+                    </div>
+                    <div class="stat-label">Längster Flug</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="max-points" aria-label="Maximale WeGlide Punkte">
+                        0
+                        <div class="stat-pilot" id="max-points-pilot">-</div>
+                    </div>
+                    <div class="stat-label">Max. WeGlide Punkte</div>
+                </div>
+            </section>
+
+            <!-- Datenquelle und Aktualisieren-Knopf -->
+            <section class="data-source-bar" aria-label="Datenquelle und Aktualisierung">
+                <div class="data-source">
+                    <span id="data-source" aria-live="polite">Daten von WeGlide API</span>
+                    <div id="loading-message" class="info-message info-loading" style="display: none;" role="status"
+                        aria-live="polite">
+                        <span class="sr-only">Ladestatus: </span>Daten werden von WeGlide geladen...
+                    </div>
+                    <div id="api-error-message" class="info-message info-error" style="display: none;" role="alert"
+                        aria-live="assertive">
+                        Fehler beim Laden der API-Daten.
+                    </div>
+                    <div id="update-success" class="info-message info-success" style="display: none;" role="status"
+                        aria-live="polite">
+                        Daten erfolgreich aktualisiert!
+                    </div>
+                </div>
+                <button id="refresh-button" class="refresh-button" aria-label="Daten von WeGlide API aktualisieren">
+                    <span aria-hidden="true"></span>
+                    Daten aktualisieren
+                </button>
+            </section>
+
+            <!-- Tab-Navigation -->
+            <nav class="tabs" role="tablist" aria-label="Hauptnavigation">
+                <button class="tab active" data-tab="flightdetails" role="tab" aria-selected="true"
+                    aria-controls="flightdetails" id="tab-flightdetails">
+                    Aktuelle Flüge
+                </button>
+                <button class="tab" data-tab="rangliste" role="tab" aria-selected="false" aria-controls="rangliste"
+                    id="tab-rangliste">
+                    SG Säntis Cup
+                </button>
+                <button class="tab" data-tab="badges" role="tab" aria-selected="false" aria-controls="badges"
+                    id="tab-badges">
+                    Badges Awards
+                </button>
+                <button class="tab" data-tab="statistics" role="tab" aria-selected="false" aria-controls="statistics"
+                    id="tab-statistics">
+                    Statistiken
+                </button>
+            </nav>
+
+            <!-- Tab-Inhalte -->
+            <div class="tab-content active" id="flightdetails" role="tabpanel" aria-labelledby="tab-flightdetails"
+                tabindex="0">
+                <div id="latest-flights-container" class="latest-flights" aria-label="Aktuelle Flüge">
+                    <!-- Flug-Daten werden durch JavaScript ersetzt -->
+                    <div class="no-data">Flugdaten werden geladen...</div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="rangliste" role="tabpanel" aria-labelledby="tab-rangliste" tabindex="0">
+                <div class="ranking-header">
+                    <h2 class="section-title">🏆 SG Säntis Cup Rangliste 2025</h2>
+                    <div class="ranking-subtitle">
+                        Basierend auf den drei besten Flügen jedes Piloten mit angepassten Faktoren für faire
+                        Wettbewerbsbedingungen
+                    </div>
+                </div>
+
+                <div class="ranking-table-container">
+                    <table class="ranking-table" aria-label="SG Säntis Cup Rangliste">
+                        <thead>
+                            <tr>
+                                <th class="rank-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                        </svg>
+                                    </span>
+                                    Rang
+                                </th>
+                                <th class="pilot-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                        </svg>
+                                    </span>
+                                    Pilot
+                                </th>
+                                <th class="flights-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                                        </svg>
+                                    </span>
+                                    gewertete Flüge
+                                </th>
+                                <th class="km-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 0l-4 4 4 4 4-4-4-4zm8 0l-4 4 4 4V8z" />
+                                        </svg>
+                                    </span>
+                                    Gesamt Kilometer
+                                </th>
+                                <th class="points-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    </span>
+                                    Gesamt Punkte
+                                </th>
+                                <th class="details-col" scope="col">
+                                    <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                            <path
+                                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                                        </svg>
+                                    </span>
+                                    Details
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranking-body">
+                            <!-- Ranking-Daten werden durch JavaScript erstellt -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ranking-footer">
+                    <div class="ranking-info">
+                        <div class="ranking-status">
+                            <span class="status-icon" aria-hidden="true">📅</span>
+                            <strong>Stand:</strong> <span id="ranking-date">13.05.2025</span>
+                        </div>
+                        <div class="ranking-description">
+                            <span class="description-icon" aria-hidden="true">ℹ️</span>
+                            Die SG Säntis Cup Rangliste wird basierend auf den drei besten Flügen jedes Piloten
+                            berechnet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="badges" role="tabpanel" aria-labelledby="tab-badges" tabindex="0">
+                <section class="badges-container">
+                    <div id="badge-ranking-container">
+                        <!-- Badge-Ranking wird hier dynamisch eingefügt -->
+                    </div>
+                </section>
+            </div>
+
+            <div class="tab-content" id="statistics" role="tabpanel" aria-labelledby="tab-statistics" tabindex="0">
+                <section class="chart-container">
+                    <h2 class="section-title">📊 Detaillierte Statistiken</h2>
+
+                    <div class="charts-grid">
+                        <div class="chart-item-container">
+                            <div id="points-chart" class="chart-placeholder" aria-label="Punkteverteilung Chart">
+                                <div class="no-data">Punkte-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-item-container">
+                            <div id="flights-per-pilot-chart" class="chart-placeholder"
+                                aria-label="Flüge pro Pilot Chart">
+                                <div class="no-data">Flüge-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-item-container">
+                            <div id="km-chart" class="chart-placeholder" aria-label="Top Kilometer Leistungen">
+                                <div class="no-data">Kilometer-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-item-container">
+                            <div id="top-speed-chart" class="chart-placeholder" aria-label="Top Geschwindigkeiten">
+                                <div class="no-data">Geschwindigkeits-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-item-container">
+                            <div id="weglide-points-chart" class="chart-placeholder"
+                                aria-label="WeGlide Punkte Übersicht">
+                                <div class="no-data">WeGlide-Chart wird geladen...</div>
+                            </div>
+                        </div>
+                        <div class="chart-item-container">
+                            <div id="monthly-progress-chart" class="chart-placeholder"
+                                aria-label="Monatliche Entwicklung">
+                                <div class="no-data">Monatschart wird geladen...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>
+                    <strong>© 2025 XTRON Roman Buehler</strong> |
+                    <span>Seestrasse 17, 9326 Horn</span>
+                </p>
+                <p>
+                    Alle Rechte vorbehalten. SG Säntis Soaring Challenge data by
+                    <a href="https://www.weglide.org" target="_blank" rel="noopener noreferrer"
+                        style="color: var(--accent-teal); text-decoration: none;">WeGlide</a>
+                </p>
+                <p style="margin-top: 10px;">
+                    <a href="https://www.sg-saentis.ch" target="_blank" rel="noopener noreferrer"
+                        style="color: var(--primary-medium); text-decoration: none;">
+                        🌐 SG Säntis Website
+                    </a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Screen Reader Live Region für dynamische Updates -->
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="live-updates"></div>
+
+    <!-- Skip Links für bessere Zugänglichkeit -->
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+</body>
+
+</html>

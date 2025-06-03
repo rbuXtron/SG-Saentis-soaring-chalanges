@@ -1,0 +1,54 @@
+/**
+ * SG Säntis Cup - Punkteberechnung
+ * 
+ * Kernmodul für die Berechnung der Punkte
+ */
+
+import { PILOT_FACTORS, AIRCRAFT_FACTORS, AIRFIELD_FACTORS, getAircraftFactor } from '../config/constants.js';
+
+/**
+ * Berechnet die Punkte für einen einzelnen Flug
+ * @param {Object} flight - Flugdaten
+ * @param {number} pilotFactor - Aktueller Pilotenfaktor
+ * @returns {number} - Berechnete Punkte
+ */
+export function calculateFlightPoints(flight, pilotFactor) {
+  const km = flight.km || 0;
+  const aircraftFactor = getAircraftFactor(flight.aircraftType);
+  const takeoffFactor = flight.takeoffFactor || 0.8;
+  
+  return km * pilotFactor * aircraftFactor * takeoffFactor;
+}
+
+/**
+ * Berechnet den Pilotenfaktor basierend auf der Distanz
+ * @param {number} distance - Geflogene Distanz in km
+ * @returns {number} - Pilotenfaktor
+ */
+export function calculatePilotFactor(distance) {
+  for (const factor of PILOT_FACTORS) {
+    if (distance <= factor.maxKm) {
+      return factor.factor;
+    }
+  }
+  return 1.0; // Fallback
+}
+
+/**
+ * Berechnet die Punkte für alle Flüge mit progressivem Pilotenfaktor
+ * @param {Array} flights - Array mit Flügen
+ * @param {string} pilotName - Name des Piloten
+ * @param {Array} allFlights - ALLE Flüge des Piloten für progressive Berechnung
+ */
+export function calculateFlightPointsWithHistory(flights, pilotName, allFlights) {
+  // ... (Code aus data-processor.js verschieben)
+}
+
+/**
+ * Berechnet den progressiven Pilotenfaktor
+ * @param {Array} allFlights - Alle Flüge chronologisch sortiert
+ * @returns {Array} - Flüge mit korrekten Pilotenfaktoren
+ */
+export function calculateProgressivePilotFactors(allFlights) {
+  // ... (Code aus data-processor.js verschieben)
+}

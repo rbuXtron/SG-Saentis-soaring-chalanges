@@ -1,0 +1,49 @@
+{
+  "name": "sg-saentis-cup",
+  "version": "3.4.0",
+  "description": "SG Säntis Soaring Challenge 2025",
+  "scripts": {
+    "build": "echo 'No build needed'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "pnpm": "^7.5.1"
+  },
+  "packageManager": "pnpm@7.5.1",
+    "vercel": {
+        "functions": {
+        "api/**/*.js": {
+            "maxDuration": 10
+        }
+        },
+        "rewrites": [
+        {
+            "source": "/api/:path*",
+            "destination": "/api/:path*"
+        }
+        ],
+        "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+            {
+                "key": "X-Content-Type-Options",
+                "value": "nosniff"
+            },
+            {
+                "key": "X-Frame-Options",
+                "value": "DENY"
+            },
+            {
+                "key": "X-XSS-Protection",
+                "value": "1; mode=block"
+            }
+            ]
+        }
+        ]
+    }
+}
