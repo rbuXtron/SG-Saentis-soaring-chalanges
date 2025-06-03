@@ -79,60 +79,46 @@ class WeGlideApiClient {
     return requestPromise;
   }
 
-  // VEREINFACHTE Methoden - nutzen IMMER Proxy
-  async fetchClubData() {
-  // Keine zusätzlichen Parameter nötig, da contest=free in vercel.json definiert ist
-  return this.fetchData(API_ENDPOINTS.CLUB_DATA, {}, {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' }
+  // In public/js/services/weglide-api-service.js
+
+async fetchClubData() {
+  return this.fetchData(API_ENDPOINTS.CLUB_DATA, {
+    endpoint: 'weglide'
   });
 }
 
-  async fetchClubFlights(year = new Date().getFullYear(), limit = 100) {
-    return this.fetchData(API_ENDPOINTS.SEASON_FLIGHTS, {
-      season_in: year
-    });
-  }
+async fetchUserFlights(userId, year) {
+  return this.fetchData(API_ENDPOINTS.USER_FLIGHTS, {
+    endpoint: 'flights',
+    user_id_in: userId,
+    season_in: year,
+    limit: API.PAGINATION.DEFAULT_LIMIT,
+    order_by: '-scoring_date'
+  });
+}
 
-  async fetchUserFlights(userId, year) {
-    return this.fetchData(API_ENDPOINTS.USER_FLIGHTS, {
-      user_id_in: userId,
-      season_in: year,
-      limit: API.PAGINATION.DEFAULT_LIMIT
-    });
-  }
+async fetchSprintData(userId) {
+  return this.fetchData(API_ENDPOINTS.SPRINT_DATA, {
+    endpoint: 'sprint',
+    user_id_in: userId,
+    limit: API.PAGINATION.DEFAULT_LIMIT,
+    order_by: '-created'
+  });
+}
 
-  async fetchSprintData(userId) {
-    return this.fetchData(API_ENDPOINTS.SPRINT_DATA, {
-      user_id_in: userId,
-      limit: API.PAGINATION.DEFAULT_LIMIT
-    });
-  }
+async fetchUserAchievements(userId) {
+  return this.fetchData(API_ENDPOINTS.ACHIEVEMENTS, {
+    endpoint: 'achievements',
+    userId: userId
+  });
+}
 
-  async fetchUserAchievements(userId) {
-    if (!userId) {
-      console.warn('[API] Keine User-ID für Achievements angegeben');
-      return [];
-    }
-    
-    console.log(`[API] Lade Achievements für User ${userId}`);
-    
-    try {
-      const data = await this.fetchData(`${API_ENDPOINTS.ACHIEVEMENTS}/${userId}`);
-      return data || [];
-    } catch (error) {
-      console.error(`[API] Fehler beim Laden der Achievements für User ${userId}:`, error);
-      return [];
-    }
-  }
-
-  async fetchFlightDetails(flightId) {
-    if (!flightId) {
-      console.warn('[API] Keine Flug-ID angegeben');
-      return null;
-    }
-    return this.fetchData(`${API_ENDPOINTS.FLIGHT_DETAIL}/${flightId}`);
-  }
+async fetchFlightDetails(flightId) {
+  return this.fetchData(API_ENDPOINTS.FLIGHT_DETAIL, {
+    endpoint: 'flightdetail',
+    flightId: flightId
+  });
+}
 
   clearCache() {
     this._cache = {};

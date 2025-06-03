@@ -2,72 +2,11 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "framework": null,
-  "rewrites": [
-    {
-      "source": "/api/weglide",
-      "destination": "https://api.weglide.org/v1/club/1281?contest=free"
-    },
-    {
-      "source": "/api/flights",
-      "destination": "https://api.weglide.org/v1/flights"
-    },
-    {
-      "source": "/api/season_flights",
-      "destination": "https://api.weglide.org/v1/season_flights"
-    },
-    {
-      "source": "/api/sprint",
-      "destination": "https://api.weglide.org/v1/sprint"
-    },
-    {
-      "source": "/api/achievements/:userId",
-      "destination": "https://api.weglide.org/v1/user/:userId/achievements"
-    },
-    {
-      "source": "/api/flightdetail/:flightId",
-      "destination": "https://api.weglide.org/v1/flight/:flightId"
-    },
-    {
-      "source": "/api/pilot-flights/:userId",
-      "destination": "https://api.weglide.org/v1/user/:userId/flights"
+  "functions": {
+    "api/proxy.js": {
+      "maxDuration": 10
     }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Authorization, Accept"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    }
-  ],
+  },
   "cleanUrls": true,
   "trailingSlash": false
 }
