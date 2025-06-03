@@ -17,6 +17,8 @@ const DEBUG_MODE = true;
  */
 const flightDetailsCache = new Map();
 
+console.log('🚀 badge-reverse-calculator-enhanced.js wird geladen!');
+
 /**
  * Lädt Flugdetails mit Cache
  */
@@ -75,7 +77,8 @@ async function loadFlightDetailsBatch(flightIds) {
  * Hauptfunktion: Berechnet Season-Badges durch präzise Rückwärtssuche
  */
 export async function calculateSeasonBadgesReverse(userId, pilotName) {
-  console.log(`\n🔄 Starte präzise Rückwärts-Badge-Berechnung für ${pilotName} (ID: ${userId})`);
+  console.log(`\n🔄 [ENHANCED] Starte präzise Rückwärts-Badge-Berechnung für ${pilotName} (ID: ${userId})`);
+  console.log(`   Version: ENHANCED 4.0`);
   console.log(`   Saisongrenze: ${SEASON_END.toLocaleString('de-DE')}`);
   
   try {

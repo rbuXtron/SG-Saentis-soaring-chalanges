@@ -1466,4 +1466,23 @@ function getSeasonForDate(dateString) {
   }
 }
 
+// Debug-Funktion für Badge-Berechnung
+window.testBadgeCalculation = async function(pilotName) {
+  console.log(`\n🧪 Teste Badge-Berechnung für ${pilotName}...`);
+  
+  const pilot = window.pilotData?.find(p => p.name === pilotName);
+  if (!pilot) {
+    console.error(`Pilot ${pilotName} nicht gefunden!`);
+    return;
+  }
+  
+  // Importiere die enhanced Version
+  const { testBadgeCalculation } = await import('../services/badge-reverse-calculator-enhanced.js');
+  
+  const result = await testBadgeCalculation(pilot.userId, pilot.name);
+  console.log('Ergebnis:', result);
+  
+  return result;
+};
+
 

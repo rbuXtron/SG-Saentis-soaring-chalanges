@@ -163,9 +163,10 @@ class WeGlideApiClient {
     });
   }
 
-  // Flug-Details
+  // In der fetchFlightDetails Methode:
   async fetchFlightDetails(flightId) {
-    return this.fetchData(`/api/flight/${flightId}`, {}, {
+    // WICHTIG: Verwende /api/flightdetail/ (nicht /api/flight/)
+    return this.fetchData(`/api/flightdetail/${flightId}`, {}, {
       cacheTime: 24 * 60 * 60 * 1000 // 24 Stunden
     });
   }

@@ -1,11 +1,18 @@
 // /public/js/core/data-processor.js
 /**
+/ /public/js/core/data-processor.js
+/**
  * SG Säntis Cup - Datenverarbeitungsmodul
  * Version 2.0 - Mit optimiertem Club-Flüge Loading
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
-import { calculateSeasonBadges } from '../services/badge-season-calculator.js';
+// ÄNDERN: Importiere die enhanced Version
+import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
+// Entferne die alten Imports:
+// import { calculateSeasonBadges } from '../services/badge-season-calculator.js';
+// import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
+
 import {
   APP_CONFIG,
   PILOT_FACTORS,
@@ -17,7 +24,6 @@ import {
 } from '../config/constants.js';
 import { formatISODateTime, formatDateForDisplay } from '../utils/utils.js';
 import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
-import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
