@@ -124,6 +124,11 @@ class SGSaentisCupApp {
     try {
       console.log('SG Säntis Cup App wird initialisiert (Version 3.4)...');
 
+      // Mache wichtige Funktionen global für Debugging
+      window.sgApp = this;
+      window.apiClient = apiClient; // Import apiClient oben hinzufügen
+      window.refreshData = () => this.refreshData();
+
       // Event-Handler und UI initialisieren
       this.setupEventHandlers();
       this.createTooltipOverlay();
@@ -1467,22 +1472,129 @@ function getSeasonForDate(dateString) {
 }
 
 // Debug-Funktion für Badge-Berechnung
-window.testBadgeCalculation = async function(pilotName) {
+window.testBadgeCalculation = async function (pilotName) {
   console.log(`\n🧪 Teste Badge-Berechnung für ${pilotName}...`);
-  
+
   const pilot = window.pilotData?.find(p => p.name === pilotName);
   if (!pilot) {
     console.error(`Pilot ${pilotName} nicht gefunden!`);
     return;
   }
-  
+
   // Importiere die enhanced Version
   const { testBadgeCalculation } = await import('../services/badge-reverse-calculator-enhanced.js');
-  
+
   const result = await testBadgeCalculation(pilot.userId, pilot.name);
   console.log('Ergebnis:', result);
-  
+
   return result;
 };
+
+// Debug-Konsole für SG Säntis App
+window.SGDebug = {
+  // Cache leeren
+  clearCache: async function () {
+    const { apiClient } = await import('../services/weglide-api-service.js');
+    apiClient.clearCache();
+    console.log('✅ Cache geleert');
+  },
+
+  // Daten neu laden
+  refresh: async function () {
+    if (window.sgApp) {
+      await window.sgApp.refreshData();
+    } else {
+      console.error('❌ App nicht initialisiert');
+    }
+  },
+
+  // Badge-Berechnung testen
+  testBadges: async function (pilotName) {
+    const { testBadgeCalculation } = await import('../services/badge-reverse-calculator-enhanced.js');
+
+    const pilot = window.pilotData?.find(p => p.name === pilotName);
+    if (!pilot) {
+      console.error(`❌ Pilot ${pilotName} nicht gefunden!`);
+      console.log('Verfügbare Piloten:', window.pilotData?.map(p => p.name));
+      return;
+    }
+
+    return await testBadgeCalculation(pilot.userId, pilot.name);
+  },
+
+  // Flugdetails abrufen
+  getFlightDetails: async function (flightId) {
+    const { apiClient } = await import('../services/weglide-api-service.js');
+    return await apiClient.fetchFlightDetails(flightId);
+  },
+
+  // Alle Piloten anzeigen
+  listPilots: function () {
+    if (!window.pilotData) {
+      console.error('❌ Keine Pilotendaten geladen');
+      return;
+    }
+
+    console.table(window.pilotData.map(p => ({
+      Name: p.name,
+      ID: p.userId,
+      Punkte: p.totalPoints?.toFixed(2),
+      Badges: p.badgeCount || 0,
+      Flüge: p.allFlights?.length || 0
+    })));
+  },
+
+  // Badge-Status anzeigen
+  showBadgeStatus: function () {
+    if (!window.pilotData) {
+      console.error('❌ Keine Pilotendaten geladen');
+      return;
+    }
+
+    const withBadges = window.pilotData.filter(p => p.badgeCount > 0);
+    console.log(`📊 Badge-Status:`);
+    console.log(`   ${withBadges.length} von ${window.pilotData.length} Piloten haben Badges`);
+
+    const top5 = [...withBadges]
+      .sort((a, b) => b.badgeCount - a.badgeCount)
+      .slice(0, 5);
+
+    console.log('\n🏆 Top 5:');
+    top5.forEach((p, i) => {
+      console.log(`   ${i + 1}. ${p.name}: ${p.badgeCount} Badges`);
+    });
+  },
+
+  // Hilfe anzeigen
+  help: function () {
+    console.log(`
+🛠️ SG Säntis Debug-Konsole
+═══════════════════════════════════════════
+
+Verfügbare Befehle:
+
+📊 Daten:
+  SGDebug.listPilots()           - Zeigt alle Piloten
+  SGDebug.showBadgeStatus()      - Badge-Übersicht
+  SGDebug.refresh()              - Lädt alle Daten neu
+  SGDebug.clearCache()           - Leert den Cache
+
+🏅 Badges:
+  SGDebug.testBadges("Name")     - Testet Badge-Berechnung für einen Piloten
+  SGDebug.getFlightDetails(123)  - Lädt Details für einen Flug
+
+🔍 Beispiele:
+  await SGDebug.testBadges("Guido Halter")
+  await SGDebug.getFlightDetails(3838955)
+  
+📝 Globale Variablen:
+  window.pilotData               - Alle Pilotendaten
+  window.sgApp                   - App-Instanz
+    `);
+  }
+};
+
+// Zeige Hilfe beim Laden
+console.log('✅ SG Säntis Debug-Konsole geladen. Tippe "SGDebug.help()" für Hilfe.');
 
 
