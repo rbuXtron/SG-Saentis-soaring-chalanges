@@ -17,6 +17,7 @@ import {
 } from '../config/constants.js';
 import { formatISODateTime, formatDateForDisplay } from '../utils/utils.js';
 import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
+import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
@@ -137,7 +138,9 @@ export async function fetchAllWeGlideData() {
           }
 
           // Badge-Berechnung
-          const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
+          //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
+          // NEU:
+          const badgeAnalysis = await calculateSeasonBadgesReverse(userId, member.name);
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(
