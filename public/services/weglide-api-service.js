@@ -1,6 +1,7 @@
+// /public/js/services/weglide-api-service.js
 /**
  * SG Säntis Cup - WeGlide API Service
- * Nutzt IMMER Proxy-Routes (auch in Produktion)
+ * Version 2.0 - Mit optimiertem Club-Flüge Loading
  */
 
 import { API_ENDPOINTS } from '../config/api-config.js';
@@ -10,39 +11,42 @@ class WeGlideApiClient {
   constructor() {
     this._cache = {};
     this._activeRequests = new Map();
+    this._clubFlightsCache = null;
+    this._clubFlightsCacheTime = null;
   }
 
   _createCacheKey(endpoint, params) {
     return `${endpoint}?${new URLSearchParams(params).toString()}`;
   }
 
-  _isCacheValid(cacheEntry) {
+  _isCacheValid(cacheEntry, customExpiration = null) {
     if (!API.CACHE.ENABLED) return false;
     const now = new Date().getTime();
-    const expirationTime = API.CACHE.EXPIRATION_MINUTES * 60 * 1000;
+    const expirationTime = customExpiration || (API.CACHE.EXPIRATION_MINUTES * 60 * 1000);
     return (now - cacheEntry.timestamp) < expirationTime;
   }
 
   async fetchData(endpoint, params = {}, options = {}) {
     const cacheKey = this._createCacheKey(endpoint, params);
 
-    if (this._cache[cacheKey] && this._isCacheValid(this._cache[cacheKey])) {
-      console.log(`[API] Verwende Cache für: ${cacheKey}`);
+    // Cache-Prüfung
+    if (this._cache[cacheKey] && this._isCacheValid(this._cache[cacheKey], options.cacheTime)) {
+      console.log(`[API] Cache-Hit für: ${endpoint}`);
       return this._cache[cacheKey].data;
     }
 
+    // Aktive Request-Prüfung
     if (this._activeRequests.has(cacheKey)) {
-      console.log(`[API] Bereits aktive Anfrage für: ${cacheKey}`);
+      console.log(`[API] Warte auf aktive Anfrage: ${endpoint}`);
       return this._activeRequests.get(cacheKey);
     }
 
-    console.log(`[API] Starte neue Anfrage für: ${endpoint}`);
+    console.log(`[API] Neue Anfrage: ${endpoint}`);
 
     const requestPromise = new Promise(async (resolve, reject) => {
       try {
         const queryString = new URLSearchParams(params).toString();
         const url = `${endpoint}${queryString ? '?' + queryString : ''}`;
-        console.log(`[API] Anfrage-URL: ${url}`);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -54,11 +58,12 @@ class WeGlideApiClient {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
 
+        // Cache speichern
         if (API.CACHE.ENABLED) {
           this._cache[cacheKey] = {
             data,
@@ -68,8 +73,8 @@ class WeGlideApiClient {
 
         resolve(data);
       } catch (error) {
-        console.error(`[API] Fehler bei Anfrage ${endpoint}:`, error);
-        resolve([]); // Leeres Array im Fehlerfall
+        console.error(`[API] Fehler bei ${endpoint}:`, error);
+        reject(error);
       } finally {
         this._activeRequests.delete(cacheKey);
       }
@@ -79,50 +84,120 @@ class WeGlideApiClient {
     return requestPromise;
   }
 
-  // In public/js/services/weglide-api-service.js
+  // Club-Daten
+  async fetchClubData() {
+    return this.fetchData('/api/weglide', {}, {
+      cacheTime: 60 * 60 * 1000 // 1 Stunde
+    });
+  }
 
-async fetchClubData() {
-  return this.fetchData(API_ENDPOINTS.CLUB_DATA, {
-    endpoint: 'weglide'
-  });
-}
+  // NEUE METHODE: Alle Club-Flüge laden
+  async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
+    // Spezial-Cache für Club-Flüge (30 Minuten)
+    const cacheValid = this._clubFlightsCacheTime && 
+                      (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
+    
+    if (!forceRefresh && cacheValid && this._clubFlightsCache) {
+      console.log('[API] Verwende Cache für Club-Flüge');
+      return this._clubFlightsCache;
+    }
 
-async fetchUserFlights(userId, year) {
-  return this.fetchData(API_ENDPOINTS.USER_FLIGHTS, {
-    endpoint: 'flights',
-    user_id_in: userId,
-    season_in: year,
-    limit: API.PAGINATION.DEFAULT_LIMIT,
-    order_by: '-scoring_date'
-  });
-}
+    console.log('[API] Lade alle Club-Flüge neu...');
+    
+    try {
+      const response = await this.fetchData('/api/club-flights-complete', {
+        startDate: startDate
+      });
 
-async fetchSprintData(userId) {
-  return this.fetchData(API_ENDPOINTS.SPRINT_DATA, {
-    endpoint: 'sprint',
-    user_id_in: userId,
-    limit: API.PAGINATION.DEFAULT_LIMIT,
-    order_by: '-created'
-  });
-}
+      // Cache aktualisieren
+      this._clubFlightsCache = response;
+      this._clubFlightsCacheTime = Date.now();
 
-async fetchUserAchievements(userId) {
-  return this.fetchData(API_ENDPOINTS.ACHIEVEMENTS, {
-    endpoint: 'achievements',
-    userId: userId
-  });
-}
+      return response;
+    } catch (error) {
+      console.error('[API] Fehler beim Laden der Club-Flüge:', error);
+      // Fallback auf Cache wenn verfügbar
+      if (this._clubFlightsCache) {
+        console.warn('[API] Verwende veralteten Cache als Fallback');
+        return this._clubFlightsCache;
+      }
+      throw error;
+    }
+  }
 
-async fetchFlightDetails(flightId) {
-  return this.fetchData(API_ENDPOINTS.FLIGHT_DETAIL, {
-    endpoint: 'flightdetail',
-    flightId: flightId
-  });
-}
+  // User-Flüge (jetzt aus Club-Flüge-Cache)
+  async fetchUserFlights(userId, year) {
+    // Wenn Club-Flüge gecacht sind, daraus filtern
+    if (this._clubFlightsCache && this._clubFlightsCache.flights) {
+      console.log(`[API] Filtere User ${userId} Flüge aus Cache`);
+      
+      const userFlights = this._clubFlightsCache.flights.filter(flight => {
+        const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
+        return flight.user?.id === userId && flightYear === year;
+      });
+      
+      return userFlights;
+    }
 
+    // Fallback auf einzelne API-Anfrage
+    console.log(`[API] Lade User ${userId} Flüge via API`);
+    return this.fetchData('/api/flights', {
+      user_id_in: userId,
+      season_in: year,
+      limit: API.PAGINATION.DEFAULT_LIMIT
+    });
+  }
+
+  // Sprint-Daten
+  async fetchSprintData(userId) {
+    return this.fetchData('/api/sprint', {
+      user_id_in: userId,
+      limit: API.PAGINATION.DEFAULT_LIMIT
+    });
+  }
+
+  // Achievements
+  async fetchUserAchievements(userId) {
+    return this.fetchData(`/api/achievements/${userId}`, {}, {
+      cacheTime: 2 * 60 * 60 * 1000 // 2 Stunden
+    });
+  }
+
+  // Flug-Details
+  async fetchFlightDetails(flightId) {
+    return this.fetchData(`/api/flight/${flightId}`, {}, {
+      cacheTime: 24 * 60 * 60 * 1000 // 24 Stunden
+    });
+  }
+
+  // Cache leeren
   clearCache() {
     this._cache = {};
-    console.log("[API] Cache wurde gelöscht");
+    this._clubFlightsCache = null;
+    this._clubFlightsCacheTime = null;
+    console.log("[API] Cache vollständig geleert");
+  }
+
+  // Nur Club-Flüge-Cache leeren
+  clearClubFlightsCache() {
+    this._clubFlightsCache = null;
+    this._clubFlightsCacheTime = null;
+    console.log("[API] Club-Flüge-Cache geleert");
+  }
+
+  // Cache-Statistiken
+  getCacheStats() {
+    const cacheEntries = Object.keys(this._cache).length;
+    const clubFlightsCached = !!this._clubFlightsCache;
+    const clubFlightsAge = this._clubFlightsCacheTime 
+      ? Math.floor((Date.now() - this._clubFlightsCacheTime) / 1000 / 60) 
+      : null;
+
+    return {
+      entries: cacheEntries,
+      clubFlightsCached,
+      clubFlightsAge: clubFlightsAge ? `${clubFlightsAge} Minuten` : 'Nicht gecacht'
+    };
   }
 }
 
