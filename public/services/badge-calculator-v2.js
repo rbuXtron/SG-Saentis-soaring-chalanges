@@ -14,7 +14,7 @@
 const SEASON_START = new Date('2024-10-01T00:00:00'); // Nur Badges ab diesem Datum zählen
 const SEASON_END = new Date('2025-09-30T23:59:59');
 const FLIGHTS_START = new Date('2023-06-01');
-const DEBUG = true;
+const DEBUG = false; // Reduziere Debug-Output für Production
 
 /**
  * Hauptfunktion: Berechnet Badges für alle Vereinsmitglieder
@@ -133,7 +133,7 @@ export async function calculateUserSeasonBadges(userId, userName) {
       
       // Details
       totalBadges: achievements.length,
-      seasonBadges: seasonBadges.length,
+      seasonBadgesCount: seasonBadges.length, // Korrigiert: war doppelt mit seasonBadges
       multiLevelCount: multiLevelBadges.length,
       singleLevelCount: singleLevelBadges.length,
       multiLevelBadgeCount: multiLevelBadges.length,
@@ -156,7 +156,12 @@ export async function calculateUserSeasonBadges(userId, userName) {
       // Zusätzliche Eigenschaften für Kompatibilität
       firstTimeTypes: stats.firstTimeTypes,
       repeatedTypes: stats.repeatedTypes,
-      multipleOccurrences: stats.multipleOccurrences
+      multipleOccurrences: stats.multipleOccurrences,
+      
+      // Für Kompatibilität mit loadPilotBadgesWithYearVerification
+      currentYearBadges: processedBadges,
+      verifiedCount: processedBadges.filter(b => b.verified).length,
+      categoryCount: new Set(processedBadges.map(b => b.badge_id)).size
     };
     
   } catch (error) {
@@ -494,6 +499,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   // Durchsuche Flüge vor Season-Start
   let flightsChecked = 0;
   let flightsWithDetails = 0;
+  const maxFlightsToCheck = 30; // Begrenze auf 30 Flüge
   
   for (const flight of flights) {
     const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
@@ -502,6 +508,12 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
     if (flightDate >= SEASON_START) continue;
     
     flightsChecked++;
+    
+    // Abbruch wenn zu viele Flüge geprüft wurden
+    if (flightsChecked > maxFlightsToCheck && !foundPreSeason) {
+      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet (Limit erreicht)`);
+      break;
+    }
     
     try {
       // Lade Flugdetails
@@ -514,7 +526,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
       flightsWithDetails++;
       
       // Debug: Zeige Struktur der Flugdetails beim ersten Mal
-      if (flightsChecked === 1) {
+      if (flightsWithDetails === 1 && DEBUG) {
         console.log(`      📋 Flugdetails-Struktur:`, {
           hasAchievements: !!flightDetails.achievements,
           hasAchievement: !!flightDetails.achievement,
@@ -543,15 +555,6 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
         continue;
       }
       
-      // Debug: Zeige Achievement-Struktur
-      if (flightsWithDetails === 1 && achievements.length > 0) {
-        console.log(`      📋 Achievement-Struktur:`, {
-          count: achievements.length,
-          firstAchievement: achievements[0],
-          keys: Object.keys(achievements[0] || {})
-        });
-      }
-      
       // Suche nach diesem Badge in den Achievements
       const achievement = achievements.find(a => {
         // Verschiedene Möglichkeiten der badge_id
@@ -573,7 +576,6 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
         
         console.log(`      ✅ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
         console.log(`      📎 Flug-ID: ${flight.id}`);
-        console.log(`      📋 Achievement gefunden:`, achievement);
         break;
       }
       
@@ -584,15 +586,16 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
       continue;
     }
     
-    // Begrenze die Anzahl der Flüge
-    if (flightsChecked >= 50 && !foundPreSeason) {
-      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet`);
-      break;
+    // Kleine Pause nach jedem 5. Flug für Rate Limiting
+    if (flightsChecked % 5 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
   
   // Debug-Zusammenfassung
-  console.log(`      📊 ${flightsChecked} Flüge geprüft, ${flightsWithDetails} mit Details geladen`);
+  if (DEBUG) {
+    console.log(`      📊 ${flightsChecked} Flüge geprüft, ${flightsWithDetails} mit Details geladen`);
+  }
   
   // Berechne Season-Punkte
   const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
@@ -619,12 +622,18 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
 }
 
 /**
- * Lädt Flugdetails mit Cache
+ * Lädt Flugdetails mit Cache und Retry-Logik
  */
 const flightDetailsCache = new Map();
+let failedFlightIds = new Set(); // Track dauerhaft fehlgeschlagene IDs
 
 async function loadFlightDetails(flightId) {
   if (!flightId) return null;
+  
+  // Überspringe bekannte Fehler
+  if (failedFlightIds.has(flightId)) {
+    return null;
+  }
   
   // Cache prüfen
   if (flightDetailsCache.has(flightId)) {
@@ -636,6 +645,10 @@ async function loadFlightDetails(flightId) {
     const response = await fetch(`/api/proxy?path=flightdetail/${flightId}`);
     
     if (!response.ok) {
+      if (response.status === 404) {
+        // Flug existiert nicht mehr - permanent markieren
+        failedFlightIds.add(flightId);
+      }
       throw new Error(`Flugdetails nicht verfügbar: ${response.status}`);
     }
     
@@ -649,6 +662,12 @@ async function loadFlightDetails(flightId) {
     if (DEBUG && flightDetailsCache.size < 10) {
       console.warn(`      ⚠️ Konnte Flug ${flightId} nicht laden:`, error.message);
     }
+    
+    // Bei wiederholten Fehlern ID merken
+    if (error.message.includes('404')) {
+      failedFlightIds.add(flightId);
+    }
+    
     return null;
   }
 }
@@ -674,7 +693,7 @@ function createEmptyResult(userId, userName) {
     seasonBadgeCount: 0,
     badgeCategoryCount: 0,
     totalBadges: 0,
-    seasonBadges: 0,
+    seasonBadgesCount: 0,
     multiLevelCount: 0,
     singleLevelCount: 0,
     multiLevelBadgeCount: 0,
@@ -690,7 +709,11 @@ function createEmptyResult(userId, userName) {
     stats: emptyStats,
     firstTimeTypes: 0,
     repeatedTypes: 0,
-    multipleOccurrences: 0
+    multipleOccurrences: 0,
+    // Kompatibilität
+    currentYearBadges: [],
+    verifiedCount: 0,
+    categoryCount: 0
   };
 }
 
@@ -703,7 +726,7 @@ export function debugBadgeAnalysis(result) {
   console.log(`Pilot: ${result.userName} (ID: ${result.userId})`);
   console.log(`\nÜbersicht:`);
   console.log(`  • ${result.totalBadges} Badges gesamt`);
-  console.log(`  • ${result.seasonBadges} Badges ab 01.10.2024`);
+  console.log(`  • ${result.seasonBadgesCount} Badges ab 01.10.2024`);
   console.log(`  • ${result.seasonBadgeCount} Season-Punkte berechnet`);
   console.log(`\nBadge-Typen:`);
   console.log(`  • ${result.singleLevelCount} Single-Level (je 1 Punkt)`);
