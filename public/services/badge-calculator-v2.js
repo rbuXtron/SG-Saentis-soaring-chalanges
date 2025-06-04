@@ -163,7 +163,7 @@ async function loadClubMembers(clubId) {
 
 /**
  * Lädt alle Flüge eines Users mit adaptiver Zeitbereichs-Teilung
- * Nutzt die Vercel API-Endpunkte
+ * Nutzt die Vercel API-Endpunkte mit korrekter Rekursion
  */
 async function loadUserFlightsAdaptive(userId) {
   const allFlights = [];
@@ -172,135 +172,125 @@ async function loadUserFlightsAdaptive(userId) {
   
   console.log(`  📅 Lade Flüge adaptiv...`);
   
-  // Hilfsfunktion für API-Calls
-  async function fetchFlights(params) {
-    // Verwende den club-flights-complete Endpunkt für bessere Performance
-    const url = `/api/club-flights-complete?` + new URLSearchParams({
-      startDate: params.from,
-      endDate: params.to,
-      userId: userId // Filtern wir später lokal
-    });
-    
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`API Fehler: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Filtere nur Flüge dieses Users
-      if (data.flights && Array.isArray(data.flights)) {
-        return data.flights.filter(f => f.user && f.user.id === parseInt(userId));
-      }
-      
-      return [];
-    } catch (error) {
-      // Fallback auf Jahr-basiertes Loading
-      console.warn('    ⚠️ Club-flights Fehler, versuche alternatives Loading...');
-      return await loadFlightsByYear(userId, params.from, params.to);
-    }
-  }
-  
-  // Alternative: Lade Flüge Jahr für Jahr
-  async function loadFlightsByYear(userId, fromDate, toDate) {
-    const flights = [];
-    const startYear = new Date(fromDate).getFullYear();
-    const endYear = new Date(toDate).getFullYear();
-    
-    for (let year = startYear; year <= endYear; year++) {
-      try {
-        const response = await fetch(`/api/flights?user_id_in=${userId}&season_in=${year}&limit=100`);
-        
-        if (response.ok) {
-          const yearFlights = await response.json();
-          if (Array.isArray(yearFlights)) {
-            // Filtere nach Datum
-            const filtered = yearFlights.filter(f => {
-              const date = new Date(f.scoring_date || f.takeoff_time);
-              return date >= new Date(fromDate) && date <= new Date(toDate);
-            });
-            flights.push(...filtered);
-          }
-        }
-      } catch (error) {
-        console.warn(`    ⚠️ Fehler beim Laden von Jahr ${year}:`, error.message);
-      }
-      
-      // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-    
-    return flights;
-  }
-  
   // Rekursive Funktion zum Laden mit Zeitbereichs-Teilung
   async function loadFlightsInRange(fromDate, toDate, depth = 0) {
     const from = fromDate.toISOString().split('T')[0];
     const to = toDate.toISOString().split('T')[0];
     
     try {
-      const flights = await fetchFlights({ from, to });
+      // Nutze den /api/flights Endpunkt mit korrekten Parametern
+      const params = new URLSearchParams({
+        user_id_in: userId,
+        date_from: from,
+        date_to: to,
+        limit: '100'
+      });
+      
+      const response = await fetch(`/api/proxy?endpoint=flights&${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`API Fehler: ${response.status}`);
+      }
+      
+      const flights = await response.json();
+      
+      if (!Array.isArray(flights)) {
+        return;
+      }
       
       if (DEBUG) {
         const indent = '  '.repeat(depth);
         console.log(`    ${indent}${from} bis ${to}: ${flights.length} Flüge`);
       }
       
-      // Wenn genau 100 Flüge = möglicherweise Limit erreicht
-      if (flights.length >= 100) {
+      // WICHTIG: Wenn genau 100 Flüge = Limit erreicht, Zeitbereich teilen
+      if (flights.length === 100) {
         if (DEBUG) {
-          console.log(`    ${'  '.repeat(depth)}⚠️ Viele Flüge - teile Zeitbereich zur Sicherheit`);
+          console.log(`    ${'  '.repeat(depth)}⚠️ Limit erreicht - teile Zeitbereich`);
         }
         
         // Berechne Anzahl der Tage im Bereich
         const daysDiff = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24));
         
-        // Nur teilen wenn mehr als 7 Tage
-        if (daysDiff > 7) {
-          // Teile in 2 Hälften
-          const midDate = new Date(fromDate);
-          midDate.setDate(midDate.getDate() + Math.floor(daysDiff / 2));
+        // Nur teilen wenn mehr als 1 Tag
+        if (daysDiff > 1) {
+          // WICHTIG: Nicht die Flüge hier hinzufügen!
+          // Stattdessen den Zeitbereich teilen und rekursiv laden
           
-          // Lade beide Hälften
-          await loadFlightsInRange(fromDate, midDate, depth + 1);
-          await loadFlightsInRange(new Date(midDate.getTime() + 86400000), toDate, depth + 1);
+          // Teile in 2 oder 3 Teile basierend auf Bereichsgröße
+          const parts = daysDiff > 30 ? 3 : 2;
+          const daysPerPart = Math.ceil(daysDiff / parts);
           
-          return; // Wichtig: Return hier
+          // Lade jeden Teil rekursiv
+          for (let i = 0; i < parts; i++) {
+            const partStart = new Date(fromDate);
+            partStart.setDate(partStart.getDate() + (i * daysPerPart));
+            
+            const partEnd = new Date(fromDate);
+            partEnd.setDate(partEnd.getDate() + ((i + 1) * daysPerPart) - 1);
+            
+            // Sicherstellen dass partEnd nicht über toDate hinausgeht
+            if (partEnd > toDate) {
+              partEnd.setTime(toDate.getTime());
+            }
+            
+            // Rekursiver Aufruf für diesen Teil
+            await loadFlightsInRange(partStart, partEnd, depth + 1);
+            
+            // Kurze Pause für Rate Limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          return; // WICHTIG: Return ohne Flüge hinzuzufügen!
+        } else {
+          // Wenn wir nicht weiter teilen können (nur 1 Tag), 
+          // müssen wir die 100 Flüge akzeptieren
+          console.warn(`    ${'  '.repeat(depth)}⚠️ Kann nicht weiter teilen (nur 1 Tag) - akzeptiere ${flights.length} Flüge`);
+          allFlights.push(...flights);
         }
+      } else {
+        // Weniger als 100 Flüge = sicher alle geladen
+        allFlights.push(...flights);
       }
-      
-      // Füge Flüge zur Gesamtliste hinzu
-      allFlights.push(...flights);
       
     } catch (error) {
       console.error(`    ❌ Fehler beim Laden (${from} - ${to}):`, error.message);
       
-      // Bei Fehler: Versuche Jahr-weises Loading als Fallback
-      const flights = await loadFlightsByYear(userId, from, to);
-      allFlights.push(...flights);
+      // Bei Fehler: Versuche kleinere Zeiträume
+      const daysDiff = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 7) {
+        const midDate = new Date(fromDate);
+        midDate.setDate(midDate.getDate() + Math.floor(daysDiff / 2));
+        
+        await loadFlightsInRange(fromDate, midDate, depth + 1);
+        await loadFlightsInRange(new Date(midDate.getTime() + 86400000), toDate, depth + 1);
+      }
     }
   }
   
   // Starte den Ladevorgang
   await loadFlightsInRange(startDate, endDate);
   
-  // Lade zusätzlich aktuelle Saison-Flüge
+  // Lade zusätzlich aktuelle Saison-Flüge (für Statistik)
   try {
-    const currentYear = new Date().getFullYear();
-    const response = await fetch(`/api/flights?user_id_in=${userId}&season_in=${currentYear}&limit=100`);
+    const seasonStart = SEASON_START.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    
+    const params = new URLSearchParams({
+      user_id_in: userId,
+      date_from: seasonStart,
+      date_to: today,
+      limit: '100'
+    });
+    
+    const response = await fetch(`/api/proxy?endpoint=flights&${params}`);
     
     if (response.ok) {
       const seasonFlights = await response.json();
       if (Array.isArray(seasonFlights)) {
-        const filtered = seasonFlights.filter(f => {
-          const date = new Date(f.scoring_date || f.takeoff_time);
-          return date >= SEASON_START;
-        });
-        
-        allFlights.push(...filtered);
-        if (DEBUG && filtered.length > 0) {
-          console.log(`    Saison 24/25: ${filtered.length} Flüge`);
+        allFlights.push(...seasonFlights);
+        if (DEBUG && seasonFlights.length > 0) {
+          console.log(`    Saison 24/25: ${seasonFlights.length} Flüge`);
         }
       }
     }
@@ -318,7 +308,7 @@ async function loadUserFlightsAdaptive(userId) {
     new Date(b.scoring_date || b.takeoff_time) - new Date(a.scoring_date || a.takeoff_time)
   );
   
-  console.log(`  → ${sortedFlights.length} Flüge insgesamt geladen`);
+  console.log(`  → ${sortedFlights.length} eindeutige Flüge geladen`);
   
   return sortedFlights;
 }
@@ -385,7 +375,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
     if (seasonPoints <= 0) {
-      console.log(`      → Badge ${badge.badge_id} ist nicht mehr gültig in dieser Saison`);
+      console.log(`      → Badge ${badge.badge_id} nicht mehr gültig in Saison 24/25`);
       return null; // Badge nicht mehr gültig
     }
   } else {
