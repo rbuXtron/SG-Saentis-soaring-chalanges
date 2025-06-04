@@ -15,6 +15,8 @@ import { apiClient } from '../services/weglide-api-service.js';
 //import { calculateSeasonBadgesFinal } from '../services/badge-season-calculator-final.js';
 //import { calculateSeasonBadges } from '../services/badge-calculator-unified.js';
 import { calculateUserSeasonBadges } from '../services/badge-calculator-v2.js';
+import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-badge-evaluator.js';
+
 
 import {
   APP_CONFIG,
@@ -121,7 +123,8 @@ export async function fetchAllWeGlideData() {
           );
 
           // Badge-Berechnung mit ALLEN Flügen (für Historie)
-          const badgeAnalysis = await calculateUserSeasonBadges(
+          //const badgeAnalysis = await calculateUserSeasonBadges(
+          const badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
             userId,
             member.name,
             ownFlights  // Übergebe ALLE Flüge (inkl. Historie)
