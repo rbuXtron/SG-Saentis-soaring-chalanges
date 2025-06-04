@@ -211,7 +211,8 @@ function calculateBadgeStatistics(processedBadges) {
  * Lädt alle Vereinsmitglieder
  */
 async function loadClubMembers(clubId) {
-  const response = await fetch(`/api/proxy?endpoint=weglide`);
+  // Verwende den universellen Proxy
+  const response = await fetch(`/api/proxy?path=club/${clubId}&contest=free`);
   
   if (!response.ok) {
     throw new Error(`Club-API Fehler: ${response.status}`);
@@ -397,7 +398,8 @@ async function loadUserFlightsAdaptive(userId) {
  */
 async function loadUserAchievements(userId) {
   try {
-    const response = await fetch(`/api/proxy?endpoint=achievements&userId=${userId}`);
+    // Verwende den universellen Proxy
+    const response = await fetch(`/api/proxy?path=achievement/user/${userId}`);
     
     if (!response.ok) {
       throw new Error(`Achievement-API Fehler: ${response.status}`);
@@ -478,6 +480,9 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
  */
 const flightDetailsCache = new Map();
 
+/**
+ * Lädt Flugdetails mit Cache
+ */
 async function loadFlightDetails(flightId) {
   if (!flightId) return null;
   
@@ -487,7 +492,8 @@ async function loadFlightDetails(flightId) {
   }
   
   try {
-    const response = await fetch(`/api/proxy?endpoint=flightdetail&flightId=${flightId}`);
+    // Verwende den universellen Proxy
+    const response = await fetch(`/api/proxy?path=flight/${flightId}`);
     
     if (!response.ok) {
       throw new Error(`Flugdetails nicht verfügbar: ${response.status}`);
@@ -500,7 +506,7 @@ async function loadFlightDetails(flightId) {
     
     return details;
   } catch (error) {
-    if (DEBUG && flightDetailsCache.size < 10) { // Begrenze Debug-Output
+    if (DEBUG && flightDetailsCache.size < 10) {
       console.warn(`      ⚠️ Konnte Flug ${flightId} nicht laden:`, error.message);
     }
     return null;
