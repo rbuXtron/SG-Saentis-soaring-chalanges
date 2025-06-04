@@ -441,44 +441,153 @@ async function loadBadgeHistory(userId, badgeId) {
 }
 
 /**
- * Verbesserte Version mit Badge-Historie
+ * Verifiziert Multi-Level Badge durch Flug-Historie
  */
-async function verifyMultiLevelBadgeWithHistory(badge, flights, userId) {
-  console.log(`    🔍 Verifiziere ${badge.badge_id} (${badge.points} Punkte)`);
+async function verifyMultiLevelBadge(badge, flights, userId) {
+  console.log(`    🔍 Verifiziere ${badge.badge_id} durch Flug-Historie`);
   
-  // Versuche zuerst die Badge-Historie zu laden
-  const badgeHistory = await loadBadgeHistory(userId, badge.badge_id);
+  let preSeasonPoints = 0;
+  let foundPreSeason = false;
+  let foundInFlight = null;
   
-  if (badgeHistory.length > 1) {
-    // Wir haben eine Historie!
-    const preSeasonBadges = badgeHistory.filter(b => 
-      new Date(b.created) < SEASON_START
-    );
+  // Durchsuche Flüge vor Season-Start
+  let flightsChecked = 0;
+  let flightsWithDetails = 0;
+  
+  for (const flight of flights) {
+    const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
     
-    if (preSeasonBadges.length > 0) {
-      // Nehme das letzte Badge vor Season-Start
-      const lastPreSeasonBadge = preSeasonBadges[preSeasonBadges.length - 1];
-      const preSeasonPoints = lastPreSeasonBadge.points || 0;
-      const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
+    // Nur Flüge vor Season-Start prüfen
+    if (flightDate >= SEASON_START) continue;
+    
+    flightsChecked++;
+    
+    try {
+      // Lade Flugdetails
+      const flightDetails = await loadFlightDetails(flight.id);
       
-      console.log(`      ✅ Aus Badge-Historie: ${preSeasonPoints} → ${badge.points} Punkte`);
-      console.log(`      → Season-Punkte: ${seasonPoints}`);
+      if (!flightDetails) {
+        continue;
+      }
       
-      return {
-        ...badge,
-        seasonPoints,
-        preSeasonPoints,
-        foundPreSeason: true,
-        verified: true,
-        type: 'multi-level',
-        verificationMethod: 'badge-history',
-        historyCount: badgeHistory.length
-      };
+      flightsWithDetails++;
+      
+      // Debug: Zeige Struktur der Flugdetails beim ersten Mal
+      if (flightsChecked === 1) {
+        console.log(`      📋 Flugdetails-Struktur:`, {
+          hasAchievements: !!flightDetails.achievements,
+          hasAchievement: !!flightDetails.achievement,  // NEU: Prüfe auch Singular
+          keys: Object.keys(flightDetails).slice(0, 15)
+        });
+      }
+      
+      // Prüfe verschiedene mögliche Locations für Achievements
+      let achievements = null;
+      
+      // Option 1: achievements (Plural) direkt im Objekt
+      if (flightDetails.achievements && Array.isArray(flightDetails.achievements)) {
+        achievements = flightDetails.achievements;
+      }
+      // Option 2: achievement (Singular) direkt im Objekt - NEUE OPTION
+      else if (flightDetails.achievement) {
+        // Könnte ein Array oder ein einzelnes Objekt sein
+        if (Array.isArray(flightDetails.achievement)) {
+          achievements = flightDetails.achievement;
+        } else if (typeof flightDetails.achievement === 'object') {
+          // Einzelnes Achievement zu Array machen
+          achievements = [flightDetails.achievement];
+        }
+      }
+      // Option 3: unter flight.achievements
+      else if (flightDetails.flight && flightDetails.flight.achievements) {
+        achievements = flightDetails.flight.achievements;
+      }
+      // Option 4: unter flight.achievement
+      else if (flightDetails.flight && flightDetails.flight.achievement) {
+        if (Array.isArray(flightDetails.flight.achievement)) {
+          achievements = flightDetails.flight.achievement;
+        } else {
+          achievements = [flightDetails.flight.achievement];
+        }
+      }
+      
+      if (!achievements || achievements.length === 0) {
+        continue;
+      }
+      
+      // Debug: Zeige Achievement-Struktur
+      if (flightsWithDetails === 1 && achievements.length > 0) {
+        console.log(`      📋 Achievement-Struktur:`, {
+          count: achievements.length,
+          firstAchievement: achievements[0],
+          keys: Object.keys(achievements[0] || {})
+        });
+      }
+      
+      // Suche nach diesem Badge in den Achievements
+      const achievement = achievements.find(a => {
+        // Verschiedene Möglichkeiten der badge_id
+        return a.badge_id === badge.badge_id || 
+               a.badge === badge.badge_id ||
+               (a.badge && a.badge.id === badge.badge_id) ||
+               a.id === badge.badge_id;  // NEU: Prüfe auch nur "id"
+      });
+      
+      if (achievement) {
+        // Badge in Vergangenheit gefunden!
+        preSeasonPoints = achievement.points || achievement.level || achievement.value || 0;
+        foundPreSeason = true;
+        foundInFlight = {
+          id: flight.id,
+          date: flightDate,
+          points: preSeasonPoints
+        };
+        
+        console.log(`      ✅ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
+        console.log(`      📎 Flug-ID: ${flight.id}`);
+        console.log(`      📋 Achievement gefunden:`, achievement);
+        break;
+      }
+      
+    } catch (error) {
+      if (DEBUG && flightsChecked <= 3) {
+        console.error(`      ❌ Fehler bei Flug ${flight.id}:`, error.message);
+      }
+      continue;
+    }
+    
+    // Begrenze die Anzahl der Flüge
+    if (flightsChecked >= 50 && !foundPreSeason) {
+      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet`);
+      break;
     }
   }
   
-  // Fallback auf Flug-Durchsuchung
-  return verifyMultiLevelBadge(badge, flights, userId);
+  // Debug-Zusammenfassung
+  console.log(`      📊 ${flightsChecked} Flüge geprüft, ${flightsWithDetails} mit Details geladen`);
+  
+  // Berechne Season-Punkte
+  const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
+  
+  if (foundPreSeason) {
+    console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
+    console.log(`      → Season-Punkte: ${seasonPoints}`);
+  } else {
+    console.log(`      → Nicht in Historie gefunden - alle ${badge.points} Punkte zählen für Season`);
+  }
+  
+  return {
+    ...badge,
+    seasonPoints,
+    preSeasonPoints,
+    foundPreSeason,
+    foundInFlight,
+    verified: true,
+    type: 'multi-level',
+    verificationMethod: foundPreSeason ? 'flight-search' : 'first-time',
+    flightsChecked,
+    flightsWithDetails
+  };
 }
 
 /**
