@@ -107,9 +107,9 @@ export async function calculateUserSeasonBadges(userId, userName) {
       });
     });
     
-    // Multi-Level Badges verifizieren
+    // Multi-Level Badges verifizieren - mit verbesserter Methode
     for (const badge of multiLevelBadges) {
-      const result = await verifyMultiLevelBadge(badge, flights, userId);
+      const result = await verifyMultiLevelBadgeWithHistory(badge, flights, userId);
       processedBadges.push(result);
     }
     
@@ -211,7 +211,6 @@ function calculateBadgeStatistics(processedBadges) {
  * Lädt alle Vereinsmitglieder
  */
 async function loadClubMembers(clubId) {
-  // Verwende den universellen Proxy
   const response = await fetch(`/api/proxy?path=club/${clubId}&contest=free`);
   
   if (!response.ok) {
@@ -398,7 +397,6 @@ async function loadUserFlightsAdaptive(userId) {
  */
 async function loadUserAchievements(userId) {
   try {
-    // Verwende den universellen Proxy
     const response = await fetch(`/api/proxy?path=achievement/user/${userId}`);
     
     if (!response.ok) {
@@ -414,45 +412,171 @@ async function loadUserAchievements(userId) {
 }
 
 /**
+ * Alternative: Lade Badge-Historie direkt von der API
+ */
+async function loadBadgeHistory(userId, badgeId) {
+  try {
+    // Lade alle Achievements des Users
+    const response = await fetch(`/api/proxy?path=achievement/user/${userId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Achievement-Historie nicht verfügbar`);
+    }
+    
+    const allAchievements = await response.json();
+    
+    // Filtere nach badge_id und sortiere nach Datum
+    const badgeHistory = allAchievements
+      .filter(a => a.badge_id === badgeId)
+      .sort((a, b) => new Date(a.created) - new Date(b.created));
+    
+    console.log(`      📜 Badge-Historie für ${badgeId}: ${badgeHistory.length} Einträge`);
+    
+    return badgeHistory;
+    
+  } catch (error) {
+    console.warn(`      ⚠️ Konnte Badge-Historie nicht laden:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Verbesserte Version mit Badge-Historie
+ */
+async function verifyMultiLevelBadgeWithHistory(badge, flights, userId) {
+  console.log(`    🔍 Verifiziere ${badge.badge_id} (${badge.points} Punkte)`);
+  
+  // Versuche zuerst die Badge-Historie zu laden
+  const badgeHistory = await loadBadgeHistory(userId, badge.badge_id);
+  
+  if (badgeHistory.length > 1) {
+    // Wir haben eine Historie!
+    const preSeasonBadges = badgeHistory.filter(b => 
+      new Date(b.created) < SEASON_START
+    );
+    
+    if (preSeasonBadges.length > 0) {
+      // Nehme das letzte Badge vor Season-Start
+      const lastPreSeasonBadge = preSeasonBadges[preSeasonBadges.length - 1];
+      const preSeasonPoints = lastPreSeasonBadge.points || 0;
+      const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
+      
+      console.log(`      ✅ Aus Badge-Historie: ${preSeasonPoints} → ${badge.points} Punkte`);
+      console.log(`      → Season-Punkte: ${seasonPoints}`);
+      
+      return {
+        ...badge,
+        seasonPoints,
+        preSeasonPoints,
+        foundPreSeason: true,
+        verified: true,
+        type: 'multi-level',
+        verificationMethod: 'badge-history',
+        historyCount: badgeHistory.length
+      };
+    }
+  }
+  
+  // Fallback auf Flug-Durchsuchung
+  return verifyMultiLevelBadge(badge, flights, userId);
+}
+
+/**
  * Verifiziert Multi-Level Badge durch Flug-Historie
  */
 async function verifyMultiLevelBadge(badge, flights, userId) {
-  console.log(`    🔍 Verifiziere ${badge.badge_id} (${badge.points} Punkte)`);
+  console.log(`    🔍 Verifiziere ${badge.badge_id} durch Flug-Historie`);
   
   let preSeasonPoints = 0;
   let foundPreSeason = false;
+  let foundInFlight = null;
   
   // Durchsuche Flüge vor Season-Start
+  let flightsChecked = 0;
+  let flightsWithDetails = 0;
+  
   for (const flight of flights) {
     const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
     
     // Nur Flüge vor Season-Start prüfen
     if (flightDate >= SEASON_START) continue;
     
+    flightsChecked++;
+    
     try {
       // Lade Flugdetails
       const flightDetails = await loadFlightDetails(flight.id);
       
-      if (!flightDetails || !flightDetails.achievements) continue;
+      if (!flightDetails) {
+        continue;
+      }
+      
+      flightsWithDetails++;
+      
+      // Debug: Zeige Struktur der Flugdetails beim ersten Mal
+      if (flightsChecked === 1) {
+        console.log(`      📋 Flugdetails-Struktur:`, {
+          hasAchievements: !!flightDetails.achievements,
+          achievementCount: flightDetails.achievements?.length || 0,
+          keys: Object.keys(flightDetails).slice(0, 10)
+        });
+      }
+      
+      // Prüfe verschiedene mögliche Locations für Achievements
+      let achievements = null;
+      
+      // Option 1: achievements direkt im Objekt
+      if (flightDetails.achievements && Array.isArray(flightDetails.achievements)) {
+        achievements = flightDetails.achievements;
+      }
+      // Option 2: unter flight.achievements
+      else if (flightDetails.flight && flightDetails.flight.achievements) {
+        achievements = flightDetails.flight.achievements;
+      }
+      // Option 3: unter data.achievements
+      else if (flightDetails.data && flightDetails.data.achievements) {
+        achievements = flightDetails.data.achievements;
+      }
+      
+      if (!achievements || achievements.length === 0) {
+        continue;
+      }
       
       // Suche nach diesem Badge in den Achievements
-      const achievement = flightDetails.achievements.find(
-        a => a.badge_id === badge.badge_id
-      );
+      const achievement = achievements.find(a => {
+        return a.badge_id === badge.badge_id || 
+               a.badge === badge.badge_id ||
+               (a.badge && a.badge.id === badge.badge_id);
+      });
       
       if (achievement) {
         // Badge in Vergangenheit gefunden!
-        preSeasonPoints = achievement.points || 0;
+        preSeasonPoints = achievement.points || achievement.level || 0;
         foundPreSeason = true;
+        foundInFlight = {
+          id: flight.id,
+          date: flightDate,
+          points: preSeasonPoints
+        };
         
-        console.log(`      ✓ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
-        break; // Stoppe bei erstem Fund
+        console.log(`      ✅ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
+        console.log(`      📎 Flug-ID: ${flight.id}`);
+        break;
       }
+      
     } catch (error) {
-      // Fehler ignorieren, weiter mit nächstem Flug
       continue;
     }
+    
+    // Begrenze die Anzahl der Flüge
+    if (flightsChecked >= 50 && !foundPreSeason) {
+      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet`);
+      break;
+    }
   }
+  
+  // Debug-Zusammenfassung
+  console.log(`      📊 ${flightsChecked} Flüge geprüft, ${flightsWithDetails} mit Details geladen`);
   
   // Berechne Season-Punkte
   const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
@@ -461,7 +585,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
   } else {
-    console.log(`      → Erstmalig in Saison 24/25 erreicht: ${seasonPoints} Punkte`);
+    console.log(`      → Nicht in Historie gefunden - alle ${badge.points} Punkte zählen für Season`);
   }
   
   return {
@@ -469,9 +593,12 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
     seasonPoints,
     preSeasonPoints,
     foundPreSeason,
+    foundInFlight,
     verified: true,
     type: 'multi-level',
-    verificationMethod: foundPreSeason ? 'historical-search' : 'first-time'
+    verificationMethod: foundPreSeason ? 'flight-search' : 'first-time',
+    flightsChecked,
+    flightsWithDetails
   };
 }
 
@@ -585,6 +712,28 @@ export function debugBadgeAnalysis(result) {
   
   console.log('═══════════════════════════════════════════\n');
 }
+
+// Debug-Funktion zum Testen
+window.testBadgeVerification = async function(userId, badgeId) {
+  console.log(`\n🧪 Teste Badge-Verifikation für User ${userId}, Badge ${badgeId}`);
+  
+  // Lade einen Beispiel-Flug
+  const flights = await loadUserFlightsAdaptive(userId);
+  const oldFlight = flights.find(f => new Date(f.scoring_date) < SEASON_START);
+  
+  if (oldFlight) {
+    console.log(`\nTeste mit Flug ${oldFlight.id} vom ${new Date(oldFlight.scoring_date).toLocaleDateString()}`);
+    const details = await loadFlightDetails(oldFlight.id);
+    console.log('Flugdetails:', details);
+    console.log('Achievements:', details?.achievements || 'KEINE ACHIEVEMENTS GEFUNDEN');
+  }
+  
+  // Teste Badge-Historie
+  const history = await loadBadgeHistory(userId, badgeId);
+  console.log('\nBadge-Historie:', history);
+  
+  return { flights: flights.length, history: history.length };
+};
 
 // Export
 export default {
