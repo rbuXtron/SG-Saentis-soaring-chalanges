@@ -3,7 +3,7 @@
  * 
  * Implementiert den exakten Algorithmus:
  * 1. Lade alle User eines Vereins
- * 2. Lade historische Flüge für Badge-Verifizierung
+ * 2. Lade historische Flüge für Badge-Verifizierung (2023-06-01 bis 2024-09-30)
  * 3. Lade Badges jünger als 30.09.2024
  * 4. Evaluiere Multi-Level Badges (points > 1)
  * 5. Durchsuche ältere Flüge für Badge-Historie
@@ -15,6 +15,8 @@
 // Konstanten
 const SEASON_START = new Date('2024-10-01T00:00:00'); // Saisonbeginn 2024/2025
 const SEASON_END = new Date('2025-09-30T23:59:59');   // Saisonende 2024/2025
+const HISTORY_START = new Date('2023-06-01T00:00:00'); // Start der Historie-Suche
+const HISTORY_END = new Date('2024-09-30T23:59:59');   // Ende der Historie-Suche (Tag vor Saisonbeginn)
 const CURRENT_SEASON = '2024/2025';
 const DEBUG = false; // Reduziere Debug-Output für Production
 
@@ -24,6 +26,7 @@ const DEBUG = false; // Reduziere Debug-Output für Production
 export async function calculateClubBadges(clubId = 1281) {
     console.log('🏅 Badge Calculator V2 - Start');
     console.log(`   Saison: ${CURRENT_SEASON} (${SEASON_START.toLocaleDateString()} - ${SEASON_END.toLocaleDateString()})`);
+    console.log(`   Historie-Zeitraum: ${HISTORY_START.toLocaleDateString()} - ${HISTORY_END.toLocaleDateString()}`);
     console.log('================================');
 
     try {
@@ -80,25 +83,24 @@ export async function calculateUserSeasonBadges(userId, userName, historicalFlig
         // Nutze übergebene historische Flüge für Badge-Historie
         if (historicalFlights && Array.isArray(historicalFlights) && historicalFlights.length > 0) {
             console.log(`  ✅ Nutze ${historicalFlights.length} übergebene historische Flüge`);
-            flightsForBadgeHistory = historicalFlights;
+            
+            // WICHTIG: Filtere Flüge für Badge-Historie (nur 2023-06-01 bis 2024-09-30)
+            flightsForBadgeHistory = historicalFlights.filter(flight => {
+                const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
+                return flightDate >= HISTORY_START && flightDate <= HISTORY_END;
+            });
+            
+            console.log(`  📅 Nach Filterung: ${flightsForBadgeHistory.length} Flüge im Historie-Zeitraum`);
 
             // Validiere Zeitbereich
-            const dates = historicalFlights
-                .map(f => new Date(f.scoring_date || f.takeoff_time))
-                .filter(d => !isNaN(d))
-                .sort((a, b) => a - b);
-
-            if (dates.length > 0) {
+            if (flightsForBadgeHistory.length > 0) {
+                const dates = flightsForBadgeHistory
+                    .map(f => new Date(f.scoring_date || f.takeoff_time))
+                    .sort((a, b) => a - b);
+                
                 const oldestDate = dates[0];
                 const newestDate = dates[dates.length - 1];
-                console.log(`  📅 Historische Flüge: ${oldestDate.toLocaleDateString()} bis ${newestDate.toLocaleDateString()}`);
-
-                // Prüfe ob genug Historie vorhanden
-                const requiredDate = new Date('2023-07-01');
-                if (oldestDate > requiredDate) {
-                    console.warn(`  ⚠️ Historische Flüge reichen nur bis ${oldestDate.toLocaleDateString()}`);
-                    console.warn(`    Empfohlen: Flüge ab ${requiredDate.toLocaleDateString()} für vollständige Badge-Verifizierung`);
-                }
+                console.log(`  📅 Historie-Flüge: ${oldestDate.toLocaleDateString()} bis ${newestDate.toLocaleDateString()}`);
             }
         } else {
             // Fallback: Lade historische Flüge selbst
@@ -272,19 +274,22 @@ async function loadClubMembers(clubId) {
 }
 
 /**
- * Lädt historische Flüge eines Users (vor Saisonbeginn)
+ * Lädt historische Flüge eines Users (nur für den definierten Historie-Zeitraum)
  * Nur als Fallback wenn keine Flüge übergeben wurden
  */
 async function loadHistoricalFlights(userId) {
     const allFlights = [];
-    const endDate = new Date(SEASON_START);
-    endDate.setDate(endDate.getDate() - 1); // Tag vor Saisonbeginn
 
-    console.log(`    📅 Lade historische Flüge bis ${endDate.toLocaleDateString()}...`);
+    console.log(`    📅 Lade historische Flüge (${HISTORY_START.toLocaleDateString()} - ${HISTORY_END.toLocaleDateString()})...`);
 
-    // Lade die letzten 2-3 Jahre für Badge-Historie
-    const currentYear = new Date().getFullYear();
-    const yearsToLoad = [currentYear - 1, currentYear - 2, currentYear - 3];
+    // Bestimme welche Jahre geladen werden müssen
+    const startYear = HISTORY_START.getFullYear(); // 2023
+    const endYear = HISTORY_END.getFullYear();     // 2024
+    const yearsToLoad = [];
+    
+    for (let year = startYear; year <= endYear; year++) {
+        yearsToLoad.push(year);
+    }
 
     for (const year of yearsToLoad) {
         try {
@@ -301,14 +306,14 @@ async function loadHistoricalFlights(userId) {
                 const flights = await response.json();
 
                 if (Array.isArray(flights)) {
-                    // Filtere nur Flüge vor Saisonbeginn
+                    // WICHTIG: Filtere nur Flüge im Historie-Zeitraum
                     const historicalFlights = flights.filter(flight => {
                         const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
-                        return flightDate < SEASON_START;
+                        return flightDate >= HISTORY_START && flightDate <= HISTORY_END;
                     });
 
                     allFlights.push(...historicalFlights);
-                    console.log(`      Jahr ${year}: ${historicalFlights.length} historische Flüge`);
+                    console.log(`      Jahr ${year}: ${historicalFlights.length} Flüge im Historie-Zeitraum`);
                 }
             }
         } catch (error) {
@@ -321,7 +326,7 @@ async function loadHistoricalFlights(userId) {
         new Date(b.scoring_date || b.takeoff_time) - new Date(a.scoring_date || a.takeoff_time)
     );
 
-    console.log(`    → ${sortedFlights.length} historische Flüge geladen`);
+    console.log(`    → ${sortedFlights.length} historische Flüge im Zeitraum geladen`);
 
     return sortedFlights;
 }
@@ -417,26 +422,30 @@ async function verifyMultiLevelBadgeWithHistory(badge, historicalFlights, userId
 
 /**
  * Verifiziert Multi-Level Badge durch historische Flüge
+ * WICHTIG: Durchsucht nur Flüge im definierten Historie-Zeitraum
  */
 async function verifyMultiLevelBadge(badge, historicalFlights, userId) {
     console.log(`    🔍 Verifiziere ${badge.badge_id} durch Flug-Historie`);
+    console.log(`      Zeitraum: ${HISTORY_START.toLocaleDateString()} - ${HISTORY_END.toLocaleDateString()}`);
 
     let preSeasonPoints = 0;
     let foundPreSeason = false;
     let foundInFlight = null;
 
-    // Durchsuche NUR historische Flüge (vor Season-Start)
+    // Durchsuche NUR historische Flüge im definierten Zeitraum
     let flightsChecked = 0;
     let flightsWithDetails = 0;
+    let flightsOutsideRange = 0;
     const maxFlightsToCheck = 150;
 
     for (const flight of historicalFlights) {
         const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
 
-        // Sicherheitscheck: Überspringe Flüge ab Season-Start
-        if (flightDate >= SEASON_START) {
+        // Doppelte Sicherheit: Prüfe ob Flug im erlaubten Zeitraum ist
+        if (flightDate < HISTORY_START || flightDate > HISTORY_END) {
+            flightsOutsideRange++;
             if (DEBUG) {
-                console.log(`      ⚠️ Überspringe Flug vom ${flightDate.toLocaleDateString()} (nach Season-Start)`);
+                console.log(`      ⚠️ Überspringe Flug vom ${flightDate.toLocaleDateString()} (außerhalb Historie-Zeitraum)`);
             }
             continue;
         }
@@ -547,8 +556,12 @@ async function verifyMultiLevelBadge(badge, historicalFlights, userId) {
     }
 
     // Debug-Zusammenfassung
-    if (DEBUG) {
-        console.log(`      📊 ${flightsChecked} Flüge geprüft, ${flightsWithDetails} mit Details geladen`);
+    if (DEBUG || flightsOutsideRange > 0) {
+        console.log(`      📊 ${flightsChecked} Flüge im Zeitraum geprüft`);
+        console.log(`      📊 ${flightsWithDetails} mit Details geladen`);
+        if (flightsOutsideRange > 0) {
+            console.log(`      ⚠️ ${flightsOutsideRange} Flüge außerhalb des Historie-Zeitraums übersprungen`);
+        }
     }
 
     // Berechne Season-Punkte
@@ -571,7 +584,8 @@ async function verifyMultiLevelBadge(badge, historicalFlights, userId) {
         type: 'multi-level',
         verificationMethod: foundPreSeason ? 'flight-search' : 'first-time',
         flightsChecked,
-        flightsWithDetails
+        flightsWithDetails,
+        flightsOutsideRange
     };
 }
 
@@ -679,6 +693,7 @@ export function debugBadgeAnalysis(result) {
     console.log('═══════════════════════════════════════════');
     console.log(`Pilot: ${result.userName} (ID: ${result.userId})`);
     console.log(`Saison: ${CURRENT_SEASON}`);
+    console.log(`Historie-Zeitraum: ${HISTORY_START.toLocaleDateString()} - ${HISTORY_END.toLocaleDateString()}`);
     console.log(`\nÜbersicht:`);
     console.log(`  • ${result.totalBadges} Badges gesamt`);
     console.log(`  • ${result.seasonBadgesCount} Badges ab ${SEASON_START.toLocaleDateString()}`);
@@ -687,7 +702,7 @@ export function debugBadgeAnalysis(result) {
     console.log(`  • ${result.singleLevelCount} Single-Level (je 1 Punkt)`);
     console.log(`  • ${result.multiLevelCount} Multi-Level (verifiziert)`);
     console.log(`\nFlug-Analyse:`);
-    console.log(`  • ${result.flightsAnalyzed} historische Flüge durchsucht`);
+    console.log(`  • ${result.flightsAnalyzed} historische Flüge im Zeitraum durchsucht`);
     console.log(`  • ${result.flightsInSeason} Flüge in aktueller Saison`);
 
     if (result.badges && result.badges.length > 0) {
@@ -710,10 +725,14 @@ export function debugBadgeAnalysis(result) {
 // Debug-Funktion zum Testen
 window.testBadgeVerification = async function (userId, badgeId) {
     console.log(`\n🧪 Teste Badge-Verifikation für User ${userId}, Badge ${badgeId}`);
+    console.log(`   Historie-Zeitraum: ${HISTORY_START.toLocaleDateString()} - ${HISTORY_END.toLocaleDateString()}`);
 
     // Lade historische Flüge
     const flights = await loadHistoricalFlights(userId);
-    const oldFlight = flights.find(f => new Date(f.scoring_date) < SEASON_START);
+    const oldFlight = flights.find(f => {
+        const date = new Date(f.scoring_date);
+        return date >= HISTORY_START && date <= HISTORY_END;
+    });
 
     if (oldFlight) {
         console.log(`\nTeste mit Flug ${oldFlight.id} vom ${new Date(oldFlight.scoring_date).toLocaleDateString()}`);
