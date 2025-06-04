@@ -86,6 +86,7 @@ export async function calculateUserSeasonBadges(userId, userName) {
     console.log(`  → ${seasonBadges.length} Badges ab ${SEASON_START.toLocaleDateString()}`);
     
     // Schritt 4: Evaluiere Multi-Level Badges
+    // Multi-Level Badges sind NUR die mit points > 1
     const multiLevelBadges = seasonBadges.filter(badge => badge.points > 1);
     const singleLevelBadges = seasonBadges.filter(badge => badge.points <= 1);
     
