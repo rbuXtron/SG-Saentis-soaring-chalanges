@@ -67,9 +67,9 @@ export async function calculateUserSeasonBadges(userId, userName) {
   console.log(`\n👤 Verarbeite ${userName} (ID: ${userId})`);
   
   try {
-    // Schritt 2: Lade alle Flüge blockweise
+    // Schritt 2: Lade alle Flüge adaptiv
     console.log('  📅 Lade Flüge...');
-    const flights = await loadUserFlightsMonthly(userId);
+    const flights = await loadUserFlightsAdaptive(userId);
     console.log(`  → ${flights.length} Flüge gefunden`);
     
     // Schritt 3: Lade Badges
@@ -157,55 +157,121 @@ async function loadClubMembers(clubId) {
 }
 
 /**
- * Lädt alle Flüge eines Users blockweise monatlich
- * WICHTIG: Sortiert chronologisch absteigend (neueste zuerst) für rekursive Suche
+ * Lädt alle Flüge eines Users mit adaptiver Zeitbereichs-Teilung
+ * OPTIMIERT: Teilt Zeitbereiche nur bei Bedarf (wenn 100 Flüge erreicht)
  */
-async function loadUserFlightsMonthly(userId) {
+async function loadUserFlightsAdaptive(userId) {
   const allFlights = [];
-  const now = new Date();
+  const startDate = new Date('2023-07-01');
+  const endDate = new Date('2024-09-30'); // Bis Tag vor Saisonbeginn
   
-  // Iteriere monatlich von jetzt bis Juni 2023
-  let currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endDate = new Date(FLIGHTS_START);
+  console.log(`  📅 Lade Flüge adaptiv (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})...`);
   
-  while (currentDate >= endDate) {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
+  // Rekursive Funktion zum Laden mit Zeitbereichs-Teilung
+  async function loadFlightsInRange(fromDate, toDate, depth = 0) {
+    const from = fromDate.toISOString().split('T')[0];
+    const to = toDate.toISOString().split('T')[0];
     
     try {
-      // Lade Flüge für diesen Monat
-      const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
-      
       const response = await fetch(
-        `/api/proxy?endpoint=flights&user_id_in=${userId}&date_from=${monthStart}&date_to=${monthEnd}&limit=100`
+        `/api/proxy?endpoint=flights&user_id_in=${userId}&date_from=${from}&date_to=${to}&limit=100`
       );
       
-      if (response.ok) {
-        const flights = await response.json();
-        if (Array.isArray(flights)) {
-          allFlights.push(...flights);
-          if (DEBUG && flights.length > 0) {
-            console.log(`    ${year}-${String(month).padStart(2, '0')}: ${flights.length} Flüge`);
+      if (!response.ok) {
+        throw new Error(`API Fehler: ${response.status}`);
+      }
+      
+      const flights = await response.json();
+      
+      if (!Array.isArray(flights)) {
+        return;
+      }
+      
+      if (DEBUG) {
+        const indent = '  '.repeat(depth);
+        console.log(`    ${indent}${from} bis ${to}: ${flights.length} Flüge`);
+      }
+      
+      // Wenn genau 100 Flüge = Limit erreicht, Zeitbereich teilen
+      if (flights.length === 100) {
+        if (DEBUG) {
+          console.log(`    ${'  '.repeat(depth)}⚠️ Limit erreicht - teile Zeitbereich`);
+        }
+        
+        // Berechne Anzahl der Tage im Bereich
+        const daysDiff = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24));
+        
+        // Nur teilen wenn mehr als 1 Tag
+        if (daysDiff > 1) {
+          // Teile in 2 oder 3 Teile basierend auf Bereichsgröße
+          const parts = daysDiff > 30 ? 3 : 2;
+          const daysPerPart = Math.ceil(daysDiff / parts);
+          
+          // Lade jeden Teil rekursiv
+          for (let i = 0; i < parts; i++) {
+            const partStart = new Date(fromDate);
+            partStart.setDate(partStart.getDate() + (i * daysPerPart));
+            
+            const partEnd = new Date(fromDate);
+            partEnd.setDate(partEnd.getDate() + ((i + 1) * daysPerPart) - 1);
+            
+            // Sicherstellen dass partEnd nicht über toDate hinausgeht
+            if (partEnd > toDate) {
+              partEnd.setTime(toDate.getTime());
+            }
+            
+            // Rekursiver Aufruf für diesen Teil
+            await loadFlightsInRange(partStart, partEnd, depth + 1);
+            
+            // Kurze Pause für Rate Limiting
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
+          
+          return; // Wichtig: Return hier, da wir die Teile bereits geladen haben
         }
       }
+      
+      // Füge Flüge zur Gesamtliste hinzu
+      allFlights.push(...flights);
+      
     } catch (error) {
-      console.warn(`    ⚠️ Fehler beim Laden von ${year}-${month}:`, error.message);
+      console.error(`    ❌ Fehler beim Laden (${from} - ${to}):`, error.message);
     }
-    
-    // Zum vorherigen Monat
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    
-    // Rate limiting
-    await new Promise(resolve => setTimeout(resolve, 100));
   }
   
-  // WICHTIG: Sortiere chronologisch absteigend (neueste zuerst)
-  // Dies ermöglicht die rekursive Rückwärtssuche ab 01.10.2024
-  return allFlights.sort((a, b) => 
+  // Starte den Ladevorgang
+  await loadFlightsInRange(startDate, endDate);
+  
+  // Lade zusätzlich aktuelle Saison-Flüge (für Statistik)
+  try {
+    const seasonStart = SEASON_START.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    
+    const response = await fetch(
+      `/api/proxy?endpoint=flights&user_id_in=${userId}&date_from=${seasonStart}&date_to=${today}&limit=100`
+    );
+    
+    if (response.ok) {
+      const seasonFlights = await response.json();
+      if (Array.isArray(seasonFlights)) {
+        allFlights.push(...seasonFlights);
+        if (DEBUG && seasonFlights.length > 0) {
+          console.log(`    Saison 24/25: ${seasonFlights.length} Flüge`);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`    ⚠️ Fehler beim Laden der Saison-Flüge:`, error.message);
+  }
+  
+  // Sortiere chronologisch absteigend (neueste zuerst)
+  const sortedFlights = allFlights.sort((a, b) => 
     new Date(b.scoring_date || b.takeoff_time) - new Date(a.scoring_date || a.takeoff_time)
   );
+  
+  console.log(`  → ${sortedFlights.length} Flüge insgesamt geladen`);
+  
+  return sortedFlights;
 }
 
 /**
@@ -269,7 +335,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   if (foundPreSeason) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
-    console.log(`      → Badge ${badge.badge_id} verifiziert mit ${seasonPoints} Saison-Punkten`);
+    console.log(`      → Badge verifiziert: ${badge.badge_id} (${seasonPoints} Punkte)`);
   } else {
     console.log(`      → Erstmalig in Saison 24/25 erreicht: ${seasonPoints} Punkte`);
   }
