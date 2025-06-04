@@ -173,13 +173,10 @@ export async function calculateUserSeasonBadgesWithConfig(userId, userName, hist
     console.log(`\n👤 Verarbeite ${userName} (ID: ${userId}) mit konfigurierten Multi-Level Badges`);
     
     try {
-        // Import der benötigten Funktionen
-        const { loadUserAchievements } = await import('./badge-calculator-v2.js');
-        
         const SEASON_START = new Date('2024-10-01T00:00:00');
         const SEASON_END = new Date('2025-09-30T23:59:59');
         
-        // Lade Achievements
+        // Lade Achievements direkt über die API
         const achievements = await loadUserAchievements(userId);
         
         // Filtere Season Badges
@@ -267,6 +264,23 @@ async function loadFlightDetails(flightId) {
         return await response.json();
     } catch (error) {
         return null;
+    }
+}
+
+// Hilfsfunktion zum Laden von User Achievements
+async function loadUserAchievements(userId) {
+    try {
+        const response = await fetch(`/api/proxy?path=achievement/user/${userId}`);
+        
+        if (!response.ok) {
+            throw new Error(`Achievement-API Fehler: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.warn(`  ⚠️ Konnte Achievements nicht laden:`, error.message);
+        return [];
     }
 }
 

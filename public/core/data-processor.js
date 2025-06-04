@@ -127,7 +127,8 @@ export async function fetchAllWeGlideData() {
           const badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
             userId,
             member.name,
-            ownFlights  // Übergebe ALLE Flüge (inkl. Historie)
+            ownFlights,
+            currentYearFlights
           );
 
           // Sprint-Daten separat laden (nur wenn nötig)
