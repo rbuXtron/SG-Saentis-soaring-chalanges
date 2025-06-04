@@ -23,110 +23,45 @@ export default async function handler(req, res) {
     let finalPath = '';
     let queryParams = { ...otherParams };
     
-    // NEU: Helper für effizientes Club-Flüge Loading
-    if (path === 'club-flights-batch') {
-      try {
-        const { userIds, seasons } = req.query;
-        
-        if (!userIds || !seasons) {
-          res.status(400).json({ error: 'userIds and seasons required' });
-          return;
-        }
-        
-        const userIdArray = userIds.split(',');
-        const seasonArray = seasons.split(',');
-        const allFlights = [];
-        
-        // Lade Flüge für alle User und Seasons
-        for (const userId of userIdArray) {
-          for (const season of seasonArray) {
-            try {
-              const url = `${baseUrl}/flights?user_id_in=${userId}&season_in=${season}&limit=100`;
-              console.log(`Fetching: ${url}`);
-              
-              const response = await fetch(url, {
-                headers: {
-                  'Accept': 'application/json',
-                  'User-Agent': 'SG-Saentis-Soaring/1.0'
-                }
-              });
-              
-              if (response.ok) {
-                const flights = await response.json();
-                if (Array.isArray(flights)) {
-                  // Füge userId zu jedem Flug hinzu
-                  flights.forEach(f => f.userId = parseInt(userId));
-                  allFlights.push(...flights);
-                }
-              }
-            } catch (err) {
-              console.error(`Fehler bei User ${userId}, Season ${season}:`, err.message);
-            }
-          }
-        }
-        
-        res.status(200).json(allFlights);
-        return;
-      } catch (error) {
-        console.error('Batch-Loading Fehler:', error);
-        res.status(500).json({ error: 'Batch loading failed' });
-        return;
+    // NEU: Spezialbehandlung für flights Endpunkt
+    if (path === 'flights' || endpoint === 'flights') {
+      finalPath = 'flights';
+      // Stelle sicher, dass alle Parameter korrekt sind
+      if (otherParams.user_id_in) {
+        queryParams.user_id_in = otherParams.user_id_in;
+      }
+      if (otherParams.season_in) {
+        queryParams.season_in = otherParams.season_in;
+      }
+      if (otherParams.date_from) {
+        queryParams.date_from = otherParams.date_from;
+      }
+      if (otherParams.date_to) {
+        queryParams.date_to = otherParams.date_to;
+      }
+      if (otherParams.limit) {
+        queryParams.limit = otherParams.limit;
       }
     }
-    
-    // NEU: Range-basiertes Flug-Loading
-    if (path === 'flights-range') {
-      try {
-        const { user_id_in, date_from, date_to, limit = '100' } = req.query;
-        
-        if (!user_id_in || !date_from || !date_to) {
-          res.status(400).json({ error: 'user_id_in, date_from and date_to required' });
-          return;
-        }
-        
-        const url = `${baseUrl}/flights?user_id_in=${user_id_in}&date_from=${date_from}&date_to=${date_to}&limit=${limit}`;
-        console.log(`Range fetch: ${url}`);
-        
-        const response = await fetch(url, {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'SG-Saentis-Soaring/1.0'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`WeGlide API error: ${response.status}`);
-        }
-        
-        const flights = await response.json();
-        res.status(200).json(flights);
-        return;
-      } catch (error) {
-        console.error('Range loading error:', error);
-        res.status(500).json({ error: error.message });
-        return;
-      }
+    // NEU: Sprint Endpunkt
+    else if (path === 'sprint' || endpoint === 'sprint') {
+      finalPath = 'sprint';
     }
-    
+    // NEU: User Endpunkt
+    else if (path && path.startsWith('user/')) {
+      finalPath = path;
+    }
     // Standard path handling
-    if (path) {
-      // Neuer universeller Proxy-Modus
-      // Korrigiere automatisch flight/ zu flightdetail/ wenn es eine ID enthält
+    else if (path) {
+      // Korrigiere automatisch flight/ zu flightdetail/
       if (path.startsWith('flight/') && !path.includes('?')) {
-        // Es ist wahrscheinlich eine Flugdetail-Anfrage
         const flightId = path.replace('flight/', '');
         finalPath = `flightdetail/${flightId}`;
-      } else if (path === 'flights') {
-        // Flights endpoint
-        finalPath = 'flights';
-      } else if (path.startsWith('achievement/user/')) {
-        // Achievement endpoint
+      } else if (path.startsWith('flightdetail/')) {
         finalPath = path;
-      } else if (path.startsWith('user/')) {
-        // User endpoint
+      } else if (path.startsWith('achievement/user/')) {
         finalPath = path;
       } else if (path.startsWith('club/')) {
-        // Club endpoint
         finalPath = path;
       } else {
         finalPath = path;
@@ -136,7 +71,7 @@ export default async function handler(req, res) {
       switch(endpoint) {
         case 'weglide':
           finalPath = 'club/1281';
-          queryParams.contest = 'free';
+          queryParams.contest = queryParams.contest || 'free';
           break;
           
         case 'achievements':
@@ -152,7 +87,6 @@ export default async function handler(req, res) {
         case 'flightdetail':
         case 'flight':
           if (otherParams.flightId) {
-            // KORRIGIERT: flightdetail statt flight
             finalPath = `flightdetail/${otherParams.flightId}`;
             delete queryParams.flightId;
           } else {
@@ -203,6 +137,12 @@ export default async function handler(req, res) {
     // Prüfe ob Response OK ist
     if (!response.ok) {
       console.error(`WeGlide API error: ${response.status} ${response.statusText}`);
+      
+      // Bei 404 könnte es sein, dass der Endpunkt nicht existiert
+      if (response.status === 404) {
+        console.error(`Endpunkt existiert nicht: ${url}`);
+      }
+      
       res.status(response.status).json({
         error: `WeGlide API error: ${response.status}`,
         details: data,

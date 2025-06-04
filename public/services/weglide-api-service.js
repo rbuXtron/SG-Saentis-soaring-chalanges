@@ -26,8 +26,6 @@ class WeGlideApiClient {
     return (now - cacheEntry.timestamp) < expirationTime;
   }
 
-  // In weglide-api-service.js - Überprüfen/Korrigieren Sie die fetchData Methode:
-
   async fetchData(endpoint, params = {}, options = {}) {
     const cacheKey = this._createCacheKey(endpoint, params);
 
@@ -49,8 +47,8 @@ class WeGlideApiClient {
       try {
         const queryString = new URLSearchParams(params).toString();
         const url = `${endpoint}${queryString ? '?' + queryString : ''}`;
-
-        console.log(`[API] Fetching URL: ${url}`); // Debug
+        
+        console.log(`[API] Fetching URL: ${url}`);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -88,19 +86,16 @@ class WeGlideApiClient {
     return requestPromise;
   }
 
-  // Club-Daten - KORRIGIERT
+  // Club-Daten
   async fetchClubData() {
-    // WICHTIG: Kein führender Slash wenn wir relative URLs verwenden!
     return this.fetchData('/api/proxy', {
-      endpoint: 'weglide'  // Nutzt den funktionierenden Legacy-Endpoint
+      endpoint: 'weglide'
     }, {
       cacheTime: 60 * 60 * 1000 // 1 Stunde
     });
   }
-  // In weglide-api-service.js - Ersetzen Sie die fetchAllClubFlights Methode:
 
-  // In weglide-api-service.js - Korrigieren Sie die fetchAllClubFlights Methode:
-
+  // NEUE METHODE: Alle Club-Flüge laden
   async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
     // Spezial-Cache für Club-Flüge (30 Minuten)
     const cacheValid = this._clubFlightsCacheTime &&
@@ -129,36 +124,52 @@ class WeGlideApiClient {
       // Schritt 2: Lade Flüge für alle Mitglieder
       const allFlights = [];
       const currentYear = new Date().getFullYear();
-
-      // Lade nur die letzten 2 Jahre für Performance
-      const seasons = [currentYear, currentYear - 1];
-
+      
+      // Lade die letzten 3 Jahre für Badge-Historie
+      const seasons = [currentYear, currentYear - 1, currentYear - 2];
+      
       // Progress tracking
       let processedMembers = 0;
-
-      for (const member of members) {
-        for (const season of seasons) {
-          try {
-            // WICHTIG: Nutze die existierende fetchUserFlights Methode!
-            const seasonFlights = await this.fetchUserFlights(member.id, season);
-
-            if (Array.isArray(seasonFlights) && seasonFlights.length > 0) {
-              // User-Info ist bereits in den Flügen wenn wir fetchUserFlights nutzen
-              allFlights.push(...seasonFlights);
-              console.log(`[API] ${member.name}: ${seasonFlights.length} Flüge in ${season}`);
+      
+      // Batch-Verarbeitung für bessere Performance
+      const batchSize = 5;
+      
+      for (let i = 0; i < members.length; i += batchSize) {
+        const batch = members.slice(i, i + batchSize);
+        
+        const batchPromises = batch.map(async (member) => {
+          const userFlights = [];
+          
+          for (const season of seasons) {
+            try {
+              const seasonFlights = await this.fetchUserFlights(member.id, season);
+              
+              if (Array.isArray(seasonFlights) && seasonFlights.length > 0) {
+                // Füge User-Info zu jedem Flug hinzu
+                seasonFlights.forEach(flight => {
+                  flight.user = {
+                    id: member.id,
+                    name: member.name
+                  };
+                });
+                userFlights.push(...seasonFlights);
+                console.log(`[API] ${member.name}: ${seasonFlights.length} Flüge in ${season}`);
+              }
+            } catch (error) {
+              console.warn(`[API] Fehler beim Laden für ${member.name} (${season}):`, error.message);
             }
-          } catch (error) {
-            console.warn(`[API] Fehler beim Laden für ${member.name} (${season}):`, error.message);
           }
-        }
-
-        processedMembers++;
-        if (processedMembers % 5 === 0) {
-          console.log(`[API] Fortschritt: ${processedMembers}/${members.length} Mitglieder`);
-        }
-
-        // Kleine Pause zwischen Usern
-        await new Promise(resolve => setTimeout(resolve, 50));
+          
+          return userFlights;
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(userFlights => {
+          allFlights.push(...userFlights);
+        });
+        
+        processedMembers += batch.length;
+        console.log(`[API] Fortschritt: ${processedMembers}/${members.length} Mitglieder`);
       }
 
       console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
@@ -173,7 +184,7 @@ class WeGlideApiClient {
       // Berechne Metadaten
       let oldestDate = new Date();
       let newestDate = new Date(0);
-
+      
       allFlights.forEach(flight => {
         const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
         if (flightDate < oldestDate) oldestDate = flightDate;
@@ -203,13 +214,13 @@ class WeGlideApiClient {
       return response;
     } catch (error) {
       console.error('[API] Fehler beim Laden der Club-Flüge:', error);
-
+      
       // Fallback auf Cache
       if (this._clubFlightsCache) {
         console.warn('[API] Verwende veralteten Cache als Fallback');
         return this._clubFlightsCache;
       }
-
+      
       // Fallback auf leere Response
       return {
         flights: [],
@@ -223,7 +234,7 @@ class WeGlideApiClient {
     }
   }
 
-  // Stelle sicher, dass fetchUserFlights korrekt implementiert ist:
+  // User-Flüge
   async fetchUserFlights(userId, year) {
     // Wenn Club-Flüge gecacht sind, daraus filtern
     if (this._clubFlightsCache && this._clubFlightsCache.flights) {
@@ -234,60 +245,100 @@ class WeGlideApiClient {
         return flight.user?.id === userId && flightYear === year;
       });
 
-      return userFlights;
+      if (userFlights.length > 0) {
+        return userFlights;
+      }
     }
 
     // Fallback auf einzelne API-Anfrage
     console.log(`[API] Lade User ${userId} Flüge für ${year} via API`);
-
-    // VERWENDE DIE KORREKTE API STRUKTUR
+    
     try {
-      // Für die WeGlide API müssen wir einen anderen Ansatz verwenden
-      // Da der direkte flights endpoint nicht über unseren Proxy funktioniert,
-      // nutzen wir einen anderen Weg:
-
-      // Option 1: Verwende den Sprint-Endpunkt (falls verfügbar)
-      const sprintData = await this.fetchData('/api/proxy', {
-        path: 'sprint',
+      const flights = await this.fetchData('/api/proxy', {
+        path: 'flights',
         user_id_in: userId,
+        season_in: year,
         limit: 100
       });
-
-      if (Array.isArray(sprintData)) {
-        // Filtere nach Jahr
-        return sprintData.filter(flight => {
-          const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
-          return flightYear === year;
-        });
+      
+      if (Array.isArray(flights)) {
+        console.log(`[API] ${flights.length} Flüge für User ${userId} in ${year} geladen`);
+        return flights;
       }
-
+      
       return [];
     } catch (error) {
-      console.warn(`[API] Fehler beim Laden der User-Flüge:`, error.message);
+      console.error(`[API] Fehler beim Laden der User-Flüge:`, error);
+      
+      // Fallback: Versuche es mit date range
+      try {
+        const dateFrom = `${year}-01-01`;
+        const dateTo = `${year}-12-31`;
+        
+        const flights = await this.fetchData('/api/proxy', {
+          path: 'flights',
+          user_id_in: userId,
+          date_from: dateFrom,
+          date_to: dateTo,
+          limit: 100
+        });
+        
+        if (Array.isArray(flights)) {
+          console.log(`[API] ${flights.length} Flüge via date range geladen`);
+          return flights;
+        }
+      } catch (fallbackError) {
+        console.error(`[API] Auch Fallback fehlgeschlagen:`, fallbackError);
+      }
+      
       return [];
     }
   }
 
   // Sprint-Daten
   async fetchSprintData(userId) {
-    return this.fetchData('/api/sprint', {
-      user_id_in: userId,
-      limit: API.PAGINATION.DEFAULT_LIMIT
-    });
+    try {
+      const sprints = await this.fetchData('/api/proxy', {
+        path: 'sprint',
+        user_id_in: userId,
+        limit: API.PAGINATION.DEFAULT_LIMIT
+      });
+      
+      if (Array.isArray(sprints)) {
+        return sprints;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error(`[API] Fehler beim Laden der Sprint-Daten:`, error);
+      return [];
+    }
   }
 
   // Achievements
   async fetchUserAchievements(userId) {
-    return this.fetchData(`/api/achievements/${userId}`, {}, {
+    return this.fetchData(`/api/proxy`, {
+      path: `achievement/user/${userId}`
+    }, {
       cacheTime: 2 * 60 * 60 * 1000 // 2 Stunden
     });
   }
 
-  // In der fetchFlightDetails Methode:
+  // Flug-Details
   async fetchFlightDetails(flightId) {
-    // WICHTIG: Verwende /api/flightdetail/ (nicht /api/flight/)
-    return this.fetchData(`/api/flightdetail/${flightId}`, {}, {
+    return this.fetchData(`/api/proxy`, {
+      path: `flightdetail/${flightId}`
+    }, {
       cacheTime: 24 * 60 * 60 * 1000 // 24 Stunden
+    });
+  }
+
+  // User-Details
+  async fetchUserDetails(userId) {
+    return this.fetchData(`/api/proxy`, {
+      path: `user/${userId}`
+    }, {
+      cacheTime: 5 * 60 * 1000 // 5 Minuten
     });
   }
 
@@ -304,18 +355,6 @@ class WeGlideApiClient {
     this._clubFlightsCache = null;
     this._clubFlightsCacheTime = null;
     console.log("[API] Club-Flüge-Cache geleert");
-  }
-  // In deiner weglide-api-service.js
-  async fetchUserDetails(userId) {
-    return this.fetchData(`/api/user/${userId}`, {}, {
-      cacheTime: 5 * 60 * 1000 // 5 Minuten
-    });
-  }
-  // Flug-Details mit korrektem Endpunkt
-  async fetchFlightDetails(flightId) {
-    return this.fetchData(`/api/flightdetail/${flightId}`, {}, {
-      cacheTime: 24 * 60 * 60 * 1000 // 24 Stunden Cache
-    });
   }
 
   // Cache-Statistiken
