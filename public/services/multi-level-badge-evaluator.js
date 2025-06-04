@@ -179,10 +179,24 @@ export function isConfiguredMultiLevelBadge(badgeId) {
  */
 export async function calculateUserSeasonBadgesWithConfig(userId, userName, historicalFlights = null, currentSeasonFlights = null) {
     console.log(`\n👤 Verarbeite ${userName} (ID: ${userId}) mit konfigurierten Multi-Level Badges`);
+    console.log(`   Historische Flüge übergeben: ${historicalFlights ? historicalFlights.length : 0}`);
+    console.log(`   Season Flüge übergeben: ${currentSeasonFlights ? currentSeasonFlights.length : 0}`);
     
     try {
         const SEASON_START = new Date('2024-10-01T00:00:00');
         const SEASON_END = new Date('2025-09-30T23:59:59');
+        const HISTORY_START = new Date('2023-06-01T00:00:00');
+        const HISTORY_END = new Date('2024-09-30T23:59:59');
+        
+        // Filtere historische Flüge für Badge-Historie
+        let flightsForBadgeHistory = [];
+        if (historicalFlights && Array.isArray(historicalFlights) && historicalFlights.length > 0) {
+            flightsForBadgeHistory = historicalFlights.filter(flight => {
+                const flightDate = new Date(flight.date || flight.scoring_date || flight.takeoff_time);
+                return flightDate >= HISTORY_START && flightDate <= HISTORY_END;
+            });
+            console.log(`   Flüge im Historie-Zeitraum (01.06.2023-30.09.2024): ${flightsForBadgeHistory.length}`);
+        }
         
         // Lade Achievements direkt über die API
         const achievements = await loadUserAchievements(userId);
@@ -227,14 +241,28 @@ export async function calculateUserSeasonBadgesWithConfig(userId, userName, hist
         
         // Multi-Level Badges verifizieren
         for (const badge of configuredMultiLevel) {
-            const result = await verifyMultiLevelBadgeSelective(badge, historicalFlights || [], userId);
+            // Übergebe die gefilterten historischen Flüge
+            const result = await verifyMultiLevelBadgeSelective(badge, flightsForBadgeHistory, userId);
             processedBadges.push(result);
         }
         
         // Berechne finale Punkte
         const totalSeasonPoints = processedBadges.reduce((sum, b) => sum + b.seasonPoints, 0);
         
+        // WICHTIG: Nutze den übergebenen Parameter, nicht die lokale Variable!
+        const flightsAnalyzed = (historicalFlights && historicalFlights.length) || 0;
+        const flightsInSeason = (currentSeasonFlights && currentSeasonFlights.length) || 0;
+        const flightsWithBadges = seasonBadges.length > 0 ? 
+            new Set(seasonBadges.map(b => b.flight_id).filter(id => id)).size : 0;
+        
         console.log(`  ✅ ${userName}: ${totalSeasonPoints} Season-Punkte`);
+        console.log(`     Flüge analysiert: ${flightsAnalyzed}, Saison-Flüge: ${flightsInSeason}`);
+        console.log(`     Flüge mit Badges: ${flightsWithBadges}`);
+        console.log(`     Historie-Flüge für Badge-Verifikation: ${flightsForBadgeHistory.length}`);
+        
+        console.log(`  ✅ ${userName}: ${totalSeasonPoints} Season-Punkte`);
+        console.log(`     Flüge analysiert: ${flightsAnalyzed}, Saison-Flüge: ${flightsInSeason}`);
+        console.log(`     Flüge mit Badges: ${flightsWithBadges}`);
         
         return {
             userId,
@@ -245,7 +273,23 @@ export async function calculateUserSeasonBadgesWithConfig(userId, userName, hist
             seasonBadgeCount: totalSeasonPoints,
             badgeCategoryCount: new Set(processedBadges.map(b => b.badge_id)).size,
             configuredMultiLevelCount: configuredMultiLevel.length,
-            processedBadges
+            processedBadges,
+            
+            // Wichtige Statistiken für die Anzeige
+            flightsAnalyzed: flightsAnalyzed,
+            flightsInSeason: flightsInSeason,
+            flightsWithBadges: flightsWithBadges,
+            
+            // Zusätzliche Felder für Kompatibilität
+            totalBadges: achievements.length,
+            seasonBadgesCount: seasonBadges.length,
+            multiLevelCount: configuredMultiLevel.length,
+            singleLevelCount: otherBadges.length,
+            multiLevelBadgeCount: configuredMultiLevel.length,
+            verifiedBadgeCount: processedBadges.filter(b => b.verified).length,
+            allTimeBadges: achievements,
+            allTimeBadgeCount: achievements.length,
+            priorSeasonCount: achievements.length - seasonBadges.length
         };
         
     } catch (error) {
@@ -302,11 +346,33 @@ export function debugMultiLevelBadgeList() {
     console.log(`\nGesamt: ${MULTI_LEVEL_BADGE_IDS.length} Multi-Level Badge-Typen`);
 }
 
+// Debug-Funktion für Badge-Analyse
+export function debugBadgeAnalysis(pilot) {
+    console.log('\n🔍 DEBUG Badge-Analyse für', pilot.name);
+    console.log('=====================================');
+    console.log('Flüge analysiert:', pilot.flightsAnalyzed || 0);
+    console.log('Flüge in Saison:', pilot.flightsInSeason || 0);
+    console.log('Flüge mit Badges:', pilot.flightsWithBadges || 0);
+    console.log('Season Badges:', pilot.seasonBadgeCount || 0);
+    console.log('Badge Kategorien:', pilot.badgeCategoryCount || 0);
+    console.log('Multi-Level Badges:', pilot.multiLevelBadgeCount || 0);
+    
+    if (pilot.badges && pilot.badges.length > 0) {
+        console.log('\nBadges:');
+        pilot.badges.forEach(badge => {
+            console.log(`  - ${badge.badge_id}: ${badge.seasonPoints} Punkte`);
+        });
+    } else {
+        console.log('\nKeine Badges gefunden');
+    }
+}
+
 // Export für globale Verwendung
 window.MultiLevelBadgeEvaluator = {
     MULTI_LEVEL_BADGE_IDS,
     verifyMultiLevelBadgeSelective,
     isConfiguredMultiLevelBadge,
     calculateUserSeasonBadgesWithConfig,
-    debugMultiLevelBadgeList
+    debugMultiLevelBadgeList,
+    debugBadgeAnalysis
 };

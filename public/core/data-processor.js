@@ -122,6 +122,8 @@ export async function fetchAllWeGlideData() {
             new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear
           );
 
+
+
           // Badge-Berechnung mit ALLEN Flügen (für Historie)
           //const badgeAnalysis = await calculateUserSeasonBadges(
           const badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
