@@ -163,14 +163,14 @@ async function loadClubMembers(clubId) {
 
 /**
  * Lädt alle Flüge eines Users mit adaptiver Zeitbereichs-Teilung
- * OPTIMIERT: Teilt Zeitbereiche nur bei Bedarf (wenn 100 Flüge erreicht)
+ * Nutzt die WeGlide API direkt mit den korrekten Parametern
  */
 async function loadUserFlightsAdaptive(userId) {
   const allFlights = [];
   const startDate = new Date('2023-07-01');
   const endDate = new Date('2024-09-30'); // Bis Tag vor Saisonbeginn
   
-  console.log(`  📅 Lade Flüge adaptiv (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})...`);
+  console.log(`  📅 Lade Flüge adaptiv...`);
   
   // Rekursive Funktion zum Laden mit Zeitbereichs-Teilung
   async function loadFlightsInRange(fromDate, toDate, depth = 0) {
@@ -178,15 +178,27 @@ async function loadUserFlightsAdaptive(userId) {
     const to = toDate.toISOString().split('T')[0];
     
     try {
-      const response = await fetch(
-        `/api/proxy?` + new URLSearchParams({
-          endpoint: 'flights',
-          user_id_in: userId,
-          date_from: from,
-          date_to: to,
-          limit: 100
-        })
-      );
+      // Direkt WeGlide API verwenden
+      const url = `https://api.weglide.org/v1/flight?` + new URLSearchParams({
+        user_id_in: userId,
+        scoring_date_start: from,
+        scoring_date_end: to,
+        contest: 'free',
+        order_by: '-scoring_date',
+        not_scored: 'false',
+        story: 'false',
+        valid: 'false',
+        skip: '0',
+        limit: '100',
+        format: 'json'
+      });
+      
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SG-Saentis-Soaring/1.0'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`API Fehler: ${response.status}`);
@@ -235,7 +247,7 @@ async function loadUserFlightsAdaptive(userId) {
             await loadFlightsInRange(partStart, partEnd, depth + 1);
             
             // Kurze Pause für Rate Limiting
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
           
           return; // Wichtig: Return hier, da wir die Teile bereits geladen haben
@@ -258,15 +270,26 @@ async function loadUserFlightsAdaptive(userId) {
     const seasonStart = SEASON_START.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
     
-    const response = await fetch(
-      `/api/proxy?` + new URLSearchParams({
-        endpoint: 'flights',
-        user_id_in: userId,
-        date_from: seasonStart,
-        date_to: today,
-        limit: 100
-      })
-    );
+    const url = `https://api.weglide.org/v1/flight?` + new URLSearchParams({
+      user_id_in: userId,
+      scoring_date_start: seasonStart,
+      scoring_date_end: today,
+      contest: 'free',
+      order_by: '-scoring_date',
+      not_scored: 'false',
+      story: 'false', 
+      valid: 'false',
+      skip: '0',
+      limit: '100',
+      format: 'json'
+    });
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'SG-Saentis-Soaring/1.0'
+      }
+    });
     
     if (response.ok) {
       const seasonFlights = await response.json();
@@ -352,7 +375,11 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   if (foundPreSeason) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
-    console.log(`      → Badge ${badge.badge_id} verifiziert mit ${seasonPoints} Season-Punkten`);
+    if (seasonPoints > 0) {
+      console.log(`      → Verifiziert: ${badge.badge_id} (${seasonPoints} Punkte)`);
+    } else {
+      console.log(`      → Badge ${badge.badge_id} bereits vollständig erreicht`);
+    }
   } else {
     console.log(`      → Erstmalig in Saison 24/25 erreicht: ${seasonPoints} Punkte`);
   }
