@@ -1597,4 +1597,36 @@ Verfügbare Befehle:
 // Zeige Hilfe beim Laden
 console.log('✅ SG Säntis Debug-Konsole geladen. Tippe "SGDebug.help()" für Hilfe.');
 
+// In main-app.js - Fügen Sie diese Debug-Funktion hinzu:
 
+window.debugFlightLoading = function () {
+  console.log('🔍 DEBUG: Flight Loading Status');
+  console.log('================================');
+
+  if (window.apiClient && apiClient._clubFlightsCache) {
+    const cache = apiClient._clubFlightsCache;
+    console.log('✅ Club-Flüge im Cache:', {
+      flüge: cache.flights?.length || 0,
+      mitglieder: cache.metadata?.memberCount || 0,
+      zeitbereich: cache.metadata?.dateRange || 'N/A',
+      cacheAge: apiClient._clubFlightsCacheTime ?
+        `${Math.round((Date.now() - apiClient._clubFlightsCacheTime) / 60000)} Minuten` :
+        'N/A'
+    });
+  } else {
+    console.log('❌ Keine Club-Flüge im Cache');
+  }
+
+  if (window.pilotData) {
+    const flightCounts = window.pilotData.map(p => ({
+      name: p.name,
+      flüge: p.allFlights?.length || 0,
+      ältesterFlug: p.allFlights && p.allFlights.length > 0 ?
+        new Date(Math.min(...p.allFlights.map(f =>
+          new Date(f.date || f.scoring_date || f.takeoff_time)
+        ))).toLocaleDateString() : 'N/A'
+    }));
+
+    console.table(flightCounts);
+  }
+};

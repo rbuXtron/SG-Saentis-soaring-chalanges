@@ -91,39 +91,72 @@ class WeGlideApiClient {
     });
   }
 
-  // NEUE METHODE: Alle Club-Flüge laden
-  async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
-    // Spezial-Cache für Club-Flüge (30 Minuten)
-    const cacheValid = this._clubFlightsCacheTime &&
-      (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
+  // In weglide-api-service.js - Aktualisieren Sie fetchAllClubFlights:
 
-    if (!forceRefresh && cacheValid && this._clubFlightsCache) {
-      console.log('[API] Verwende Cache für Club-Flüge');
-      return this._clubFlightsCache;
-    }
+async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
+  // Spezial-Cache für Club-Flüge (30 Minuten)
+  const cacheValid = this._clubFlightsCacheTime &&
+    (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
 
-    console.log('[API] Lade alle Club-Flüge neu...');
-
-    try {
-      const response = await this.fetchData('/api/club-flights-complete', {
-        startDate: startDate
-      });
-
-      // Cache aktualisieren
-      this._clubFlightsCache = response;
-      this._clubFlightsCacheTime = Date.now();
-
-      return response;
-    } catch (error) {
-      console.error('[API] Fehler beim Laden der Club-Flüge:', error);
-      // Fallback auf Cache wenn verfügbar
-      if (this._clubFlightsCache) {
-        console.warn('[API] Verwende veralteten Cache als Fallback');
+  if (!forceRefresh && cacheValid && this._clubFlightsCache) {
+    console.log('[API] Verwende Cache für Club-Flüge');
+    
+    // Validiere Cache-Inhalt
+    const metadata = this._clubFlightsCache.metadata;
+    if (metadata && metadata.dateRange) {
+      const oldestDate = new Date(metadata.dateRange.oldestFlight);
+      const requestedDate = new Date(startDate);
+      
+      if (oldestDate <= requestedDate) {
+        console.log(`[API] ✅ Cache enthält Flüge bis ${oldestDate.toLocaleDateString()}`);
         return this._clubFlightsCache;
+      } else {
+        console.log(`[API] ⚠️ Cache zu neu, lade mehr Historie...`);
       }
-      throw error;
     }
   }
+
+  console.log('[API] Lade alle Club-Flüge neu...');
+  console.log(`[API] Zeitbereich: ab ${startDate}`);
+
+  try {
+    const response = await this.fetchData('/api/club-flights-complete', {
+      clubId: 1281,
+      startDate: startDate
+    });
+
+    // Validiere Response
+    if (!response || !response.flights || !Array.isArray(response.flights)) {
+      throw new Error('Ungültige Response-Struktur');
+    }
+
+    // Debug-Info
+    console.log(`[API] ✅ ${response.flights.length} Flüge geladen`);
+    if (response.metadata) {
+      console.log(`[API] 📊 Metadaten:`, {
+        mitglieder: response.metadata.memberCount,
+        zeitbereich: `${response.metadata.dateRange.from} bis ${response.metadata.dateRange.to}`,
+        ältesterFlug: response.metadata.dateRange.oldestFlight,
+        neusterFlug: response.metadata.dateRange.newestFlight
+      });
+    }
+
+    // Cache aktualisieren
+    this._clubFlightsCache = response;
+    this._clubFlightsCacheTime = Date.now();
+
+    return response;
+  } catch (error) {
+    console.error('[API] Fehler beim Laden der Club-Flüge:', error);
+    
+    // Fallback auf Cache wenn verfügbar
+    if (this._clubFlightsCache) {
+      console.warn('[API] Verwende veralteten Cache als Fallback');
+      return this._clubFlightsCache;
+    }
+    throw error;
+  }
+}
 
   // User-Flüge (jetzt aus Club-Flüge-Cache)
   async fetchUserFlights(userId, year) {

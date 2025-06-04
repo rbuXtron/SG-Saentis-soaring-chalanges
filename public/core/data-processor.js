@@ -38,133 +38,106 @@ export async function fetchAllWeGlideData() {
     console.log('🚀 Starte optimiertes Daten-Loading');
     console.log('====================================');
 
-    // 1. Club-Daten abrufen für Mitgliederliste
-    console.log('\n📋 Schritt 1: Lade Club-Mitglieder...');
+    // 1. Club-Daten abrufen (nur für Metadaten)
+    console.log('\n📋 Schritt 1: Lade Club-Metadaten...');
     const clubData = await apiClient.fetchClubData();
-    
-    if (!clubData || !clubData.user || !Array.isArray(clubData.user)) {
-      console.error('❌ Keine gültigen Club-Daten erhalten');
-      return [];
-    }
 
-    const members = clubData.user;
-    console.log(`✅ ${members.length} Mitglieder gefunden`);
-
-    // 2. ALLE Club-Flüge laden (optimiert)
-    console.log('\n✈️ Schritt 2: Lade ALLE Club-Flüge seit Juni 2023...');
+    // 2. ALLE Club-Flüge laden (mit ausreichend Historie für Badges)
+    console.log('\n✈️ Schritt 2: Lade ALLE Club-Flüge mit Historie...');
     const startTime = Date.now();
-    
-    const clubFlightsResponse = await apiClient.fetchAllClubFlights('2023-06-01');
-    
+
+    // Stelle sicher, dass wir genug Historie für Badge-Verifizierung haben
+    const requiredStartDate = '2023-06-01'; // Für Badge-Historie
+    const clubFlightsResponse = await apiClient.fetchAllClubFlights(requiredStartDate);
+
     if (!clubFlightsResponse || !clubFlightsResponse.flights) {
       console.error('❌ Keine Club-Flüge erhalten');
       return [];
     }
 
     const allClubFlights = clubFlightsResponse.flights;
+    const members = clubFlightsResponse.members || clubData.user;
     const loadTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    
-    console.log(`✅ ${allClubFlights.length} Flüge in ${loadTime}s geladen`);
-    console.log(`📊 Metadaten:`, clubFlightsResponse.metadata);
 
-    // 3. Flüge nach User gruppieren und Co-Pilot-Filterung
+    console.log(`✅ ${allClubFlights.length} Flüge in ${loadTime}s geladen`);
+
+    // Validiere Zeitbereich
+    if (clubFlightsResponse.metadata && clubFlightsResponse.metadata.dateRange) {
+      const range = clubFlightsResponse.metadata.dateRange;
+      console.log(`📅 Zeitbereich: ${range.from} bis ${range.to}`);
+      console.log(`  → Ältester Flug: ${range.oldestFlight ? new Date(range.oldestFlight).toLocaleDateString() : 'N/A'}`);
+      console.log(`  → Neuester Flug: ${range.newestFlight ? new Date(range.newestFlight).toLocaleDateString() : 'N/A'}`);
+
+      // Warnung wenn nicht genug Historie
+      const oldestDate = new Date(range.oldestFlight || range.from);
+      const requiredDate = new Date(requiredStartDate);
+      if (oldestDate > requiredDate) {
+        console.warn(`⚠️ WARNUNG: Flüge reichen nur bis ${oldestDate.toLocaleDateString()}, benötigt wird ${requiredDate.toLocaleDateString()}`);
+      }
+    }
+
+    // 3. Flüge nach User gruppieren
     console.log('\n🔧 Schritt 3: Verarbeite Flugdaten...');
     const flightsByUser = new Map();
-    const coPilotStats = {
-      total: 0,
-      byUser: new Map()
-    };
 
     allClubFlights.forEach(flight => {
       const userId = flight.user?.id;
       if (!userId) return;
 
-      // Co-Pilot Check für alle User
-      members.forEach(member => {
-        if (member.id !== userId && checkIfPilotIsCoPilot(flight, member.id)) {
-          coPilotStats.total++;
-          coPilotStats.byUser.set(
-            member.id, 
-            (coPilotStats.byUser.get(member.id) || 0) + 1
-          );
-        }
-      });
-
-      // Flug dem Haupt-Piloten zuordnen
       if (!flightsByUser.has(userId)) {
         flightsByUser.set(userId, []);
       }
       flightsByUser.get(userId).push(flight);
     });
 
-    console.log(`📊 Co-Pilot-Statistik: ${coPilotStats.total} Flüge mit Co-Piloten`);
+    console.log(`📊 Flüge nach User gruppiert: ${flightsByUser.size} Piloten`);
 
     // 4. Verarbeite jeden Piloten
     console.log('\n👥 Schritt 4: Verarbeite Piloten-Daten...');
     const currentYear = new Date().getFullYear();
     const processedMembers = [];
 
-    // Batch-Verarbeitung für Badges
+    // Badge-Berechnung mit den bereits geladenen Flügen
     const batchSize = 5;
-    
+
     for (let i = 0; i < members.length; i += batchSize) {
       const batch = members.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (member) => {
         try {
           const userId = member.id;
           const userFlights = flightsByUser.get(userId) || [];
-          
+
           // Filtere Flüge wo der User NICHT Co-Pilot ist
-          const ownFlights = userFlights.filter(flight => 
+          const ownFlights = userFlights.filter(flight =>
             !checkIfPilotIsCoPilot(flight, userId)
           );
-          
-          const coPilotCount = userFlights.length - ownFlights.length;
-          if (coPilotCount > 0) {
-            console.log(`  ⚠️ ${member.name}: ${coPilotCount} Flüge als Co-Pilot gefiltert`);
-          }
 
-          // Flüge nach Jahr sortieren
-          const currentYearFlights = ownFlights.filter(f => 
+          console.log(`  ${member.name}: ${ownFlights.length} eigene Flüge (von ${userFlights.length} gesamt)`);
+
+          // Sortiere Flüge nach Jahr
+          const currentYearFlights = ownFlights.filter(f =>
             new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear
           );
-          const previousYearFlights = ownFlights.filter(f => 
-            new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear - 1
-          );
-          const historicalFlights = ownFlights.filter(f => 
-            new Date(f.scoring_date || f.takeoff_time).getFullYear() < currentYear
-          );
 
-          console.log(`  ${member.name}: ${currentYearFlights.length} Flüge in ${currentYear}, ${previousYearFlights.length} in ${currentYear - 1}`);
-
-          // Sprint-Daten laden (diese müssen separat geladen werden)
-          let sprintData = [];
-          try {
-            sprintData = await apiClient.fetchSprintData(userId);
-          } catch (error) {
-            console.warn(`    Sprint-Daten für ${member.name} nicht verfügbar`);
-          }
-
-          // Badge-Berechnung
-          //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
-          // NEU:
-          //const badgeAnalysis = await calculateSeasonBadgesFinal(userId, member.name);
-          //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
-          //const badgeAnalysis = await calculateUserSeasonBadges(userId, member.name);
+          // Badge-Berechnung mit ALLEN Flügen (für Historie)
           const badgeAnalysis = await calculateUserSeasonBadges(
-            userId, 
+            userId,
             member.name,
-            ownFlights  // Übergebe die bereits gefilterten Flüge
+            ownFlights  // Übergebe ALLE Flüge (inkl. Historie)
           );
+
+          // Sprint-Daten separat laden (nur wenn nötig)
+          let sprintData = [];
+          // Sprint-Daten könnten aus den vorhandenen Flügen extrahiert werden
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(
             member,
             currentYear,
             currentYearFlights,
-            previousYearFlights,
-            historicalFlights,
+            ownFlights.filter(f => new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear - 1),
+            ownFlights.filter(f => new Date(f.scoring_date || f.takeoff_time).getFullYear() < currentYear),
             ownFlights,
             sprintData,
             badgeAnalysis
@@ -182,10 +155,11 @@ export async function fetchAllWeGlideData() {
       console.log(`  Fortschritt: ${Math.min(i + batchSize, members.length)}/${members.length} Piloten`);
     }
 
+
     // 5. Statistiken berechnen
     console.log('\n📊 Schritt 5: Berechne Gesamt-Statistiken...');
     const stats = calculateClubStatistics(processedMembers);
-    
+
     console.log('\n✅ Datenverarbeitung abgeschlossen!');
     console.log('====================================');
     console.log(`Zusammenfassung:`);
@@ -266,10 +240,10 @@ async function processMemberDataOptimized(
     pilotFactor: currentPilotFactor,
     historicalPilotFactor: bestHistoricalFactor,
     // Badge-Daten - Sicherstellen dass es Arrays sind
-    badges: Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : 
-            Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : [],
-    seasonBadges: Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : 
-                  Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : [],
+    badges: Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges :
+      Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : [],
+    seasonBadges: Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges :
+      Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : [],
     badgeCount: badgeAnalysis.badgeCount || badgeAnalysis.seasonBadgeCount || 0,
     badgeCategoryCount: badgeAnalysis.badgeCategoryCount || badgeAnalysis.seasonBadgeTypeCount || 0,
     allTimeBadges: Array.isArray(badgeAnalysis.allTimeBadges) ? badgeAnalysis.allTimeBadges : [],
@@ -283,7 +257,7 @@ async function processMemberDataOptimized(
     multipleOccurrences: badgeAnalysis.multipleOccurrences || 0,
     multiLevelBadgeCount: badgeAnalysis.multiLevelBadgeCount || badgeAnalysis.multiLevelCount || 0,
     verifiedBadgeCount: badgeAnalysis.verifiedBadgeCount || 0
-};
+  };
 }
 
 /**
@@ -364,7 +338,7 @@ export function processFlightData(flight) {
 export function calculateFlightPointsWithHistory(flights, pilotName, allFlights) {
   // Implementation bleibt gleich
   const allFlightsWithFactors = calculateProgressivePilotFactors(allFlights);
-  
+
   const flightFactorMap = new Map();
   allFlightsWithFactors.forEach(flight => {
     const key = `${flight.date}_${flight.km}`;
