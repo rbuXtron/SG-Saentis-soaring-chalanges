@@ -151,7 +151,12 @@ export async function fetchAllWeGlideData() {
           // NEU:
           //const badgeAnalysis = await calculateSeasonBadgesFinal(userId, member.name);
           //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
-          const badgeAnalysis = await calculateUserSeasonBadges(userId, member.name);
+          //const badgeAnalysis = await calculateUserSeasonBadges(userId, member.name);
+          const badgeAnalysis = await calculateUserSeasonBadges(
+            userId, 
+            member.name,
+            ownFlights  // Übergebe die bereits gefilterten Flüge
+          );
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(

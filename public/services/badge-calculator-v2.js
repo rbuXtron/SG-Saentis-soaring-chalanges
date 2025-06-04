@@ -62,15 +62,24 @@ export async function calculateClubBadges(clubId = 1281) {
 
 /**
  * Berechnet Season-Badges für einen einzelnen User
+ * @param {number} userId - User ID
+ * @param {string} userName - User Name
+ * @param {Array} userFlights - Optional: Bereits geladene Flüge des Users
  */
-export async function calculateUserSeasonBadges(userId, userName) {
+export async function calculateUserSeasonBadges(userId, userName, userFlights = null) {
   console.log(`\n👤 Verarbeite ${userName} (ID: ${userId})`);
   
   try {
-    // Schritt 2: Lade alle Flüge adaptiv
-    console.log('  📅 Lade Flüge...');
-    const flights = await loadUserFlightsAdaptive(userId);
-    console.log(`  → ${flights.length} Flüge gefunden`);
+    // Schritt 2: Nutze übergebene Flüge oder lade sie
+    let flights;
+    if (userFlights && Array.isArray(userFlights)) {
+      console.log(`  📅 Nutze ${userFlights.length} übergebene Flüge`);
+      flights = userFlights;
+    } else {
+      console.log('  📅 Lade Flüge...');
+      flights = await loadUserFlightsAdaptive(userId);
+      console.log(`  → ${flights.length} Flüge gefunden`);
+    }
     
     // Schritt 3: Lade Badges
     console.log('  🏅 Lade Achievements...');
@@ -234,6 +243,7 @@ async function loadClubMembers(clubId) {
 
 /**
  * Lädt alle Flüge eines Users mit adaptiver Zeitbereichs-Teilung
+ * WICHTIG: Filtert Flüge wo der User Co-Pilot ist
  */
 async function loadUserFlightsAdaptive(userId) {
   const allFlights = [];
@@ -383,9 +393,31 @@ async function loadUserFlightsAdaptive(userId) {
     console.warn(`    ⚠️ Fehler beim Laden der Saison-Flüge:`, error.message);
   }
   
+  // WICHTIG: Filtere Flüge wo User Co-Pilot ist
+  const ownFlights = allFlights.filter(flight => {
+    // Prüfe ob der User Co-Pilot in diesem Flug ist
+    if (flight.co_user) {
+      if (typeof flight.co_user === 'object' && flight.co_user.id === userId) {
+        return false; // User ist Co-Pilot
+      }
+      if (typeof flight.co_user === 'number' && flight.co_user === userId) {
+        return false; // User ist Co-Pilot
+      }
+    }
+    if (flight.co_user_id && parseInt(flight.co_user_id) === parseInt(userId)) {
+      return false; // User ist Co-Pilot
+    }
+    return true; // User ist Pilot
+  });
+  
+  const filteredCount = allFlights.length - ownFlights.length;
+  if (filteredCount > 0) {
+    console.log(`  ⚠️ ${filteredCount} Flüge als Co-Pilot gefiltert`);
+  }
+  
   // Entferne Duplikate
   const uniqueFlights = Array.from(
-    new Map(allFlights.map(f => [f.id, f])).values()
+    new Map(ownFlights.map(f => [f.id, f])).values()
   );
   
   // Sortiere chronologisch absteigend (neueste zuerst)
@@ -393,7 +425,7 @@ async function loadUserFlightsAdaptive(userId) {
     new Date(b.scoring_date || b.takeoff_time) - new Date(a.scoring_date || a.takeoff_time)
   );
   
-  console.log(`  → ${sortedFlights.length} eindeutige Flüge geladen`);
+  console.log(`  → ${sortedFlights.length} eindeutige Flüge geladen (als Pilot)`);
   
   return sortedFlights;
 }
@@ -500,7 +532,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   // Durchsuche Flüge vor Season-Start
   let flightsChecked = 0;
   let flightsWithDetails = 0;
-  const maxFlightsToCheck = 30; // Begrenze auf 30 Flüge
+  const maxFlightsToCheck = 50; // Erhöhe Limit auf 50 Flüge für bessere Abdeckung
   
   for (const flight of flights) {
     const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
@@ -512,7 +544,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
     
     // Abbruch wenn zu viele Flüge geprüft wurden
     if (flightsChecked > maxFlightsToCheck && !foundPreSeason) {
-      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet (Limit erreicht)`);
+      console.log(`      ⏸️ Suche nach ${flightsChecked} Flügen beendet (Limit: ${maxFlightsToCheck})`);
       break;
     }
     
