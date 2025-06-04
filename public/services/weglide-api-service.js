@@ -1,7 +1,10 @@
 // /public/js/services/weglide-api-service.js
 /**
  * SG Säntis Cup - WeGlide API Service
- * Version 2.0 - Mit optimiertem Club-Flüge Loading
+ * Version 2.1 - Mit optimiertem Club-Flüge Loading und Trennung von Season/Historischen Flügen
+ * 
+ * WICHTIG: Saison läuft vom 1. Oktober bis 30. September
+ * Aktuelle Saison 2024/2025: 01.10.2024 - 30.09.2025
  */
 
 import { API_ENDPOINTS } from '../config/api-config.js';
@@ -13,6 +16,53 @@ class WeGlideApiClient {
     this._activeRequests = new Map();
     this._clubFlightsCache = null;
     this._clubFlightsCacheTime = null;
+  }
+
+  /**
+   * Hilfsfunktion: Bestimmt die Saison für ein Datum
+   * Saison läuft vom 1. Oktober bis 30. September
+   * @param {Date|string} date - Datum
+   * @returns {string} - Saison im Format "2024/2025"
+   */
+  getSeasonForDate(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1; // JavaScript months are 0-based
+    
+    // Oktober bis Dezember: Saison beginnt in diesem Jahr
+    if (month >= 10) {
+      return `${year}/${year + 1}`;
+    }
+    // Januar bis September: Saison begann im Vorjahr
+    else {
+      return `${year - 1}/${year}`;
+    }
+  }
+
+  /**
+   * Bestimmt Start- und Enddatum einer Saison
+   * @param {string} season - Saison im Format "2024/2025"
+   * @returns {Object} - { start: Date, end: Date }
+   */
+  getSeasonDates(season) {
+    const [startYear, endYear] = season.split('/').map(y => parseInt(y));
+    return {
+      start: new Date(startYear, 9, 1), // 1. Oktober (Monat 9 = Oktober)
+      end: new Date(endYear, 8, 30, 23, 59, 59) // 30. September (Monat 8 = September)
+    };
+  }
+
+  /**
+   * Prüft ob ein Datum in der aktuellen Saison liegt
+   * @param {Date|string} date - Zu prüfendes Datum
+   * @returns {boolean}
+   */
+  isCurrentSeason(date) {
+    const d = new Date(date);
+    const now = new Date();
+    const currentSeason = this.getSeasonForDate(now);
+    const dateSeason = this.getSeasonForDate(d);
+    return currentSeason === dateSeason;
   }
 
   _createCacheKey(endpoint, params) {
@@ -95,7 +145,7 @@ class WeGlideApiClient {
     });
   }
 
-  // NEUE METHODE: Alle Club-Flüge laden
+  // NEUE METHODE: Alle Club-Flüge laden mit Trennung Season/Historical
   async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
     // Spezial-Cache für Club-Flüge (30 Minuten)
     const cacheValid = this._clubFlightsCacheTime &&
@@ -106,7 +156,7 @@ class WeGlideApiClient {
       return this._clubFlightsCache;
     }
 
-    console.log('[API] Lade alle Club-Flüge neu...');
+    console.log('[API] Lade alle Club-Flüge neu (getrennt nach Season/Historical)...');
 
     try {
       // Schritt 1: Lade Club-Daten
@@ -121,12 +171,18 @@ class WeGlideApiClient {
       const members = clubData.user;
       console.log(`[API] ${members.length} Mitglieder gefunden`);
 
-      // Schritt 2: Lade Flüge für alle Mitglieder
-      const allFlights = [];
-      const currentYear = new Date().getFullYear();
+      // Schritt 2: Bestimme aktuelle Saison
+      const currentSeason = this.getSeasonForDate(new Date());
+      const currentSeasonDates = this.getSeasonDates(currentSeason);
       
-      // Lade die letzten 3 Jahre für Badge-Historie
-      const seasons = [currentYear, currentYear - 1, currentYear - 2];
+      console.log(`[API] Aktuelle Saison: ${currentSeason}`);
+      console.log(`[API] Saison-Zeitraum: ${currentSeasonDates.start.toLocaleDateString()} - ${currentSeasonDates.end.toLocaleDateString()}`);
+
+      // Strukturierte Datensammlung
+      const flightsByPeriod = {
+        currentSeason: [],    // Aktuelle Saison (z.B. 2024/2025)
+        historical: []        // Historische Flüge
+      };
       
       // Progress tracking
       let processedMembers = 0;
@@ -140,23 +196,43 @@ class WeGlideApiClient {
         const batchPromises = batch.map(async (member) => {
           const userFlights = [];
           
-          for (const season of seasons) {
+          // Lade Flüge für die letzten 3 Jahre
+          const currentYear = new Date().getFullYear();
+          const yearsToLoad = [currentYear, currentYear - 1, currentYear - 2];
+          
+          for (const year of yearsToLoad) {
             try {
-              const seasonFlights = await this.fetchUserFlights(member.id, season);
+              const yearFlights = await this.fetchUserFlights(member.id, year);
               
-              if (Array.isArray(seasonFlights) && seasonFlights.length > 0) {
+              if (Array.isArray(yearFlights) && yearFlights.length > 0) {
                 // Füge User-Info zu jedem Flug hinzu
-                seasonFlights.forEach(flight => {
+                yearFlights.forEach(flight => {
                   flight.user = {
                     id: member.id,
                     name: member.name
                   };
                 });
-                userFlights.push(...seasonFlights);
-                console.log(`[API] ${member.name}: ${seasonFlights.length} Flüge in ${season}`);
+                userFlights.push(...yearFlights);
+                console.log(`[API] ${member.name}: ${yearFlights.length} Flüge in ${year}`);
               }
             } catch (error) {
-              console.warn(`[API] Fehler beim Laden für ${member.name} (${season}):`, error.message);
+              console.warn(`[API] Fehler beim Laden der Flüge ${year} für ${member.name}:`, error.message);
+            }
+          }
+          
+          // Zusätzlich: Lade Flüge aus 2023 wenn nötig (für Badge-Historie)
+          if (!yearsToLoad.includes(2023)) {
+            try {
+              const flights2023 = await this.fetchUserFlights(member.id, 2023);
+              if (Array.isArray(flights2023) && flights2023.length > 0) {
+                flights2023.forEach(flight => {
+                  flight.user = { id: member.id, name: member.name };
+                });
+                userFlights.push(...flights2023);
+                console.log(`[API] ${member.name}: ${flights2023.length} Flüge in 2023 (für Badge-Historie)`);
+              }
+            } catch (error) {
+              console.warn(`[API] Fehler beim Laden der 2023-Flüge für ${member.name}:`, error.message);
             }
           }
           
@@ -164,45 +240,89 @@ class WeGlideApiClient {
         });
         
         const batchResults = await Promise.all(batchPromises);
+        
+        // Sortiere Flüge in aktuelle Saison und historisch
         batchResults.forEach(userFlights => {
-          allFlights.push(...userFlights);
+          userFlights.forEach(flight => {
+            const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
+            
+            if (this.isCurrentSeason(flightDate)) {
+              flightsByPeriod.currentSeason.push(flight);
+            } else {
+              flightsByPeriod.historical.push(flight);
+            }
+          });
         });
         
         processedMembers += batch.length;
         console.log(`[API] Fortschritt: ${processedMembers}/${members.length} Mitglieder`);
       }
 
-      console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
-
-      // Sortiere nach Datum (neueste zuerst)
-      allFlights.sort((a, b) => {
+      // Sortiere beide Arrays nach Datum (neueste zuerst)
+      flightsByPeriod.currentSeason.sort((a, b) => {
+        const dateA = new Date(a.scoring_date || a.takeoff_time);
+        const dateB = new Date(b.scoring_date || b.takeoff_time);
+        return dateB - dateA;
+      });
+      
+      flightsByPeriod.historical.sort((a, b) => {
         const dateA = new Date(a.scoring_date || a.takeoff_time);
         const dateB = new Date(b.scoring_date || b.takeoff_time);
         return dateB - dateA;
       });
 
+      console.log(`[API] ✅ Flüge geladen:`);
+      console.log(`[API]   → ${flightsByPeriod.currentSeason.length} Flüge in aktueller Saison ${currentSeason}`);
+      console.log(`[API]   → ${flightsByPeriod.historical.length} historische Flüge`);
+
+      // Berechne detaillierte Saison-Statistiken
+      const seasonStats = {};
+      [...flightsByPeriod.currentSeason, ...flightsByPeriod.historical].forEach(flight => {
+        const season = this.getSeasonForDate(flight.scoring_date || flight.takeoff_time);
+        seasonStats[season] = (seasonStats[season] || 0) + 1;
+      });
+
+      console.log(`[API] Flüge nach Saison:`);
+      Object.entries(seasonStats)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .forEach(([season, count]) => {
+          console.log(`[API]   → ${season}: ${count} Flüge`);
+        });
+
       // Berechne Metadaten
       let oldestDate = new Date();
       let newestDate = new Date(0);
       
-      allFlights.forEach(flight => {
+      [...flightsByPeriod.currentSeason, ...flightsByPeriod.historical].forEach(flight => {
         const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
         if (flightDate < oldestDate) oldestDate = flightDate;
         if (flightDate > newestDate) newestDate = flightDate;
       });
 
-      // Erstelle Response
+      // Erstelle Response mit getrennten Flügen
       const response = {
-        flights: allFlights,
+        // Für Abwärtskompatibilität
+        flights: [...flightsByPeriod.currentSeason, ...flightsByPeriod.historical],
+        
+        // NEU: Getrennte Arrays nach Saison
+        currentSeasonFlights: flightsByPeriod.currentSeason,
+        historicalFlights: flightsByPeriod.historical,
+        
         metadata: {
           memberCount: members.length,
-          flightCount: allFlights.length,
+          currentSeason: currentSeason,
+          currentSeasonStart: currentSeasonDates.start.toISOString(),
+          currentSeasonEnd: currentSeasonDates.end.toISOString(),
+          currentSeasonCount: flightsByPeriod.currentSeason.length,
+          historicalCount: flightsByPeriod.historical.length,
+          totalCount: flightsByPeriod.currentSeason.length + flightsByPeriod.historical.length,
           dateRange: {
             from: oldestDate.toISOString().split('T')[0],
             to: newestDate.toISOString().split('T')[0],
             oldestFlight: oldestDate.toISOString().split('T')[0],
             newestFlight: newestDate.toISOString().split('T')[0]
-          }
+          },
+          seasonBreakdown: seasonStats
         },
         members: members
       };
@@ -224,28 +344,47 @@ class WeGlideApiClient {
       // Fallback auf leere Response
       return {
         flights: [],
+        currentSeasonFlights: [],
+        historicalFlights: [],
         metadata: {
           memberCount: 0,
-          flightCount: 0,
-          dateRange: {}
+          currentSeason: this.getSeasonForDate(new Date()),
+          currentSeasonCount: 0,
+          historicalCount: 0,
+          totalCount: 0,
+          dateRange: {},
+          seasonBreakdown: {}
         },
         members: []
       };
     }
   }
 
-  // User-Flüge - KORRIGIERT: Verwende 'flight' statt 'flights'
+  // User-Flüge - Verwende 'flight' statt 'flights'
   async fetchUserFlights(userId, year) {
     // Wenn Club-Flüge gecacht sind, daraus filtern
-    if (this._clubFlightsCache && this._clubFlightsCache.flights) {
-      console.log(`[API] Filtere User ${userId} Flüge aus Cache`);
+    if (this._clubFlightsCache) {
+      console.log(`[API] Prüfe Cache für User ${userId} Flüge...`);
 
-      const userFlights = this._clubFlightsCache.flights.filter(flight => {
-        const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
-        return flight.user?.id === userId && flightYear === year;
-      });
+      const targetSeason = `${year - 1}/${year}`; // z.B. "2024/2025" für year=2025
+      const currentSeason = this.getSeasonForDate(new Date());
+      let userFlights = [];
+
+      if (targetSeason === currentSeason && this._clubFlightsCache.currentSeasonFlights) {
+        // Aktuelle Saison aus getrenntem Array
+        userFlights = this._clubFlightsCache.currentSeasonFlights.filter(flight => 
+          flight.user?.id === userId
+        );
+      } else if (this._clubFlightsCache.historicalFlights) {
+        // Historische Flüge - filtere nach Saison
+        userFlights = this._clubFlightsCache.historicalFlights.filter(flight => {
+          const flightSeason = this.getSeasonForDate(flight.scoring_date || flight.takeoff_time);
+          return flight.user?.id === userId && flightSeason === targetSeason;
+        });
+      }
 
       if (userFlights.length > 0) {
+        console.log(`[API] ${userFlights.length} Flüge für User ${userId} aus Cache gefunden`);
         return userFlights;
       }
     }
@@ -254,9 +393,9 @@ class WeGlideApiClient {
     console.log(`[API] Lade User ${userId} Flüge für ${year} via API`);
     
     try {
-      // KORRIGIERT: Verwende 'flight' Endpunkt
+      // Verwende 'flight' Endpunkt (SINGULAR!)
       const flights = await this.fetchData('/api/proxy', {
-        path: 'flight',  // SINGULAR!
+        path: 'flight',
         user_id_in: userId,
         season_in: year,
         limit: 100
@@ -277,7 +416,7 @@ class WeGlideApiClient {
         const dateTo = `${year}-12-31`;
         
         const flights = await this.fetchData('/api/proxy', {
-          path: 'flight',  // SINGULAR!
+          path: 'flight',
           user_id_in: userId,
           date_from: dateFrom,
           date_to: dateTo,
@@ -366,11 +505,54 @@ class WeGlideApiClient {
       ? Math.floor((Date.now() - this._clubFlightsCacheTime) / 1000 / 60)
       : null;
 
+    let currentSeasonCount = 0;
+    let historicalCount = 0;
+    let currentSeason = 'N/A';
+    
+    if (this._clubFlightsCache) {
+      currentSeasonCount = this._clubFlightsCache.currentSeasonFlights?.length || 0;
+      historicalCount = this._clubFlightsCache.historicalFlights?.length || 0;
+      currentSeason = this._clubFlightsCache.metadata?.currentSeason || 'N/A';
+    }
+
     return {
       entries: cacheEntries,
       clubFlightsCached,
-      clubFlightsAge: clubFlightsAge ? `${clubFlightsAge} Minuten` : 'Nicht gecacht'
+      clubFlightsAge: clubFlightsAge ? `${clubFlightsAge} Minuten` : 'Nicht gecacht',
+      currentSeason: currentSeason,
+      currentSeasonFlights: currentSeasonCount,
+      historicalFlights: historicalCount,
+      totalCachedFlights: currentSeasonCount + historicalCount
     };
+  }
+
+  // Debug-Funktion für getrennte Flüge
+  debugFlightSeparation() {
+    if (!this._clubFlightsCache) {
+      console.log('[API] Keine gecachten Club-Flüge vorhanden');
+      return;
+    }
+
+    const cache = this._clubFlightsCache;
+    console.log('\n🔍 DEBUG: Flug-Trennung nach Saison');
+    console.log('====================================');
+    console.log(`Aktuelle Saison: ${cache.metadata?.currentSeason || 'N/A'}`);
+    console.log(`Saison-Start: ${cache.metadata?.currentSeasonStart ? new Date(cache.metadata.currentSeasonStart).toLocaleDateString() : 'N/A'}`);
+    console.log(`Saison-Ende: ${cache.metadata?.currentSeasonEnd ? new Date(cache.metadata.currentSeasonEnd).toLocaleDateString() : 'N/A'}`);
+    console.log(`\nAktuelle Saison: ${cache.currentSeasonFlights?.length || 0} Flüge`);
+    console.log(`Historisch: ${cache.historicalFlights?.length || 0} Flüge`);
+    
+    if (cache.metadata?.seasonBreakdown) {
+      console.log('\nSaison-Aufschlüsselung:');
+      Object.entries(cache.metadata.seasonBreakdown)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .forEach(([season, count]) => {
+          const isCurrent = season === cache.metadata?.currentSeason ? ' (AKTUELL)' : '';
+          console.log(`  ${season}: ${count} Flüge${isCurrent}`);
+        });
+    }
+    
+    console.log('\nCache-Alter:', this.getCacheStats().clubFlightsAge);
   }
 }
 
