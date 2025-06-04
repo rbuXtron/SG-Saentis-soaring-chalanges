@@ -101,7 +101,9 @@ export async function calculateUserSeasonBadges(userId, userName) {
         ...badge,
         seasonPoints: 1,
         verified: true,
-        type: 'single-level'
+        type: 'single-level',
+        foundPreSeason: false,
+        preSeasonPoints: 0
       });
     });
     
@@ -110,6 +112,9 @@ export async function calculateUserSeasonBadges(userId, userName) {
       const result = await verifyMultiLevelBadge(badge, flights, userId);
       processedBadges.push(result);
     }
+    
+    // Statistiken berechnen
+    const stats = calculateBadgeStatistics(processedBadges);
     
     // Ergebnis zusammenstellen
     const totalSeasonPoints = processedBadges.reduce((sum, b) => sum + b.seasonPoints, 0);
@@ -121,6 +126,7 @@ export async function calculateUserSeasonBadges(userId, userName) {
       userName,
       // Hauptergebnisse
       badges: processedBadges,
+      seasonBadges: processedBadges,
       badgeCount: totalSeasonPoints,
       seasonBadgeCount: totalSeasonPoints,
       badgeCategoryCount: new Set(processedBadges.map(b => b.badge_id)).size,
@@ -130,10 +136,27 @@ export async function calculateUserSeasonBadges(userId, userName) {
       seasonBadges: seasonBadges.length,
       multiLevelCount: multiLevelBadges.length,
       singleLevelCount: singleLevelBadges.length,
+      multiLevelBadgeCount: multiLevelBadges.length,
       
       // Flug-Statistiken
       flightsAnalyzed: flights.length,
-      flightsInSeason: flights.filter(f => new Date(f.scoring_date) >= SEASON_START).length
+      flightsInSeason: flights.filter(f => new Date(f.scoring_date) >= SEASON_START).length,
+      flightsWithBadges: processedBadges.length > 0 ? seasonBadges.length : 0,
+      
+      // Badge-Statistiken
+      badgeStats: stats,
+      stats: stats, // Für Kompatibilität
+      
+      // Weitere erwartete Eigenschaften
+      verifiedBadgeCount: processedBadges.filter(b => b.verified).length,
+      allTimeBadges: achievements,
+      allTimeBadgeCount: achievements.length,
+      priorSeasonCount: achievements.length - seasonBadges.length,
+      
+      // Zusätzliche Eigenschaften für Kompatibilität
+      firstTimeTypes: stats.firstTimeTypes,
+      repeatedTypes: stats.repeatedTypes,
+      multipleOccurrences: stats.multipleOccurrences
     };
     
   } catch (error) {
@@ -143,10 +166,52 @@ export async function calculateUserSeasonBadges(userId, userName) {
 }
 
 /**
+ * Berechnet Badge-Statistiken
+ */
+function calculateBadgeStatistics(processedBadges) {
+  const stats = {
+    firstTimeTypes: 0,
+    repeatedTypes: 0,
+    multipleOccurrences: 0,
+    badgesByMonth: {},
+    topBadges: []
+  };
+
+  // Zähle erste und wiederholte Badge-Typen
+  const firstTimeBadges = processedBadges.filter(b => !b.foundPreSeason);
+  const repeatedBadges = processedBadges.filter(b => b.foundPreSeason);
+  
+  stats.firstTimeTypes = new Set(firstTimeBadges.map(b => b.badge_id)).size;
+  stats.repeatedTypes = new Set(repeatedBadges.map(b => b.badge_id)).size;
+  stats.multipleOccurrences = processedBadges.filter(b => b.seasonPoints > 1).length;
+
+  // Badges nach Monat gruppieren
+  processedBadges.forEach(badge => {
+    const date = new Date(badge.created);
+    const monthKey = `${date.toLocaleString('de-DE', { month: 'long' })} ${date.getFullYear()}`;
+    stats.badgesByMonth[monthKey] = (stats.badgesByMonth[monthKey] || 0) + badge.seasonPoints;
+  });
+
+  // Top Badges berechnen
+  const badgeTypeCount = {};
+  processedBadges.forEach(badge => {
+    const name = badge.name || badge.badge_id;
+    badgeTypeCount[name] = (badgeTypeCount[name] || 0) + badge.seasonPoints;
+  });
+
+  stats.topBadges = Object.entries(badgeTypeCount)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return stats;
+}
+
+/**
  * Lädt alle Vereinsmitglieder
  */
 async function loadClubMembers(clubId) {
-  const response = await fetch(`/api/club/${clubId}`);
+  const response = await fetch(`/api/proxy?endpoint=weglide`);
   
   if (!response.ok) {
     throw new Error(`Club-API Fehler: ${response.status}`);
@@ -163,7 +228,6 @@ async function loadClubMembers(clubId) {
 
 /**
  * Lädt alle Flüge eines Users mit adaptiver Zeitbereichs-Teilung
- * Nutzt die Vercel API-Endpunkte korrekt
  */
 async function loadUserFlightsAdaptive(userId) {
   const allFlights = [];
@@ -178,7 +242,7 @@ async function loadUserFlightsAdaptive(userId) {
     const to = toDate.toISOString().split('T')[0];
     
     try {
-      // Verwende den neuen flights-range Endpunkt
+      // Verwende den flights-range Endpunkt
       const params = new URLSearchParams({
         user_id_in: userId,
         date_from: from,
@@ -198,14 +262,14 @@ async function loadUserFlightsAdaptive(userId) {
         return;
       }
       
-      if (DEBUG) {
+      if (DEBUG && depth < 3) { // Begrenze Debug-Output
         const indent = '  '.repeat(depth);
         console.log(`    ${indent}${from} bis ${to}: ${flights.length} Flüge`);
       }
       
       // WICHTIG: Wenn genau 100 Flüge = Limit erreicht, Zeitbereich teilen
       if (flights.length === 100) {
-        if (DEBUG) {
+        if (DEBUG && depth < 3) {
           console.log(`    ${'  '.repeat(depth)}⚠️ Limit erreicht - teile Zeitbereich`);
         }
         
@@ -332,14 +396,19 @@ async function loadUserFlightsAdaptive(userId) {
  * Lädt User Achievements
  */
 async function loadUserAchievements(userId) {
-  const response = await fetch(`/api/achievements/${userId}`);
-  
-  if (!response.ok) {
-    throw new Error(`Achievement-API Fehler: ${response.status}`);
+  try {
+    const response = await fetch(`/api/proxy?endpoint=achievements&userId=${userId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Achievement-API Fehler: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn(`  ⚠️ Konnte Achievements nicht laden:`, error.message);
+    return [];
   }
-  
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
 }
 
 /**
@@ -389,7 +458,6 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   if (foundPreSeason) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
-    console.log(`      → Badge ${badge.badge_id} verifiziert mit ${seasonPoints} Season-Punkten`);
   } else {
     console.log(`      → Erstmalig in Saison 24/25 erreicht: ${seasonPoints} Punkte`);
   }
@@ -419,7 +487,7 @@ async function loadFlightDetails(flightId) {
   }
   
   try {
-    const response = await fetch(`/api/flightdetail/${flightId}`);
+    const response = await fetch(`/api/proxy?endpoint=flightdetail&flightId=${flightId}`);
     
     if (!response.ok) {
       throw new Error(`Flugdetails nicht verfügbar: ${response.status}`);
@@ -432,7 +500,7 @@ async function loadFlightDetails(flightId) {
     
     return details;
   } catch (error) {
-    if (DEBUG) {
+    if (DEBUG && flightDetailsCache.size < 10) { // Begrenze Debug-Output
       console.warn(`      ⚠️ Konnte Flug ${flightId} nicht laden:`, error.message);
     }
     return null;
@@ -443,10 +511,19 @@ async function loadFlightDetails(flightId) {
  * Erstellt ein leeres Ergebnis
  */
 function createEmptyResult(userId, userName) {
+  const emptyStats = {
+    firstTimeTypes: 0,
+    repeatedTypes: 0,
+    multipleOccurrences: 0,
+    badgesByMonth: {},
+    topBadges: []
+  };
+
   return {
     userId,
     userName,
     badges: [],
+    seasonBadges: [],
     badgeCount: 0,
     seasonBadgeCount: 0,
     badgeCategoryCount: 0,
@@ -454,8 +531,20 @@ function createEmptyResult(userId, userName) {
     seasonBadges: 0,
     multiLevelCount: 0,
     singleLevelCount: 0,
+    multiLevelBadgeCount: 0,
     flightsAnalyzed: 0,
-    flightsInSeason: 0
+    flightsInSeason: 0,
+    flightsWithBadges: 0,
+    verifiedBadgeCount: 0,
+    allTimeBadges: [],
+    allTimeBadgeCount: 0,
+    priorSeasonCount: 0,
+    // Stats
+    badgeStats: emptyStats,
+    stats: emptyStats,
+    firstTimeTypes: 0,
+    repeatedTypes: 0,
+    multipleOccurrences: 0
   };
 }
 
@@ -464,7 +553,7 @@ function createEmptyResult(userId, userName) {
  */
 export function debugBadgeAnalysis(result) {
   console.log('\n🔍 BADGE-ANALYSE:');
-  console.log('═══════════════════════════════════════');
+  console.log('═══════════════════════════════════════════');
   console.log(`Pilot: ${result.userName} (ID: ${result.userId})`);
   console.log(`\nÜbersicht:`);
   console.log(`  • ${result.totalBadges} Badges gesamt`);
@@ -491,7 +580,7 @@ export function debugBadgeAnalysis(result) {
     });
   }
   
-  console.log('═══════════════════════════════════════\n');
+  console.log('═══════════════════════════════════════════\n');
 }
 
 // Export
