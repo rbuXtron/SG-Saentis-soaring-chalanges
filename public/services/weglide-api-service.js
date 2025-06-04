@@ -26,6 +26,8 @@ class WeGlideApiClient {
     return (now - cacheEntry.timestamp) < expirationTime;
   }
 
+  // In weglide-api-service.js - Überprüfen/Korrigieren Sie die fetchData Methode:
+
   async fetchData(endpoint, params = {}, options = {}) {
     const cacheKey = this._createCacheKey(endpoint, params);
 
@@ -41,12 +43,14 @@ class WeGlideApiClient {
       return this._activeRequests.get(cacheKey);
     }
 
-    console.log(`[API] Neue Anfrage: ${endpoint}`);
+    console.log(`[API] Neue Anfrage: ${endpoint} mit params:`, params);
 
     const requestPromise = new Promise(async (resolve, reject) => {
       try {
         const queryString = new URLSearchParams(params).toString();
         const url = `${endpoint}${queryString ? '?' + queryString : ''}`;
+
+        console.log(`[API] Fetching URL: ${url}`); // Debug
 
         const response = await fetch(url, {
           method: 'GET',
@@ -84,13 +88,15 @@ class WeGlideApiClient {
     return requestPromise;
   }
 
-  // Club-Daten
+  // Club-Daten - KORRIGIERT
   async fetchClubData() {
-    return this.fetchData('/api/weglide', {}, {
+    // WICHTIG: Kein führender Slash wenn wir relative URLs verwenden!
+    return this.fetchData('/api/proxy', {
+      endpoint: 'weglide'  // Nutzt den funktionierenden Legacy-Endpoint
+    }, {
       cacheTime: 60 * 60 * 1000 // 1 Stunde
     });
   }
-
   // In weglide-api-service.js - Ersetzen Sie die fetchAllClubFlights Methode:
 
   async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
@@ -106,12 +112,12 @@ class WeGlideApiClient {
     console.log('[API] Lade alle Club-Flüge neu...');
 
     try {
-      // Schritt 1: Lade Club-Daten über den FUNKTIONIERENDEN Proxy
-      const clubData = await this.fetchData('/api/proxy', {
-        endpoint: 'weglide'  // Verwendet den Legacy endpoint der funktioniert!
-      });
+      // Schritt 1: Lade Club-Daten
+      console.log('[API] Schritt 1: Lade Club-Daten...');
+      const clubData = await this.fetchClubData(); // Nutze die existierende Methode!
 
       if (!clubData || !clubData.user || !Array.isArray(clubData.user)) {
+        console.error('[API] Ungültige Club-Daten:', clubData);
         throw new Error('Keine Club-Mitglieder gefunden');
       }
 
@@ -121,15 +127,16 @@ class WeGlideApiClient {
       // Schritt 2: Lade Flüge für alle Mitglieder
       const allFlights = [];
       const currentYear = new Date().getFullYear();
-      const seasons = [currentYear, currentYear - 1, currentYear - 2]; // 3 Jahre Historie
 
-      // Sequenziell laden um API nicht zu überlasten
+      // Lade nur die letzten 2 Jahre für Performance
+      const seasons = [currentYear, currentYear - 1];
+
+      // Progress tracking
+      let processedMembers = 0;
+
       for (const member of members) {
-        console.log(`[API] Lade Flüge für ${member.name}...`);
-
         for (const season of seasons) {
           try {
-            // Verwende den FUNKTIONIERENDEN path Parameter
             const seasonFlights = await this.fetchData('/api/proxy', {
               path: 'flights',
               user_id_in: member.id,
@@ -137,21 +144,32 @@ class WeGlideApiClient {
               limit: 100
             });
 
-            if (Array.isArray(seasonFlights)) {
+            if (Array.isArray(seasonFlights) && seasonFlights.length > 0) {
               // Füge User-Info zu jedem Flug hinzu
               seasonFlights.forEach(flight => {
-                flight.user = member;
+                flight.user = {
+                  id: member.id,
+                  name: member.name
+                };
               });
               allFlights.push(...seasonFlights);
+              console.log(`[API] ${member.name}: ${seasonFlights.length} Flüge in ${season}`);
             }
           } catch (error) {
-            console.warn(`[API] Fehler beim Laden der Flüge für ${member.name} (${season}):`, error.message);
+            console.warn(`[API] Fehler beim Laden für ${member.name} (${season}):`, error.message);
           }
         }
 
-        // Kleine Pause zwischen Usern um API nicht zu überlasten
-        await new Promise(resolve => setTimeout(resolve, 100));
+        processedMembers++;
+        if (processedMembers % 5 === 0) {
+          console.log(`[API] Fortschritt: ${processedMembers}/${members.length} Mitglieder`);
+        }
+
+        // Kleine Pause zwischen Usern
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
+
+      console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
 
       // Sortiere nach Datum (neueste zuerst)
       allFlights.sort((a, b) => {
@@ -160,24 +178,27 @@ class WeGlideApiClient {
         return dateB - dateA;
       });
 
-      console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
-
       // Berechne Metadaten
-      const flightDates = allFlights.map(f => new Date(f.scoring_date || f.takeoff_time));
-      const oldestFlight = flightDates.length > 0 ? new Date(Math.min(...flightDates)) : new Date();
-      const newestFlight = flightDates.length > 0 ? new Date(Math.max(...flightDates)) : new Date();
+      let oldestDate = new Date();
+      let newestDate = new Date(0);
 
-      // Erstelle Response im erwarteten Format
+      allFlights.forEach(flight => {
+        const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
+        if (flightDate < oldestDate) oldestDate = flightDate;
+        if (flightDate > newestDate) newestDate = flightDate;
+      });
+
+      // Erstelle Response
       const response = {
         flights: allFlights,
         metadata: {
           memberCount: members.length,
           flightCount: allFlights.length,
           dateRange: {
-            from: oldestFlight.toISOString().split('T')[0],
-            to: newestFlight.toISOString().split('T')[0],
-            oldestFlight: oldestFlight.toISOString().split('T')[0],
-            newestFlight: newestFlight.toISOString().split('T')[0]
+            from: oldestDate.toISOString().split('T')[0],
+            to: newestDate.toISOString().split('T')[0],
+            oldestFlight: oldestDate.toISOString().split('T')[0],
+            newestFlight: newestDate.toISOString().split('T')[0]
           }
         },
         members: members
@@ -191,12 +212,22 @@ class WeGlideApiClient {
     } catch (error) {
       console.error('[API] Fehler beim Laden der Club-Flüge:', error);
 
-      // Fallback auf Cache wenn verfügbar
+      // Fallback auf Cache
       if (this._clubFlightsCache) {
         console.warn('[API] Verwende veralteten Cache als Fallback');
         return this._clubFlightsCache;
       }
-      throw error;
+
+      // Fallback auf leere Response
+      return {
+        flights: [],
+        metadata: {
+          memberCount: 0,
+          flightCount: 0,
+          dateRange: {}
+        },
+        members: []
+      };
     }
   }
 
