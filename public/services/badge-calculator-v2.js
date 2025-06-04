@@ -532,7 +532,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   // Durchsuche Flüge vor Season-Start
   let flightsChecked = 0;
   let flightsWithDetails = 0;
-  const maxFlightsToCheck = 50; // Erhöhe Limit auf 50 Flüge für bessere Abdeckung
+  const maxFlightsToCheck = 150; // Erhöhe Limit auf 150 Flüge für bessere Abdeckung
   
   for (const flight of flights) {
     const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
