@@ -91,127 +91,114 @@ class WeGlideApiClient {
     });
   }
 
- // In weglide-api-service.js - Ersetzen Sie die fetchAllClubFlights Methode:
+  // In weglide-api-service.js - Ersetzen Sie die fetchAllClubFlights Methode:
 
-async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
-  // Spezial-Cache für Club-Flüge (30 Minuten)
-  const cacheValid = this._clubFlightsCacheTime &&
-    (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
+  async fetchAllClubFlights(startDate = '2023-06-01', forceRefresh = false) {
+    // Spezial-Cache für Club-Flüge (30 Minuten)
+    const cacheValid = this._clubFlightsCacheTime &&
+      (Date.now() - this._clubFlightsCacheTime) < (30 * 60 * 1000);
 
-  if (!forceRefresh && cacheValid && this._clubFlightsCache) {
-    console.log('[API] Verwende Cache für Club-Flüge');
-    return this._clubFlightsCache;
-  }
-
-  console.log('[API] Lade alle Club-Flüge neu...');
-
-  try {
-    // Schritt 1: Lade Club-Daten über den Proxy
-    const clubData = await this.fetchData('/api/proxy', {
-      path: 'club/1281',
-      contest: 'free'
-    });
-
-    if (!clubData || !clubData.user || !Array.isArray(clubData.user)) {
-      throw new Error('Keine Club-Mitglieder gefunden');
+    if (!forceRefresh && cacheValid && this._clubFlightsCache) {
+      console.log('[API] Verwende Cache für Club-Flüge');
+      return this._clubFlightsCache;
     }
 
-    const members = clubData.user;
-    console.log(`[API] ${members.length} Mitglieder gefunden`);
+    console.log('[API] Lade alle Club-Flüge neu...');
 
-    // Schritt 2: Lade Flüge für alle Mitglieder
-    const allFlights = [];
-    const currentYear = new Date().getFullYear();
-    const seasons = [currentYear, currentYear - 1, currentYear - 2]; // 3 Jahre Historie
-    
-    // Batch-Verarbeitung für bessere Performance
-    const batchSize = 5; // 5 Mitglieder gleichzeitig
-    
-    for (let i = 0; i < members.length; i += batchSize) {
-      const batch = members.slice(i, i + batchSize);
-      
-      const batchPromises = batch.map(async (member) => {
-        const userFlights = [];
-        
-        // Lade Flüge für jede Saison
+    try {
+      // Schritt 1: Lade Club-Daten über den FUNKTIONIERENDEN Proxy
+      const clubData = await this.fetchData('/api/proxy', {
+        endpoint: 'weglide'  // Verwendet den Legacy endpoint der funktioniert!
+      });
+
+      if (!clubData || !clubData.user || !Array.isArray(clubData.user)) {
+        throw new Error('Keine Club-Mitglieder gefunden');
+      }
+
+      const members = clubData.user;
+      console.log(`[API] ${members.length} Mitglieder gefunden`);
+
+      // Schritt 2: Lade Flüge für alle Mitglieder
+      const allFlights = [];
+      const currentYear = new Date().getFullYear();
+      const seasons = [currentYear, currentYear - 1, currentYear - 2]; // 3 Jahre Historie
+
+      // Sequenziell laden um API nicht zu überlasten
+      for (const member of members) {
+        console.log(`[API] Lade Flüge für ${member.name}...`);
+
         for (const season of seasons) {
           try {
+            // Verwende den FUNKTIONIERENDEN path Parameter
             const seasonFlights = await this.fetchData('/api/proxy', {
               path: 'flights',
               user_id_in: member.id,
               season_in: season,
               limit: 100
             });
-            
+
             if (Array.isArray(seasonFlights)) {
               // Füge User-Info zu jedem Flug hinzu
               seasonFlights.forEach(flight => {
                 flight.user = member;
               });
-              userFlights.push(...seasonFlights);
+              allFlights.push(...seasonFlights);
             }
           } catch (error) {
             console.warn(`[API] Fehler beim Laden der Flüge für ${member.name} (${season}):`, error.message);
           }
         }
-        
-        return userFlights;
+
+        // Kleine Pause zwischen Usern um API nicht zu überlasten
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Sortiere nach Datum (neueste zuerst)
+      allFlights.sort((a, b) => {
+        const dateA = new Date(a.scoring_date || a.takeoff_time);
+        const dateB = new Date(b.scoring_date || b.takeoff_time);
+        return dateB - dateA;
       });
-      
-      const batchResults = await Promise.all(batchPromises);
-      batchResults.forEach(userFlights => {
-        allFlights.push(...userFlights);
-      });
-      
-      console.log(`[API] Fortschritt: ${Math.min(i + batchSize, members.length)}/${members.length} Mitglieder`);
+
+      console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
+
+      // Berechne Metadaten
+      const flightDates = allFlights.map(f => new Date(f.scoring_date || f.takeoff_time));
+      const oldestFlight = flightDates.length > 0 ? new Date(Math.min(...flightDates)) : new Date();
+      const newestFlight = flightDates.length > 0 ? new Date(Math.max(...flightDates)) : new Date();
+
+      // Erstelle Response im erwarteten Format
+      const response = {
+        flights: allFlights,
+        metadata: {
+          memberCount: members.length,
+          flightCount: allFlights.length,
+          dateRange: {
+            from: oldestFlight.toISOString().split('T')[0],
+            to: newestFlight.toISOString().split('T')[0],
+            oldestFlight: oldestFlight.toISOString().split('T')[0],
+            newestFlight: newestFlight.toISOString().split('T')[0]
+          }
+        },
+        members: members
+      };
+
+      // Cache aktualisieren
+      this._clubFlightsCache = response;
+      this._clubFlightsCacheTime = Date.now();
+
+      return response;
+    } catch (error) {
+      console.error('[API] Fehler beim Laden der Club-Flüge:', error);
+
+      // Fallback auf Cache wenn verfügbar
+      if (this._clubFlightsCache) {
+        console.warn('[API] Verwende veralteten Cache als Fallback');
+        return this._clubFlightsCache;
+      }
+      throw error;
     }
-
-    // Sortiere nach Datum (neueste zuerst)
-    allFlights.sort((a, b) => {
-      const dateA = new Date(a.scoring_date || a.takeoff_time);
-      const dateB = new Date(b.scoring_date || b.takeoff_time);
-      return dateB - dateA;
-    });
-
-    console.log(`[API] ✅ ${allFlights.length} Flüge geladen`);
-
-    // Berechne Metadaten
-    const flightDates = allFlights.map(f => new Date(f.scoring_date || f.takeoff_time));
-    const oldestFlight = flightDates.length > 0 ? new Date(Math.min(...flightDates)) : new Date();
-    const newestFlight = flightDates.length > 0 ? new Date(Math.max(...flightDates)) : new Date();
-
-    // Erstelle Response im erwarteten Format
-    const response = {
-      flights: allFlights,
-      metadata: {
-        memberCount: members.length,
-        flightCount: allFlights.length,
-        dateRange: {
-          from: oldestFlight.toISOString().split('T')[0],
-          to: newestFlight.toISOString().split('T')[0],
-          oldestFlight: oldestFlight.toISOString().split('T')[0],
-          newestFlight: newestFlight.toISOString().split('T')[0]
-        }
-      },
-      members: members
-    };
-
-    // Cache aktualisieren
-    this._clubFlightsCache = response;
-    this._clubFlightsCacheTime = Date.now();
-
-    return response;
-  } catch (error) {
-    console.error('[API] Fehler beim Laden der Club-Flüge:', error);
-    
-    // Fallback auf Cache wenn verfügbar
-    if (this._clubFlightsCache) {
-      console.warn('[API] Verwende veralteten Cache als Fallback');
-      return this._clubFlightsCache;
-    }
-    throw error;
   }
-}
 
   // User-Flüge (jetzt aus Club-Flüge-Cache)
   async fetchUserFlights(userId, year) {
