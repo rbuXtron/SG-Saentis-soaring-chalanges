@@ -440,6 +440,46 @@ async function loadBadgeHistory(userId, badgeId) {
   }
 }
 
+/**
+ * Verbesserte Version mit Badge-Historie
+ */
+async function verifyMultiLevelBadgeWithHistory(badge, flights, userId) {
+  console.log(`    🔍 Verifiziere ${badge.badge_id} (${badge.points} Punkte)`);
+  
+  // Versuche zuerst die Badge-Historie zu laden
+  const badgeHistory = await loadBadgeHistory(userId, badge.badge_id);
+  
+  if (badgeHistory.length > 1) {
+    // Wir haben eine Historie!
+    const preSeasonBadges = badgeHistory.filter(b => 
+      new Date(b.created) < SEASON_START
+    );
+    
+    if (preSeasonBadges.length > 0) {
+      // Nehme das letzte Badge vor Season-Start
+      const lastPreSeasonBadge = preSeasonBadges[preSeasonBadges.length - 1];
+      const preSeasonPoints = lastPreSeasonBadge.points || 0;
+      const seasonPoints = Math.max(0, badge.points - preSeasonPoints);
+      
+      console.log(`      ✅ Aus Badge-Historie: ${preSeasonPoints} → ${badge.points} Punkte`);
+      console.log(`      → Season-Punkte: ${seasonPoints}`);
+      
+      return {
+        ...badge,
+        seasonPoints,
+        preSeasonPoints,
+        foundPreSeason: true,
+        verified: true,
+        type: 'multi-level',
+        verificationMethod: 'badge-history',
+        historyCount: badgeHistory.length
+      };
+    }
+  }
+  
+  // Fallback auf Flug-Durchsuchung
+  return verifyMultiLevelBadge(badge, flights, userId);
+}
 
 /**
  * Verifiziert Multi-Level Badge durch Flug-Historie
@@ -477,41 +517,53 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
       if (flightsChecked === 1) {
         console.log(`      📋 Flugdetails-Struktur:`, {
           hasAchievements: !!flightDetails.achievements,
-          achievementCount: flightDetails.achievements?.length || 0,
-          keys: Object.keys(flightDetails).slice(0, 10)
+          hasAchievement: !!flightDetails.achievement,
+          keys: Object.keys(flightDetails).slice(0, 15)
         });
       }
       
       // Prüfe verschiedene mögliche Locations für Achievements
       let achievements = null;
       
-      // Option 1: achievements direkt im Objekt
+      // Option 1: achievements (Plural) direkt im Objekt
       if (flightDetails.achievements && Array.isArray(flightDetails.achievements)) {
         achievements = flightDetails.achievements;
       }
-      // Option 2: unter flight.achievements
-      else if (flightDetails.flight && flightDetails.flight.achievements) {
-        achievements = flightDetails.flight.achievements;
-      }
-      // Option 3: unter data.achievements
-      else if (flightDetails.data && flightDetails.data.achievements) {
-        achievements = flightDetails.data.achievements;
+      // Option 2: achievement (Singular) direkt im Objekt
+      else if (flightDetails.achievement) {
+        // Könnte ein Array oder ein einzelnes Objekt sein
+        if (Array.isArray(flightDetails.achievement)) {
+          achievements = flightDetails.achievement;
+        } else if (typeof flightDetails.achievement === 'object') {
+          achievements = [flightDetails.achievement];
+        }
       }
       
       if (!achievements || achievements.length === 0) {
         continue;
       }
       
+      // Debug: Zeige Achievement-Struktur
+      if (flightsWithDetails === 1 && achievements.length > 0) {
+        console.log(`      📋 Achievement-Struktur:`, {
+          count: achievements.length,
+          firstAchievement: achievements[0],
+          keys: Object.keys(achievements[0] || {})
+        });
+      }
+      
       // Suche nach diesem Badge in den Achievements
       const achievement = achievements.find(a => {
+        // Verschiedene Möglichkeiten der badge_id
         return a.badge_id === badge.badge_id || 
                a.badge === badge.badge_id ||
-               (a.badge && a.badge.id === badge.badge_id);
+               (a.badge && a.badge.id === badge.badge_id) ||
+               a.id === badge.badge_id;
       });
       
       if (achievement) {
         // Badge in Vergangenheit gefunden!
-        preSeasonPoints = achievement.points || achievement.level || 0;
+        preSeasonPoints = achievement.points || achievement.level || achievement.value || 0;
         foundPreSeason = true;
         foundInFlight = {
           id: flight.id,
@@ -521,10 +573,14 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
         
         console.log(`      ✅ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
         console.log(`      📎 Flug-ID: ${flight.id}`);
+        console.log(`      📋 Achievement gefunden:`, achievement);
         break;
       }
       
     } catch (error) {
+      if (DEBUG && flightsChecked <= 3) {
+        console.error(`      ❌ Fehler bei Flug ${flight.id}:`, error.message);
+      }
       continue;
     }
     
@@ -685,7 +741,7 @@ window.testBadgeVerification = async function(userId, badgeId) {
     console.log(`\nTeste mit Flug ${oldFlight.id} vom ${new Date(oldFlight.scoring_date).toLocaleDateString()}`);
     const details = await loadFlightDetails(oldFlight.id);
     console.log('Flugdetails:', details);
-    console.log('Achievements:', details?.achievements || 'KEINE ACHIEVEMENTS GEFUNDEN');
+    console.log('Achievements:', details?.achievements || details?.achievement || 'KEINE ACHIEVEMENTS GEFUNDEN');
   }
   
   // Teste Badge-Historie
@@ -693,6 +749,50 @@ window.testBadgeVerification = async function(userId, badgeId) {
   console.log('\nBadge-Historie:', history);
   
   return { flights: flights.length, history: history.length };
+};
+
+// Debug-Funktion um die Achievement-Struktur zu analysieren
+window.debugAchievementStructure = async function(flightId) {
+  console.log(`\n🔍 Analysiere Achievement-Struktur für Flug ${flightId}`);
+  
+  const response = await fetch(`/api/proxy?path=flightdetail/${flightId}`);
+  const flight = await response.json();
+  
+  console.log('\n1. Top-Level Keys:', Object.keys(flight));
+  
+  // Prüfe alle möglichen Achievement-Locations
+  const locations = [
+    'achievement',
+    'achievements', 
+    'flight.achievement',
+    'flight.achievements',
+    'data.achievement',
+    'data.achievements'
+  ];
+  
+  locations.forEach(path => {
+    const parts = path.split('.');
+    let current = flight;
+    
+    for (const part of parts) {
+      if (current && current[part]) {
+        current = current[part];
+      } else {
+        current = null;
+        break;
+      }
+    }
+    
+    if (current) {
+      console.log(`\n✅ Gefunden bei "${path}":`, {
+        type: Array.isArray(current) ? 'Array' : typeof current,
+        count: Array.isArray(current) ? current.length : 1,
+        data: current
+      });
+    }
+  });
+  
+  return flight;
 };
 
 // Export
