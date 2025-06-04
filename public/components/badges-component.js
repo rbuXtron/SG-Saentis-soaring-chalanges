@@ -20,6 +20,16 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
         return;
     }
 
+    // Debug: Prüfe Datenstruktur
+    console.log('🔍 Badge-Daten Debug:');
+    pilots.slice(0, 3).forEach(pilot => {
+        console.log(`${pilot.name}:`, {
+            badges: Array.isArray(pilot.badges) ? 'Array' : typeof pilot.badges,
+            badgeCount: pilot.badgeCount,
+            seasonBadges: Array.isArray(pilot.seasonBadges) ? 'Array' : typeof pilot.seasonBadges
+        });
+    });
+
     // Nur Piloten mit Badges in dieser Saison
     const pilotsWithBadges = pilots
         .filter(pilot => pilot.badgeCount > 0)
@@ -317,8 +327,8 @@ function createBadgeGalleryHTML(pilot) {
         </div>
     `;
 
-    // Keine Badges gefunden
-    if (!pilot.badges || pilot.badges.length === 0) {
+ // Keine Badges gefunden
+    if (badges.length === 0) {
         html += `
             <div class="no-badges">
                 <p>Keine Badges in der Saison 2024/2025 gefunden</p>
@@ -352,9 +362,11 @@ function createBadgeGalleryHTML(pilot) {
     badgeGroups.forEach((badges, badgeId) => {
         // KORRIGIERT: Prüfe ob das Badge selbst Multi-Level ist
         const firstBadge = badges[0];
-        const isMultiLevel = firstBadge.is_multi_level ||
+        const isMultiLevel = firstBadge.type === 'multi-level' ||
+            firstBadge.is_multi_level ||
             (firstBadge.badge && firstBadge.badge.values && Array.isArray(firstBadge.badge.values) && firstBadge.badge.values.length > 1) ||
-            (firstBadge.badge && firstBadge.badge.points && Array.isArray(firstBadge.badge.points) && firstBadge.badge.points.length > 1);
+            (firstBadge.badge && firstBadge.badge.points && Array.isArray(firstBadge.badge.points) && firstBadge.badge.points.length > 1) ||
+            firstBadge.seasonPoints > 1;
 
         if (isMultiLevel) {
             // Multi-Level Badge (unabhängig davon, wie viele der Pilot hat)
@@ -368,7 +380,7 @@ function createBadgeGalleryHTML(pilot) {
         }
     });
 
-    // Multi-Level Badges anzeigen (gruppiert)
+   // Multi-Level Badges anzeigen (gruppiert)
     if (multiLevelGroups.length > 0) {
         html += `<div class="badge-group">`;
         html += `<h5 class="badge-group-title">Multi-Level Badges (${multiLevelGroups.length})</h5>`;
@@ -413,6 +425,7 @@ function createBadgeGalleryHTML(pilot) {
 
     return html;
 }
+
 
 /**
  * Hilfsfunktion: Erstellt HTML für ein einzelnes Badge-Item
@@ -600,13 +613,16 @@ function createBadgeStatisticsHTML(pilot) {
             <h5 class="stats-title">📊 Badge-Statistiken</h5>
     `;
 
+    // Prüfe ob badgeStats existiert
+    const stats = pilot.badgeStats || pilot.stats || {};
+
     // Zeitliche Verteilung
-    if (pilot.badgeStats.badgesByMonth && Object.keys(pilot.badgeStats.badgesByMonth).length > 0) {
+    if (stats.badgesByMonth && Object.keys(stats.badgesByMonth).length > 0) {
         html += `
             <div class="stats-section">
                 <h6>Zeitliche Verteilung</h6>
                 <div class="month-distribution">
-                    ${Object.entries(pilot.badgeStats.badgesByMonth || {})
+                    ${Object.entries(stats.badgesByMonth || {})
                 .sort(([a], [b]) => {
                     const dateA = new Date(a + ' 1');
                     const dateB = new Date(b + ' 1');
@@ -624,12 +640,12 @@ function createBadgeStatisticsHTML(pilot) {
     }
 
     // Top Badges
-    if (pilot.badgeStats.topBadges && pilot.badgeStats.topBadges.length > 0) {
+    if (stats.topBadges && stats.topBadges.length > 0) {
         html += `
             <div class="stats-section">
                 <h6>Häufigste Badges</h6>
                 <div class="top-badges-list">
-                    ${pilot.badgeStats.topBadges.map((badge, index) => `
+                    ${stats.topBadges.map((badge, index) => `
                         <div class="top-badge-item">
                             <span class="badge-rank">${index + 1}.</span>
                             <span class="badge-name">${badge.name}</span>
