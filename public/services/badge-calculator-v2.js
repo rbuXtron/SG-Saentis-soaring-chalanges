@@ -146,7 +146,12 @@ export async function calculateUserSeasonBadges(userId, userName) {
  * Lädt alle Vereinsmitglieder
  */
 async function loadClubMembers(clubId) {
-  const response = await fetch(`/api/proxy?endpoint=club/${clubId}`);
+  const response = await fetch(`/api/club/${clubId}`);
+  
+  if (!response.ok) {
+    throw new Error(`Club-API Fehler: ${response.status}`);
+  }
+  
   const data = await response.json();
   
   if (!data.user || !Array.isArray(data.user)) {
@@ -174,7 +179,13 @@ async function loadUserFlightsAdaptive(userId) {
     
     try {
       const response = await fetch(
-        `/api/proxy?endpoint=flights&user_id_in=${userId}&date_from=${from}&date_to=${to}&limit=100`
+        `/api/proxy?` + new URLSearchParams({
+          endpoint: 'flights',
+          user_id_in: userId,
+          date_from: from,
+          date_to: to,
+          limit: 100
+        })
       );
       
       if (!response.ok) {
@@ -248,7 +259,13 @@ async function loadUserFlightsAdaptive(userId) {
     const today = new Date().toISOString().split('T')[0];
     
     const response = await fetch(
-      `/api/proxy?endpoint=flights&user_id_in=${userId}&date_from=${seasonStart}&date_to=${today}&limit=100`
+      `/api/proxy?` + new URLSearchParams({
+        endpoint: 'flights',
+        user_id_in: userId,
+        date_from: seasonStart,
+        date_to: today,
+        limit: 100
+      })
     );
     
     if (response.ok) {
@@ -278,7 +295,7 @@ async function loadUserFlightsAdaptive(userId) {
  * Lädt User Achievements
  */
 async function loadUserAchievements(userId) {
-  const response = await fetch(`/api/proxy?endpoint=achievement/user/${userId}`);
+  const response = await fetch(`/api/achievements/${userId}`);
   
   if (!response.ok) {
     throw new Error(`Achievement-API Fehler: ${response.status}`);
@@ -335,7 +352,7 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
   if (foundPreSeason) {
     console.log(`      → Alte Punkte: ${preSeasonPoints}, Neue Punkte: ${badge.points}`);
     console.log(`      → Season-Punkte: ${seasonPoints}`);
-    console.log(`      → Badge verifiziert: ${badge.badge_id} (${seasonPoints} Punkte)`);
+    console.log(`      → Badge ${badge.badge_id} verifiziert mit ${seasonPoints} Season-Punkten`);
   } else {
     console.log(`      → Erstmalig in Saison 24/25 erreicht: ${seasonPoints} Punkte`);
   }
@@ -365,7 +382,7 @@ async function loadFlightDetails(flightId) {
   }
   
   try {
-    const response = await fetch(`/api/proxy?endpoint=flightdetail/${flightId}`);
+    const response = await fetch(`/api/flightdetail/${flightId}`);
     
     if (!response.ok) {
       throw new Error(`Flugdetails nicht verfügbar: ${response.status}`);
