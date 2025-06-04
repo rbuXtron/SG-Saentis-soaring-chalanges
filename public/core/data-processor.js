@@ -13,7 +13,8 @@ import { apiClient } from '../services/weglide-api-service.js';
 // import { calculateSeasonBadges } from '../services/badge-season-calculator.js';
 // import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
 //import { calculateSeasonBadgesFinal } from '../services/badge-season-calculator-final.js';
-import { calculateSeasonBadges } from '../services/badge-calculator-unified.js';
+//import { calculateSeasonBadges } from '../services/badge-calculator-unified.js';
+import { calculateUserSeasonBadges } from '../services/badge-calculator-v2.js';
 
 import {
   APP_CONFIG,
@@ -149,7 +150,8 @@ export async function fetchAllWeGlideData() {
           //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
           // NEU:
           //const badgeAnalysis = await calculateSeasonBadgesFinal(userId, member.name);
-          const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
+          //const badgeAnalysis = await calculateSeasonBadges(userId, member.name);
+          const badgeAnalysis = await calculateUserSeasonBadges(userId, member.name);
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(
