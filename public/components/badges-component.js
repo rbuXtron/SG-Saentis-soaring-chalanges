@@ -305,7 +305,19 @@ function createBadgeStatsBox(pilots) {
  * Erstellt HTML für die Badge-Galerie mit vereinfachter Sortierung
  * ANGEPASST: Gruppiert Multi-Level Badges zusammen
  */
+/**
+ * Erstellt HTML für die Badge-Galerie mit vereinfachter Sortierung
+ * ANGEPASST: Gruppiert Multi-Level Badges zusammen
+ */
 function createBadgeGalleryHTML(pilot) {
+    // Debug-Ausgabe
+    console.log(`🔍 Badge-Galerie für ${pilot.name}:`, {
+        badges: pilot.badges,
+        badgeCount: pilot.badgeCount,
+        seasonBadges: pilot.seasonBadges,
+        typeOfBadges: typeof pilot.badges
+    });
+
     let html = `
         <div class="badge-gallery-header">
             <h4>Badges Saison 2024/2025 - ${pilot.name}</h4>
@@ -327,8 +339,26 @@ function createBadgeGalleryHTML(pilot) {
         </div>
     `;
 
- // Keine Badges gefunden
-    if (badges.length === 0) {
+    // Sicherstellen, dass wir ein Array haben
+    let badges = [];
+    
+    // Verschiedene Möglichkeiten prüfen
+    if (Array.isArray(pilot.badges)) {
+        badges = pilot.badges;
+    } else if (Array.isArray(pilot.seasonBadges)) {
+        badges = pilot.seasonBadges;
+    } else if (pilot.badges && typeof pilot.badges === 'object') {
+        // Falls es ein Objekt ist, versuche es in ein Array zu konvertieren
+        badges = Object.values(pilot.badges);
+    } else {
+        // Fallback: Leeres Array
+        badges = [];
+    }
+
+    console.log(`  → Badges nach Konvertierung: ${badges.length} Items`);
+
+    // Keine Badges gefunden
+    if (!badges || badges.length === 0) {
         html += `
             <div class="no-badges">
                 <p>Keine Badges in der Saison 2024/2025 gefunden</p>
@@ -347,40 +377,50 @@ function createBadgeGalleryHTML(pilot) {
 
     // Gruppiere Badges nach badge_id für Multi-Level Zusammenfassung
     const badgeGroups = new Map();
-    pilot.badges.forEach(badge => {
-        const badgeId = badge.badge_id;
-        if (!badgeGroups.has(badgeId)) {
-            badgeGroups.set(badgeId, []);
-        }
-        badgeGroups.get(badgeId).push(badge);
-    });
+    
+    // Sicherstellen, dass forEach funktioniert
+    if (typeof badges.forEach === 'function') {
+        badges.forEach(badge => {
+            if (badge && badge.badge_id) {
+                const badgeId = badge.badge_id;
+                if (!badgeGroups.has(badgeId)) {
+                    badgeGroups.set(badgeId, []);
+                }
+                badgeGroups.get(badgeId).push(badge);
+            }
+        });
+    } else {
+        console.error('badges.forEach ist keine Funktion:', badges);
+    }
 
     // Separiere Multi-Level und Single-Level Badges
     const multiLevelGroups = [];
     const singleLevelBadges = [];
 
-    badgeGroups.forEach((badges, badgeId) => {
+    badgeGroups.forEach((badgeGroup, badgeId) => {
         // KORRIGIERT: Prüfe ob das Badge selbst Multi-Level ist
-        const firstBadge = badges[0];
+        const firstBadge = badgeGroup[0];
+        if (!firstBadge) return;
+
         const isMultiLevel = firstBadge.type === 'multi-level' ||
             firstBadge.is_multi_level ||
             (firstBadge.badge && firstBadge.badge.values && Array.isArray(firstBadge.badge.values) && firstBadge.badge.values.length > 1) ||
             (firstBadge.badge && firstBadge.badge.points && Array.isArray(firstBadge.badge.points) && firstBadge.badge.points.length > 1) ||
-            firstBadge.seasonPoints > 1;
+            (firstBadge.seasonPoints && firstBadge.seasonPoints > 1);
 
         if (isMultiLevel) {
             // Multi-Level Badge (unabhängig davon, wie viele der Pilot hat)
             multiLevelGroups.push({
                 badgeId: badgeId,
-                badges: badges.sort((a, b) => (a.level || a.value || 0) - (b.level || b.value || 0))
+                badges: badgeGroup.sort((a, b) => (a.level || a.value || 0) - (b.level || b.value || 0))
             });
         } else {
             // Nur echte Single-Level Badges
-            singleLevelBadges.push(...badges);
+            singleLevelBadges.push(...badgeGroup);
         }
     });
 
-   // Multi-Level Badges anzeigen (gruppiert)
+    // Multi-Level Badges anzeigen (gruppiert)
     if (multiLevelGroups.length > 0) {
         html += `<div class="badge-group">`;
         html += `<h5 class="badge-group-title">Multi-Level Badges (${multiLevelGroups.length})</h5>`;
@@ -401,8 +441,8 @@ function createBadgeGalleryHTML(pilot) {
 
         // Sortiere Single-Level Badges alphabetisch nach Name
         singleLevelBadges.sort((a, b) => {
-            const nameA = a.name || a.badge_id || '';
-            const nameB = b.name || b.badge_id || '';
+            const nameA = (a && a.name) || (a && a.badge_id) || '';
+            const nameB = (b && b.name) || (b && b.badge_id) || '';
             return nameA.localeCompare(nameB);
         });
 
@@ -416,7 +456,7 @@ function createBadgeGalleryHTML(pilot) {
     html += '</div>';
 
     // Statistik-Bereich
-    if (pilot.badgeStats) {
+    if (pilot.badgeStats || pilot.stats) {
         html += createBadgeStatisticsHTML(pilot);
     }
 
@@ -425,7 +465,6 @@ function createBadgeGalleryHTML(pilot) {
 
     return html;
 }
-
 
 /**
  * Hilfsfunktion: Erstellt HTML für ein einzelnes Badge-Item

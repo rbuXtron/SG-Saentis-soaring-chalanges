@@ -260,20 +260,25 @@ async function processMemberDataOptimized(
     sprintData: sprintData,
     pilotFactor: currentPilotFactor,
     historicalPilotFactor: bestHistoricalFactor,
-    // Badge-Daten
-    badges: badgeAnalysis.seasonBadges,
-    badgeCount: badgeAnalysis.seasonBadgeCount,
-    badgeCategoryCount: badgeAnalysis.seasonBadgeTypeCount,
-    allTimeBadges: badgeAnalysis.allTimeBadges,
-    allTimeBadgeCount: badgeAnalysis.allTimeBadgeCount,
-    priorSeasonCount: badgeAnalysis.priorSeasonCount,
-    badgeStats: badgeAnalysis.stats,
+    // Badge-Daten - Sicherstellen dass es Arrays sind
+    badges: Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : 
+            Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : [],
+    seasonBadges: Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : 
+                  Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : [],
+    badgeCount: badgeAnalysis.badgeCount || badgeAnalysis.seasonBadgeCount || 0,
+    badgeCategoryCount: badgeAnalysis.badgeCategoryCount || badgeAnalysis.seasonBadgeTypeCount || 0,
+    allTimeBadges: Array.isArray(badgeAnalysis.allTimeBadges) ? badgeAnalysis.allTimeBadges : [],
+    allTimeBadgeCount: badgeAnalysis.allTimeBadgeCount || 0,
+    priorSeasonCount: badgeAnalysis.priorSeasonCount || 0,
+    badgeStats: badgeAnalysis.badgeStats || badgeAnalysis.stats || {},
     flightsWithBadges: badgeAnalysis.flightsWithBadges || 0,
     flightsAnalyzed: badgeAnalysis.flightsAnalyzed || 0,
-    firstTimeTypes: badgeAnalysis.stats.firstTimeTypes,
-    repeatedTypes: badgeAnalysis.stats.repeatedTypes,
-    multipleOccurrences: badgeAnalysis.stats.multipleOccurrences
-  };
+    firstTimeTypes: badgeAnalysis.firstTimeTypes || 0,
+    repeatedTypes: badgeAnalysis.repeatedTypes || 0,
+    multipleOccurrences: badgeAnalysis.multipleOccurrences || 0,
+    multiLevelBadgeCount: badgeAnalysis.multiLevelBadgeCount || badgeAnalysis.multiLevelCount || 0,
+    verifiedBadgeCount: badgeAnalysis.verifiedBadgeCount || 0
+};
 }
 
 /**
