@@ -480,9 +480,6 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
  */
 const flightDetailsCache = new Map();
 
-/**
- * Lädt Flugdetails mit Cache
- */
 async function loadFlightDetails(flightId) {
   if (!flightId) return null;
   
@@ -492,8 +489,8 @@ async function loadFlightDetails(flightId) {
   }
   
   try {
-    // Verwende den universellen Proxy
-    const response = await fetch(`/api/proxy?path=flight/${flightId}`);
+    // Verwende den korrekten flightdetail Pfad
+    const response = await fetch(`/api/proxy?path=flightdetail/${flightId}`);
     
     if (!response.ok) {
       throw new Error(`Flugdetails nicht verfügbar: ${response.status}`);
