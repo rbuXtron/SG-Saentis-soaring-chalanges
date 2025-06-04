@@ -16,6 +16,8 @@ import { apiClient } from '../services/weglide-api-service.js';
 //import { calculateSeasonBadges } from '../services/badge-calculator-unified.js';
 import { calculateUserSeasonBadges } from '../services/badge-calculator-v2.js';
 import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-badge-evaluator.js';
+import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator.js';
+
 
 
 import {
@@ -124,14 +126,11 @@ export async function fetchAllWeGlideData() {
 
 
 
-          // Badge-Berechnung mit ALLEN Flügen (für Historie)
-          //const badgeAnalysis = await calculateUserSeasonBadges(
-          const badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
-            userId,
-            member.name,
-            ownFlights,
-            currentYearFlights
-          );
+           // Dann je nach Bedarf verwenden
+          const useOptimized = true; // Toggle für Tests
+          const badgeAnalysis = useOptimized
+            ? await calculateUserSeasonBadgesOptimized(userId, member.name, ownFlights, currentYearFlights)
+            : await calculateUserSeasonBadgesWithConfig(userId, member.name, ownFlights, currentYearFlights);
 
           // Sprint-Daten separat laden (nur wenn nötig)
           let sprintData = [];
