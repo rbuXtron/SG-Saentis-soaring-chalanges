@@ -23,6 +23,92 @@ export default async function handler(req, res) {
     let finalPath = '';
     let queryParams = { ...otherParams };
     
+    // NEU: Helper für effizientes Club-Flüge Loading
+    if (path === 'club-flights-batch') {
+      try {
+        const { userIds, seasons } = req.query;
+        
+        if (!userIds || !seasons) {
+          res.status(400).json({ error: 'userIds and seasons required' });
+          return;
+        }
+        
+        const userIdArray = userIds.split(',');
+        const seasonArray = seasons.split(',');
+        const allFlights = [];
+        
+        // Lade Flüge für alle User und Seasons
+        for (const userId of userIdArray) {
+          for (const season of seasonArray) {
+            try {
+              const url = `${baseUrl}/flights?user_id_in=${userId}&season_in=${season}&limit=100`;
+              console.log(`Fetching: ${url}`);
+              
+              const response = await fetch(url, {
+                headers: {
+                  'Accept': 'application/json',
+                  'User-Agent': 'SG-Saentis-Soaring/1.0'
+                }
+              });
+              
+              if (response.ok) {
+                const flights = await response.json();
+                if (Array.isArray(flights)) {
+                  // Füge userId zu jedem Flug hinzu
+                  flights.forEach(f => f.userId = parseInt(userId));
+                  allFlights.push(...flights);
+                }
+              }
+            } catch (err) {
+              console.error(`Fehler bei User ${userId}, Season ${season}:`, err.message);
+            }
+          }
+        }
+        
+        res.status(200).json(allFlights);
+        return;
+      } catch (error) {
+        console.error('Batch-Loading Fehler:', error);
+        res.status(500).json({ error: 'Batch loading failed' });
+        return;
+      }
+    }
+    
+    // NEU: Range-basiertes Flug-Loading
+    if (path === 'flights-range') {
+      try {
+        const { user_id_in, date_from, date_to, limit = '100' } = req.query;
+        
+        if (!user_id_in || !date_from || !date_to) {
+          res.status(400).json({ error: 'user_id_in, date_from and date_to required' });
+          return;
+        }
+        
+        const url = `${baseUrl}/flights?user_id_in=${user_id_in}&date_from=${date_from}&date_to=${date_to}&limit=${limit}`;
+        console.log(`Range fetch: ${url}`);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'SG-Saentis-Soaring/1.0'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`WeGlide API error: ${response.status}`);
+        }
+        
+        const flights = await response.json();
+        res.status(200).json(flights);
+        return;
+      } catch (error) {
+        console.error('Range loading error:', error);
+        res.status(500).json({ error: error.message });
+        return;
+      }
+    }
+    
+    // Standard path handling
     if (path) {
       // Neuer universeller Proxy-Modus
       // Korrigiere automatisch flight/ zu flightdetail/ wenn es eine ID enthält
@@ -30,6 +116,18 @@ export default async function handler(req, res) {
         // Es ist wahrscheinlich eine Flugdetail-Anfrage
         const flightId = path.replace('flight/', '');
         finalPath = `flightdetail/${flightId}`;
+      } else if (path === 'flights') {
+        // Flights endpoint
+        finalPath = 'flights';
+      } else if (path.startsWith('achievement/user/')) {
+        // Achievement endpoint
+        finalPath = path;
+      } else if (path.startsWith('user/')) {
+        // User endpoint
+        finalPath = path;
+      } else if (path.startsWith('club/')) {
+        // Club endpoint
+        finalPath = path;
       } else {
         finalPath = path;
       }
@@ -125,130 +223,4 @@ export default async function handler(req, res) {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-}
-// In /api/proxy.js - Fügen Sie diese neue Route hinzu:
-async function handleClubFlightsComplete(req, res) {
-  const { clubId = 1281, startDate = '2023-06-01' } = req.query;
-  
-  try {
-    console.log(`📋 Lade alle Club-Flüge seit ${startDate}...`);
-    
-    // Lade zuerst alle Club-Mitglieder
-    const clubResponse = await fetch(`https://api.weglide.org/v1/club/${clubId}?contest=free`);
-    const clubData = await clubResponse.json();
-    
-    if (!clubData.user || !Array.isArray(clubData.user)) {
-      throw new Error('Keine Mitgliederdaten gefunden');
-    }
-    
-    const members = clubData.user;
-    const allFlights = [];
-    const startDateObj = new Date(startDate);
-    const endDate = new Date();
-    
-    // Lade Flüge für jeden User
-    for (const member of members) {
-      const userFlights = await loadUserFlightsInRange(
-        member.id, 
-        startDateObj, 
-        endDate
-      );
-      
-      // Füge User-Info zu jedem Flug hinzu
-      userFlights.forEach(flight => {
-        flight.user = member; // Vollständige User-Info
-      });
-      
-      allFlights.push(...userFlights);
-    }
-    
-    // Sortiere nach Datum (neueste zuerst)
-    allFlights.sort((a, b) => {
-      const dateA = new Date(a.scoring_date || a.takeoff_time);
-      const dateB = new Date(b.scoring_date || b.takeoff_time);
-      return dateB - dateA;
-    });
-    
-    // Metadata hinzufügen
-    const metadata = {
-      clubId: clubId,
-      memberCount: members.length,
-      flightCount: allFlights.length,
-      dateRange: {
-        from: startDate,
-        to: endDate.toISOString().split('T')[0],
-        oldestFlight: allFlights.length > 0 ? allFlights[allFlights.length - 1].scoring_date : null,
-        newestFlight: allFlights.length > 0 ? allFlights[0].scoring_date : null
-      }
-    };
-    
-    res.status(200).json({
-      flights: allFlights,
-      metadata: metadata,
-      members: members
-    });
-    
-  } catch (error) {
-    console.error('❌ Fehler beim Laden der Club-Flüge:', error);
-    res.status(500).json({ 
-      error: 'Fehler beim Laden der Club-Flüge',
-      message: error.message 
-    });
-  }
-}
-
-// Hilfsfunktion für adaptives Laden
-async function loadUserFlightsInRange(userId, startDate, endDate) {
-  const allFlights = [];
-  
-  async function loadRange(from, to, depth = 0) {
-    const fromStr = from.toISOString().split('T')[0];
-    const toStr = to.toISOString().split('T')[0];
-    
-    try {
-      const params = new URLSearchParams({
-        user_id_in: userId,
-        date_from: fromStr,
-        date_to: toStr,
-        limit: '100'
-      });
-      
-      const response = await fetch(`https://api.weglide.org/v1/flights?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`API Fehler: ${response.status}`);
-      }
-      
-      const flights = await response.json();
-      
-      if (!Array.isArray(flights)) return;
-      
-      // Wenn genau 100 Flüge = Limit erreicht, Zeitbereich teilen
-      if (flights.length === 100) {
-        const daysDiff = Math.ceil((to - from) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff > 1) {
-          const midDate = new Date(from.getTime() + (to - from) / 2);
-          
-          // Rekursiv beide Hälften laden
-          await loadRange(from, midDate, depth + 1);
-          await loadRange(new Date(midDate.getTime() + 86400000), to, depth + 1);
-          return;
-        }
-      }
-      
-      allFlights.push(...flights);
-      
-    } catch (error) {
-      console.error(`Fehler beim Laden von Flügen für User ${userId}:`, error);
-    }
-  }
-  
-  await loadRange(startDate, endDate);
-  return allFlights;
-}
-
-// In der Haupt-Handler-Funktion den neuen Endpunkt hinzufügen:
-if (path === 'club-flights-complete') {
-  return handleClubFlightsComplete(req, res);
 }
