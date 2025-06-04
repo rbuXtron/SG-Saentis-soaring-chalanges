@@ -12,8 +12,9 @@ export const MULTI_LEVEL_BADGE_IDS = [
     // Distanz-Badges
     'explorer',         // Gesamtdistanz
     'no_need_to_circle', // Geradeaus-Distanz
-    'bring_it_home',    // Rückkehr zum Startplatz
+    'pythagoras',    // Rückkehr zum Startplatz
     'zugvogel',         // Migration/Langstrecke
+    'euclid',
     
     // Dauer-Badges
     'aeronaut',         // Flugdauer
@@ -23,11 +24,18 @@ export const MULTI_LEVEL_BADGE_IDS = [
     'sprinter',         // Durchschnittsgeschwindigkeit
     
     // Punkte-Badges
-    'point_hunter',     // WeGlide Punkte
+    'point_hunter',
+    'walk_of_fame',
+    'cockpit_crew',     // WeGlide Punkte
+    'always_by_your_side',
     
     // Konsistenz-Badges
     'consistency',      // Regelmäßigkeit
     'flying_spree',     // Flugserie
+    'segment_specialist',
+    'vintage_viper',
+    'sky_streak',
+    'aircraft_hopper',
     
     // Team-Badges
     'cockpit_crew',     // Co-Pilot Flüge
@@ -37,7 +45,10 @@ export const MULTI_LEVEL_BADGE_IDS = [
     'aircraft_hopper',  // Verschiedene Flugzeuge
     'nomad',            // Verschiedene Startplätze
     'tourist',          // Verschiedene Länder
-    'flying_in_circles'
+    'flying_in_circles',
+    'globe_trotter',
+    'training_lap',
+    'day_winner'
 ];
 
 /**
