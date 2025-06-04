@@ -18,7 +18,7 @@ const SEASON_END = new Date('2025-09-30T23:59:59');   // Saisonende 2024/2025
 const HISTORY_START = new Date('2023-06-01T00:00:00'); // Start der Historie-Suche
 const HISTORY_END = new Date('2024-09-30T23:59:59');   // Ende der Historie-Suche (Tag vor Saisonbeginn)
 const CURRENT_SEASON = '2024/2025';
-const DEBUG = false; // Reduziere Debug-Output für Production
+const DEBUG = true; // Reduziere Debug-Output für Production
 
 /**
  * Hauptfunktion: Berechnet Badges für alle Vereinsmitglieder
