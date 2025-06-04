@@ -537,18 +537,18 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
       // Prüfe verschiedene mögliche Locations für Achievements
       let achievements = null;
       
-      // Option 1: achievements (Plural) direkt im Objekt
-      if (flightDetails.achievements && Array.isArray(flightDetails.achievements)) {
-        achievements = flightDetails.achievements;
-      }
-      // Option 2: achievement (Singular) direkt im Objekt
-      else if (flightDetails.achievement) {
+      // Option 1: achievement (Singular) direkt im Objekt - PRIMÄR!
+      if (flightDetails.achievement) {
         // Könnte ein Array oder ein einzelnes Objekt sein
         if (Array.isArray(flightDetails.achievement)) {
           achievements = flightDetails.achievement;
         } else if (typeof flightDetails.achievement === 'object') {
           achievements = [flightDetails.achievement];
         }
+      }
+      // Option 2: achievements (Plural) als Fallback
+      else if (flightDetails.achievements && Array.isArray(flightDetails.achievements)) {
+        achievements = flightDetails.achievements;
       }
       
       if (!achievements || achievements.length === 0) {
@@ -557,25 +557,48 @@ async function verifyMultiLevelBadge(badge, flights, userId) {
       
       // Suche nach diesem Badge in den Achievements
       const achievement = achievements.find(a => {
-        // Verschiedene Möglichkeiten der badge_id
-        return a.badge_id === badge.badge_id || 
-               a.badge === badge.badge_id ||
-               (a.badge && a.badge.id === badge.badge_id) ||
-               a.id === badge.badge_id;
+        // Direkte badge_id Übereinstimmung (primär)
+        if (a.badge_id === badge.badge_id) return true;
+        
+        // Weitere Möglichkeiten der badge_id
+        if (a.badge === badge.badge_id) return true;
+        if (a.badge && typeof a.badge === 'object' && a.badge.id === badge.badge_id) return true;
+        if (a.id === badge.badge_id) return true;
+        
+        return false;
       });
       
       if (achievement) {
         // Badge in Vergangenheit gefunden!
-        preSeasonPoints = achievement.points || achievement.level || achievement.value || 0;
+        // Die points sind direkt im achievement objekt
+        preSeasonPoints = achievement.points || 0;
+        
+        // Falls points ein Array ist (aus badge.points), nehme den höchsten Wert
+        if (achievement.badge && achievement.badge.points && Array.isArray(achievement.badge.points)) {
+          // Finde den Index/Level basierend auf achievement.points
+          const currentPoints = achievement.points || 1;
+          // Der achievement.points Wert entspricht dem erreichten Level
+          preSeasonPoints = currentPoints;
+        }
+        
         foundPreSeason = true;
         foundInFlight = {
           id: flight.id,
           date: flightDate,
-          points: preSeasonPoints
+          points: preSeasonPoints,
+          achievementId: achievement.id,
+          badgeId: achievement.badge_id
         };
         
         console.log(`      ✅ Gefunden in Flug vom ${flightDate.toLocaleDateString()}: ${preSeasonPoints} Punkte`);
-        console.log(`      📎 Flug-ID: ${flight.id}`);
+        console.log(`      📎 Flug-ID: ${flight.id}, Achievement-ID: ${achievement.id}`);
+        if (DEBUG) {
+          console.log(`      📋 Achievement Details:`, {
+            badge_id: achievement.badge_id,
+            points: achievement.points,
+            name: achievement.badge?.name
+          });
+        }
         break;
       }
       
