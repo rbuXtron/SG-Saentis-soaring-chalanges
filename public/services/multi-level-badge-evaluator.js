@@ -26,16 +26,13 @@ export const MULTI_LEVEL_BADGE_IDS = [
     // Punkte-Badges
     'point_hunter',
     'walk_of_fame',
-    'cockpit_crew',     // WeGlide Punkte
-    'always_by_your_side',
     
     // Konsistenz-Badges
     'consistency',      // Regelmäßigkeit
-    'flying_spree',     // Flugserie
     'segment_specialist',
     'vintage_viper',
     'sky_streak',
-    'aircraft_hopper',
+ 
     
     // Team-Badges
     'cockpit_crew',     // Co-Pilot Flüge
