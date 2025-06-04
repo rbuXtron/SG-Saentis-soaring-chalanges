@@ -234,7 +234,7 @@ class WeGlideApiClient {
     }
   }
 
-  // User-Flüge
+  // User-Flüge - KORRIGIERT: Verwende 'flight' statt 'flights'
   async fetchUserFlights(userId, year) {
     // Wenn Club-Flüge gecacht sind, daraus filtern
     if (this._clubFlightsCache && this._clubFlightsCache.flights) {
@@ -254,8 +254,9 @@ class WeGlideApiClient {
     console.log(`[API] Lade User ${userId} Flüge für ${year} via API`);
     
     try {
+      // KORRIGIERT: Verwende 'flight' Endpunkt
       const flights = await this.fetchData('/api/proxy', {
-        path: 'flights',
+        path: 'flight',  // SINGULAR!
         user_id_in: userId,
         season_in: year,
         limit: 100
@@ -276,7 +277,7 @@ class WeGlideApiClient {
         const dateTo = `${year}-12-31`;
         
         const flights = await this.fetchData('/api/proxy', {
-          path: 'flights',
+          path: 'flight',  // SINGULAR!
           user_id_in: userId,
           date_from: dateFrom,
           date_to: dateTo,
