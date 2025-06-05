@@ -29,40 +29,55 @@ export async function fetchAllWeGlideData() {
     console.log('🚀 Starte optimiertes Daten-Loading v5.0');
     console.log('====================================');
 
-    const currentYear = new Date().getFullYear(); // 2025
 
     // 1. Club-Daten abrufen
     console.log('\n📋 Schritt 1: Lade Club-Metadaten...');
     const clubData = await apiClient.fetchClubData();
 
-    // 2. NUR aktuelle Saison-Flüge laden für normale Auswertungen
+
+
+
+// 2. Aktuelle Saison-Flüge laden für normale Auswertungen
     console.log('\n✈️ Schritt 2: Lade Saison 2025 Flüge...');
     const startTime = Date.now();
 
-    // Lade nur Flüge ab 1. Januar 2025
-    const seasonStartDate = `${currentYear}-01-01`;
-    const clubFlightsResponse = await apiClient.fetchAllClubFlights(seasonStartDate);
+    // Lade ALLE Club-Flüge (für historische Daten und aktuelle Saison)
+    const clubFlightsResponse = await apiClient.fetchAllClubFlights();
 
     if (!clubFlightsResponse || !clubFlightsResponse.flights) {
       console.error('❌ Keine Club-Flüge erhalten');
       return { pilots: [], stats: {}, sprintStats: {} };
     }
 
-    // Filtere nur Flüge aus 2025
-    const season2025Flights = clubFlightsResponse.flights.filter(flight => {
+    // Filtere Flüge nach Zeiträumen
+    const currentYear = new Date().getFullYear();
+    const allClubFlights = clubFlightsResponse.flights;
+    
+    // Aktuelle Saison Flüge (2025)
+    const season2025Flights = allClubFlights.filter(flight => {
       const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
       return flightYear === currentYear;
+    });
+    
+    // Historische Flüge (vor 2025) für Pilotenfaktor-Berechnung
+    const historicalFlights = allClubFlights.filter(flight => {
+      const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
+      return flightYear < currentYear;
     });
 
     const members = clubFlightsResponse.members || clubData.user;
     const loadTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
     console.log(`✅ ${season2025Flights.length} Flüge aus Saison 2025 in ${loadTime}s geladen`);
+    console.log(`📜 ${historicalFlights.length} historische Flüge für Pilotenfaktor-Berechnung`);
 
-    // 3. Flüge nach User gruppieren (nur 2025)
-    console.log('\n🔧 Schritt 3: Verarbeite Saison 2025 Flugdaten...');
+    // 3. Flüge nach User gruppieren
+    console.log('\n🔧 Schritt 3: Verarbeite Flugdaten...');
     const flightsByUser = groupFlightsByUser(season2025Flights);
+    const historicalFlightsByUser = groupFlightsByUser(historicalFlights);
     console.log(`📊 ${flightsByUser.size} Piloten mit Flügen in 2025`);
+
+
 
     // 4. Sprint-Daten NUR für 2025
     console.log('\n🏃 Schritt 4: Lade Sprint-Daten 2025...');
@@ -79,7 +94,8 @@ export async function fetchAllWeGlideData() {
     console.log('\n👥 Schritt 6: Verarbeite Piloten-Daten...');
     const processedMembers = await processMembersOptimized(
       members, 
-      flightsByUser, 
+      flightsByUser,
+      historicalFlightsByUser, 
       sprintsByUser,
       loadBadgeHistoryForUser,
       currentYear
@@ -214,26 +230,31 @@ async function processMembersOptimized(members, flightsByUser, sprintsByUser, lo
 /**
  * Verarbeitet Member-Daten nur mit Saison 2025
  */
-function processMemberData2025(member, flights2025, sprints2025, badgeAnalysis, currentYear) {
-  // Verarbeite nur 2025 Flugdaten
+/**
+ * Verarbeitet Member-Daten mit historischen Daten für Pilotenfaktor
+ */
+function processMemberData2025(member, flights2025, historicalFlights, sprints2025, badgeAnalysis, currentYear) {
+  // Verarbeite alle Flugdaten
   const processedFlights = flights2025.map(flight => processFlightData(flight));
+  const processedHistoricalFlights = historicalFlights.map(flight => processFlightData(flight));
+  
+  // Berechne den aktuellen Pilotenfaktor basierend auf historischen Daten
+  const allFlights = [...processedHistoricalFlights, ...processedFlights];
+  const bestHistoricalDistance = allFlights.length > 0 ?
+    Math.max(...allFlights.map(f => f.km)) : 0;
+  const dynamicPilotFactor = calculatePilotFactor(bestHistoricalDistance);
   
   // Berechne Ranking-Flüge (nur 2025)
   const rankingFlights = processedFlights
     .filter(flight => countsForScoring(flight, false));
 
-  // Berechne Punkte (vereinfacht ohne Historie)
-  calculateFlightPoints2025(rankingFlights, member.name);
+  // Berechne Punkte mit dem dynamischen Pilotenfaktor
+  calculateFlightPointsWithDynamicFactor(rankingFlights, member.name, dynamicPilotFactor);
 
   // Die besten 3 Flüge
   rankingFlights.sort((a, b) => b.points - a.points);
   const bestFlights = rankingFlights.slice(0, APP_CONFIG.BEST_FLIGHTS_COUNT);
   const totalPoints = bestFlights.reduce((sum, flight) => sum + flight.points, 0);
-
-  // Aktueller Pilotenfaktor basierend auf 2025
-  const currentBestDistance = rankingFlights.length > 0 ?
-    Math.max(...rankingFlights.map(f => f.km)) : 0;
-  const currentPilotFactor = calculatePilotFactor(currentBestDistance);
 
   // Sprint-Statistiken für 2025
   const sprintStats = calculatePilotSprintStats(sprints2025);
@@ -245,7 +266,7 @@ function processMemberData2025(member, flights2025, sprints2025, badgeAnalysis, 
     flights: bestFlights,
     allFlights: processedFlights,
     rankingFlights: rankingFlights,
-    historicalFlights: [], // Keine historischen Daten mehr
+    historicalFlights: processedHistoricalFlights, // Historische Daten verfügbar
     
     // Sprint-Daten 2025
     sprintData: sprints2025,
@@ -257,8 +278,10 @@ function processMemberData2025(member, flights2025, sprints2025, badgeAnalysis, 
       .sort((a, b) => (b.contest?.distance || 0) - (a.contest?.distance || 0))
       .slice(0, 5),
     
-    pilotFactor: currentPilotFactor,
-    historicalPilotFactor: HISTORICAL_PILOT_FACTORS[member.name] || 4.0,
+    // Pilotenfaktoren
+    pilotFactor: dynamicPilotFactor,
+    historicalPilotFactor: HISTORICAL_PILOT_FACTORS[member.name] || HISTORICAL_PILOT_FACTORS.DEFAULT,
+    bestHistoricalDistance: bestHistoricalDistance,
     
     // Badge-Daten (mit Historie berechnet, aber nur Season-Badges zählen)
     badges: badgeAnalysis.badges || [],
@@ -276,14 +299,15 @@ function processMemberData2025(member, flights2025, sprints2025, badgeAnalysis, 
 }
 
 /**
- * Vereinfachte Punkteberechnung nur mit 2025 Daten
+ * Berechnet Flugpunkte mit dynamischem Pilotenfaktor
  */
-function calculateFlightPoints2025(flights, pilotName) {
+function calculateFlightPointsWithDynamicFactor(flights, pilotName, dynamicPilotFactor) {
+  // Fallback auf historischen Faktor, wenn kein dynamischer verfügbar
   const configHistoricalFactor = HISTORICAL_PILOT_FACTORS[pilotName] || HISTORICAL_PILOT_FACTORS.DEFAULT;
-
+  
   flights.forEach(flight => {
-    // Verwende den konfigurierten historischen Faktor direkt
-    const effectivePilotFactor = configHistoricalFactor;
+    // Verwende den dynamischen Faktor, oder Fallback auf konfigurierten
+    const effectivePilotFactor = dynamicPilotFactor || configHistoricalFactor;
     const aircraftFactor = getAircraftFactor(flight.aircraftType);
     const points = flight.km * effectivePilotFactor * aircraftFactor * flight.takeoffFactor;
 
