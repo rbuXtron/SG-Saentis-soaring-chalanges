@@ -297,6 +297,7 @@ function calculateFlightPoints2025(flights, pilotName) {
 
 /**
  * Berechnet Saison-Statistiken (nur 2025)
+ * ANGEPASST: Sprint-Statistiken entfernt
  */
 function calculateSeasonStatistics(members, season) {
   let totalFlights = 0;
@@ -305,9 +306,6 @@ function calculateSeasonStatistics(members, season) {
   let longestFlightPilot = '';
   let maxWeGlidePoints = 0;
   let maxWeGlidePointsPilot = '';
-  let totalSprints = 0;
-  let maxSprintSpeed = 0;
-  let maxSprintSpeedPilot = '';
   const activePilots = new Set();
 
   members.forEach(member => {
@@ -332,16 +330,6 @@ function calculateSeasonStatistics(members, season) {
         }
       });
     }
-
-    // Sprint-Statistiken
-    if (member.sprintStats) {
-      totalSprints += member.sprintStats.totalSprints || 0;
-      
-      if ((member.sprintStats.bestSpeed || 0) > maxSprintSpeed) {
-        maxSprintSpeed = member.sprintStats.bestSpeed;
-        maxSprintSpeedPilot = member.name;
-      }
-    }
   });
 
   return {
@@ -352,9 +340,6 @@ function calculateSeasonStatistics(members, season) {
     longestFlightPilot,
     maxWeGlidePoints,
     maxWeGlidePointsPilot,
-    totalSprints,
-    maxSprintSpeed,
-    maxSprintSpeedPilot,
     season: season
   };
 }

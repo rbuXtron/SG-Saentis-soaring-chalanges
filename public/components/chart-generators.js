@@ -281,7 +281,8 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
 }
 
 /**
- * Rendert eine Chart für die Top-Geschwindigkeiten
+ * Rendert eine Chart für die Top Sprint-Geschwindigkeiten
+ * ANGEPASST: Nutzt jetzt sprintData statt allFlights
  * @param {Array} pilots - Array mit Pilotendaten
  * @param {string} containerId - ID des Container-Elements
  */
@@ -296,23 +297,28 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
   let allSprintFlights = [];
   if (Array.isArray(pilots)) {
     pilots.forEach(pilot => {
-      if (!pilot || !Array.isArray(pilot.sprintData)) return;
+      if (!pilot || !pilot.sprintData) return;
 
-      pilot.sprintData.forEach(sprint => {
-        if (!sprint || !sprint.contest || !sprint.contest.speed || sprint.contest.speed <= 0) return;
+      // Sprint-Daten können entweder in sprintData oder topSpeedSprints sein
+      const sprints = pilot.sprintData || pilot.topSpeedSprints || [];
+      
+      if (Array.isArray(sprints)) {
+        sprints.forEach(sprint => {
+          if (!sprint || !sprint.contest || !sprint.contest.speed || sprint.contest.speed <= 0) return;
 
-        allSprintFlights.push({
-          pilotName: pilot.name,
-          flightId: sprint.id,
-          speed: sprint.contest.speed,
-          distance: sprint.contest.distance,
-          points: sprint.contest.points,
-          date: sprint.scoring_date || sprint.takeoff_time,
-          aircraftType: sprint.aircraft ? sprint.aircraft.name : 'Unbekannt',
-          takeoffAirport: sprint.takeoff_airport ? sprint.takeoff_airport.name : 'Unbekannt',
-          region: sprint.takeoff_airport && sprint.takeoff_airport.region ? sprint.takeoff_airport.region : ''
+          allSprintFlights.push({
+            pilotName: pilot.name,
+            flightId: sprint.id,
+            speed: sprint.contest.speed,
+            distance: sprint.contest.distance,
+            points: sprint.contest.points,
+            date: sprint.scoring_date || sprint.takeoff_time,
+            aircraftType: sprint.aircraft ? sprint.aircraft.name : 'Unbekannt',
+            takeoffAirport: sprint.takeoff_airport ? sprint.takeoff_airport.name : 'Unbekannt',
+            region: sprint.takeoff_airport && sprint.takeoff_airport.region ? sprint.takeoff_airport.region : ''
+          });
         });
-      });
+      }
     });
   }
 
@@ -320,7 +326,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
   allSprintFlights.sort((a, b) => b.speed - a.speed);
 
   // Top 15 nehmen
-  const topFlights = allSprintFlights.slice(0, 15);
+  const topFlights = allSprintFlights.slice(0, APP_CONFIG.CHART_LIMITS.TOP_SPEED || 15);
 
   if (topFlights.length === 0) {
     const noData = document.createElement('div');
