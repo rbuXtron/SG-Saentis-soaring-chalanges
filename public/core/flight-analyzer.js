@@ -4,7 +4,7 @@
  * Kernfunktionen zur Analyse von Flügen
  */
 
-import { FLIGHT_INSTRUCTORS } from '../config/constants.js';
+import { FLIGHT_INSTRUCTORS, AIRFIELD_FACTORS } from '../config/constants.js';
 
 /**
  * Prüft ob ein Flug für die Wertung zählt

@@ -505,10 +505,5 @@ export function getCoPliotName(flight) {
   return null;
 }
 
-// Für Kompatibilität
-export function calculateFlightPointsWithHistory(flights, pilotName, allFlights) {
-  // Nutze die vereinfachte Version
-  calculateFlightPoints2025(flights, pilotName);
-}
 
 export { formatISODateTime };
