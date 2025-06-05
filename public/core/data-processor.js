@@ -19,6 +19,257 @@ import {
 import { formatISODateTime, formatDateForDisplay } from '../utils/utils.js';
 import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 
+
+// In data-processor.js - Füge diese Funktionen hinzu (z.B. nach Zeile 20)
+
+/**
+ * Lädt gecachte historische Daten aus dem LocalStorage
+ */
+async function loadCachedHistoricalData() {
+  try {
+    const cacheKey = 'sgSaentis_historicalFlights';
+    const cached = localStorage.getItem(cacheKey);
+    
+    if (!cached) {
+      console.log('📭 Kein Cache für historische Daten gefunden');
+      return [];
+    }
+    
+    const parsedCache = JSON.parse(cached);
+    
+    // Prüfe ob Cache noch gültig ist (24 Stunden)
+    const cacheAge = Date.now() - parsedCache.timestamp;
+    const maxAge = 24 * 60 * 60 * 1000; // 24 Stunden
+    
+    if (cacheAge > maxAge) {
+      console.log('⏰ Cache für historische Daten ist abgelaufen');
+      localStorage.removeItem(cacheKey);
+      return [];
+    }
+    
+    console.log(`✅ ${parsedCache.data.length} historische Flüge aus Cache geladen (${Math.round(cacheAge / 1000 / 60)} Minuten alt)`);
+    return parsedCache.data;
+    
+  } catch (error) {
+    console.error('Fehler beim Laden des Caches:', error);
+    return [];
+  }
+}
+
+/**
+ * Speichert historische Daten im LocalStorage
+ */
+async function cacheHistoricalData(flights) {
+  try {
+    const cacheKey = 'sgSaentis_historicalFlights';
+    const cacheData = {
+      timestamp: Date.now(),
+      data: flights
+    };
+    
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    console.log(`💾 ${flights.length} historische Flüge im Cache gespeichert`);
+    
+  } catch (error) {
+    // LocalStorage könnte voll sein
+    console.error('Fehler beim Cachen der Daten:', error);
+    
+    // Versuche alten Cache zu löschen
+    try {
+      localStorage.removeItem('sgSaentis_historicalFlights');
+      console.log('🗑️ Alter Cache gelöscht');
+    } catch (e) {
+      console.error('Cache konnte nicht gelöscht werden:', e);
+    }
+  }
+}
+
+/**
+ * Zeigt einen Hintergrund-Lade-Indikator
+ */
+function showBackgroundLoadingIndicator() {
+  // Prüfe ob bereits ein Indikator existiert
+  if (document.getElementById('background-loading')) return;
+  
+  const indicator = document.createElement('div');
+  indicator.id = 'background-loading';
+  indicator.className = 'background-loading-indicator';
+  indicator.innerHTML = `
+    <div class="loading-pulse"></div>
+    <span>Lade historische Daten...</span>
+  `;
+  
+  indicator.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--primary-dark, #1e3a8a);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  `;
+  
+  document.body.appendChild(indicator);
+}
+
+/**
+ * Versteckt den Hintergrund-Lade-Indikator
+ */
+function hideBackgroundLoadingIndicator() {
+  const indicator = document.getElementById('background-loading');
+  if (indicator) {
+    indicator.classList.add('fade-out');
+    setTimeout(() => {
+      indicator.remove();
+    }, 300);
+  }
+}
+
+/**
+ * Lädt historische Daten mit optimiertem Algorithmus
+ */
+async function loadHistoricalDataOptimized(members) {
+  console.log('📂 Lade vollständige historische Daten...');
+  
+  const allHistoricalFlights = [];
+  const batchSize = 15; // Erhöhte Batch-Größe
+  const years = [2023, 2024]; // Jahre die geladen werden sollen
+  
+  for (let i = 0; i < members.length; i += batchSize) {
+    const batch = members.slice(i, i + batchSize);
+    
+    const batchPromises = batch.map(async (member) => {
+      try {
+        // Lade beide Jahre parallel für jeden User
+        const yearPromises = years.map(year => 
+          apiClient.fetchUserFlights(member.id, year)
+        );
+        
+        const yearResults = await Promise.all(yearPromises);
+        
+        // Kombiniere alle Flüge und füge User-Info hinzu
+        const allFlights = [];
+        yearResults.forEach(flights => {
+          if (Array.isArray(flights)) {
+            flights.forEach(flight => {
+              allFlights.push({
+                ...flight,
+                user: { id: member.id, name: member.name }
+              });
+            });
+          }
+        });
+        
+        return allFlights;
+      } catch (error) {
+        console.error(`Fehler bei ${member.name}:`, error);
+        return [];
+      }
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    batchResults.forEach(flights => allHistoricalFlights.push(...flights));
+    
+    // Progress update
+    const progress = Math.min(i + batchSize, members.length);
+    console.log(`  Historische Daten: ${progress}/${members.length} Piloten`);
+    
+    // Rate limiting - kleine Pause zwischen Batches
+    if (i + batchSize < members.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  console.log(`✅ ${allHistoricalFlights.length} historische Flüge geladen`);
+  return allHistoricalFlights;
+}
+
+/**
+ * Lädt Flüge nur für die aktuelle Saison
+ */
+async function loadCurrentSeasonFlights(members, currentYear) {
+  console.log(`⚡ Lade Saison ${currentYear} Flüge...`);
+  
+  const allFlights = [];
+  const batchSize = 15;
+  
+  for (let i = 0; i < members.length; i += batchSize) {
+    const batch = members.slice(i, i + batchSize);
+    
+    const batchPromises = batch.map(async (member) => {
+      try {
+        const flights = await apiClient.fetchUserFlights(member.id, currentYear);
+        
+        if (Array.isArray(flights)) {
+          return flights.map(flight => ({
+            ...flight,
+            user: { id: member.id, name: member.name }
+          }));
+        }
+        return [];
+      } catch (error) {
+        console.error(`Fehler bei ${member.name}:`, error);
+        return [];
+      }
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    batchResults.forEach(flights => allFlights.push(...flights));
+    
+    // Progress update
+    const progress = Math.min(i + batchSize, members.length);
+    console.log(`  Saison ${currentYear}: ${progress}/${members.length} Piloten`);
+  }
+  
+  console.log(`✅ ${allFlights.length} Flüge für Saison ${currentYear} geladen`);
+  return allFlights;
+}
+
+/**
+ * Gruppiert Flüge nach User ID
+ */
+function groupFlightsByUser(flights) {
+  const flightsByUser = new Map();
+  
+  flights.forEach(flight => {
+    const userId = flight.user?.id;
+    if (!userId) return;
+    
+    if (!flightsByUser.has(userId)) {
+      flightsByUser.set(userId, []);
+    }
+    flightsByUser.get(userId).push(flight);
+  });
+  
+  return flightsByUser;
+}
+
+/**
+ * Gruppiert Sprints nach User ID
+ */
+function groupSprintsByUser(sprints) {
+  const sprintsByUser = new Map();
+  
+  sprints.forEach(sprint => {
+    const userId = sprint.pilotId || sprint.user_id;
+    if (!userId) return;
+    
+    if (!sprintsByUser.has(userId)) {
+      sprintsByUser.set(userId, []);
+    }
+    sprintsByUser.get(userId).push(sprint);
+  });
+  
+  return sprintsByUser;
+}
+
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
  * Version 5.0 - Lädt historische Daten für Pilotenfaktor, Badge-Details nur bei Bedarf
