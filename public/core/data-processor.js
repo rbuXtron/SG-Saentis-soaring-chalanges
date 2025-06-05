@@ -1,7 +1,7 @@
 // /public/js/core/data-processor.js
 /**
  * SG Säntis Cup - Datenverarbeitungsmodul
- * Version 4.0 - Mit verbesserter Sprint-Integration
+ * Version 5.0 - Optimiert: Historische Daten nur für Badge-Berechnung
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
@@ -21,79 +21,88 @@ import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
- * Version 4.0 - Mit verbesserter Sprint-Integration
+ * Version 5.0 - Lädt nur aktuelle Saison, außer für Badge-Verifikation
  */
 export async function fetchAllWeGlideData() {
   try {
     console.log('====================================');
-    console.log('🚀 Starte optimiertes Daten-Loading v4.0');
+    console.log('🚀 Starte optimiertes Daten-Loading v5.0');
     console.log('====================================');
+
+    const currentYear = new Date().getFullYear(); // 2025
 
     // 1. Club-Daten abrufen
     console.log('\n📋 Schritt 1: Lade Club-Metadaten...');
     const clubData = await apiClient.fetchClubData();
 
-    // 2. ALLE Club-Flüge laden
-    console.log('\n✈️ Schritt 2: Lade ALLE Club-Flüge mit Historie...');
+    // 2. NUR aktuelle Saison-Flüge laden für normale Auswertungen
+    console.log('\n✈️ Schritt 2: Lade Saison 2025 Flüge...');
     const startTime = Date.now();
 
-    const requiredStartDate = '2023-06-01';
-    const clubFlightsResponse = await apiClient.fetchAllClubFlights(requiredStartDate);
+    // Lade nur Flüge ab 1. Januar 2025
+    const seasonStartDate = `${currentYear}-01-01`;
+    const clubFlightsResponse = await apiClient.fetchAllClubFlights(seasonStartDate);
 
     if (!clubFlightsResponse || !clubFlightsResponse.flights) {
       console.error('❌ Keine Club-Flüge erhalten');
-      return [];
+      return { pilots: [], stats: {}, sprintStats: {} };
     }
 
-    const allClubFlights = clubFlightsResponse.flights;
+    // Filtere nur Flüge aus 2025
+    const season2025Flights = clubFlightsResponse.flights.filter(flight => {
+      const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
+      return flightYear === currentYear;
+    });
+
     const members = clubFlightsResponse.members || clubData.user;
     const loadTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    console.log(`✅ ${allClubFlights.length} Flüge in ${loadTime}s geladen`);
+    console.log(`✅ ${season2025Flights.length} Flüge aus Saison 2025 in ${loadTime}s geladen`);
 
-    // Validiere Zeitbereich
-    validateDateRange(clubFlightsResponse.metadata, requiredStartDate);
+    // 3. Flüge nach User gruppieren (nur 2025)
+    console.log('\n🔧 Schritt 3: Verarbeite Saison 2025 Flugdaten...');
+    const flightsByUser = groupFlightsByUser(season2025Flights);
+    console.log(`📊 ${flightsByUser.size} Piloten mit Flügen in 2025`);
 
-    // 3. Flüge nach User gruppieren
-    console.log('\n🔧 Schritt 3: Verarbeite Flugdaten...');
-    const flightsByUser = groupFlightsByUser(allClubFlights);
-    console.log(`📊 Flüge nach User gruppiert: ${flightsByUser.size} Piloten`);
+    // 4. Sprint-Daten NUR für 2025
+    console.log('\n🏃 Schritt 4: Lade Sprint-Daten 2025...');
+    const sprintData2025 = await sprintDataService.loadAllMembersSprints(members, currentYear);
+    const sprintsByUser = groupSprintsByUser(sprintData2025);
+    console.log(`✅ ${sprintData2025.length} Sprint-Einträge für 2025`);
 
-    // 4. Sprint-Daten für alle Mitglieder laden
-    console.log('\n🏃 Schritt 4: Lade Sprint-Daten...');
-    const currentYear = new Date().getFullYear();
-    const allSprintData = await loadAllSprintData(members, currentYear);
-    console.log(`✅ ${allSprintData.length} Sprint-Einträge geladen`);
+    // 5. Badge-Historie separat laden (nur wenn benötigt)
+    console.log('\n🏅 Schritt 5: Bereite Badge-Historie vor...');
+    // Erstelle eine Funktion die bei Bedarf geladen wird
+    const loadBadgeHistoryForUser = createBadgeHistoryLoader(clubFlightsResponse.flights);
 
-    // Sprint-Daten nach User gruppieren
-    const sprintsByUser = groupSprintsByUser(allSprintData);
-
-    // 5. Verarbeite jeden Piloten
-    console.log('\n👥 Schritt 5: Verarbeite Piloten-Daten...');
-    const processedMembers = await processMembersInBatches(
+    // 6. Verarbeite jeden Piloten
+    console.log('\n👥 Schritt 6: Verarbeite Piloten-Daten...');
+    const processedMembers = await processMembersOptimized(
       members, 
       flightsByUser, 
       sprintsByUser,
+      loadBadgeHistoryForUser,
       currentYear
     );
 
-    // 6. Statistiken berechnen
-    console.log('\n📊 Schritt 6: Berechne Gesamt-Statistiken...');
-    const stats = calculateClubStatistics(processedMembers);
-    const sprintStats = sprintDataService.generateSprintStatistics(allSprintData);
+    // 7. Statistiken berechnen (nur 2025)
+    console.log('\n📊 Schritt 7: Berechne Saison 2025 Statistiken...');
+    const stats = calculateSeasonStatistics(processedMembers, currentYear);
+    const sprintStats = sprintDataService.generateSprintStatistics(sprintData2025, currentYear);
 
     console.log('\n✅ Datenverarbeitung abgeschlossen!');
     console.log('====================================');
-    console.log(`Zusammenfassung:`);
-    console.log(`  • ${processedMembers.length} Piloten verarbeitet`);
-    console.log(`  • ${stats.totalFlights} Flüge in ${currentYear}`);
+    console.log(`Zusammenfassung Saison ${currentYear}:`);
+    console.log(`  • ${processedMembers.length} Piloten aktiv`);
+    console.log(`  • ${stats.totalFlights} Flüge`);
     console.log(`  • ${stats.totalKm.toFixed(0)} km Gesamtstrecke`);
     console.log(`  • ${stats.longestFlight.toFixed(0)} km längster Flug (${stats.longestFlightPilot})`);
     console.log(`  • ${sprintStats.totalSprints} Sprint-Wertungen`);
-    console.log(`  • ${sprintStats.maxSpeed.toFixed(1)} km/h Höchstgeschwindigkeit (${sprintStats.topSpeedPilot})`);
+    if (sprintStats.maxSpeed > 0) {
+      console.log(`  • ${sprintStats.maxSpeed.toFixed(1)} km/h Höchstgeschwindigkeit (${sprintStats.topSpeedPilot})`);
+    }
     console.log('====================================\n');
 
-    // Erweiterte Rückgabe mit Sprint-Statistiken
     return {
       pilots: processedMembers,
       stats: stats,
@@ -101,99 +110,47 @@ export async function fetchAllWeGlideData() {
     };
 
   } catch (error) {
-    console.error('❌ Kritischer Fehler beim Abrufen der WeGlide-Daten:', error);
-    return {
-      pilots: [],
-      stats: {},
-      sprintStats: {}
-    };
+    console.error('❌ Kritischer Fehler:', error);
+    return { pilots: [], stats: {}, sprintStats: {} };
   }
 }
 
 /**
- * Validiert den Datumsbereich der geladenen Flüge
+ * Erstellt einen Lazy-Loader für Badge-Historie
  */
-function validateDateRange(metadata, requiredStartDate) {
-  if (!metadata || !metadata.dateRange) return;
-
-  const range = metadata.dateRange;
-  console.log(`📅 Zeitbereich: ${range.from} bis ${range.to}`);
+function createBadgeHistoryLoader(allClubFlights) {
+  // Cache für bereits geladene User-Historien
+  const historyCache = new Map();
   
-  if (range.oldestFlight) {
-    console.log(`  → Ältester Flug: ${new Date(range.oldestFlight).toLocaleDateString()}`);
-  }
-  if (range.newestFlight) {
-    console.log(`  → Neuester Flug: ${new Date(range.newestFlight).toLocaleDateString()}`);
-  }
-
-  const oldestDate = new Date(range.oldestFlight || range.from);
-  const requiredDate = new Date(requiredStartDate);
-  
-  if (oldestDate > requiredDate) {
-    console.warn(`⚠️ WARNUNG: Flüge reichen nur bis ${oldestDate.toLocaleDateString()}, benötigt wird ${requiredDate.toLocaleDateString()}`);
-  }
-}
-
-/**
- * Gruppiert Flüge nach User ID
- */
-function groupFlightsByUser(flights) {
-  const flightsByUser = new Map();
-
-  flights.forEach(flight => {
-    const userId = flight.user?.id;
-    if (!userId) return;
-
-    if (!flightsByUser.has(userId)) {
-      flightsByUser.set(userId, []);
+  return async function(userId) {
+    if (historyCache.has(userId)) {
+      return historyCache.get(userId);
     }
-    flightsByUser.get(userId).push(flight);
-  });
 
-  return flightsByUser;
-}
-
-/**
- * Gruppiert Sprint-Daten nach User ID
- */
-function groupSprintsByUser(sprints) {
-  const sprintsByUser = new Map();
-
-  sprints.forEach(sprint => {
-    const userId = sprint.pilotId || sprint.user_id;
-    if (!userId) return;
-
-    if (!sprintsByUser.has(userId)) {
-      sprintsByUser.set(userId, []);
-    }
-    sprintsByUser.get(userId).push(sprint);
-  });
-
-  return sprintsByUser;
-}
-
-/**
- * Lädt Sprint-Daten für alle Mitglieder - NUR für das aktuelle Jahr
- */
-async function loadAllSprintData(members, year) {
-  try {
-    // Lade nur Sprint-Daten für das aktuelle Jahr (2025)
-    const sprints = await sprintDataService.loadAllMembersSprints(members, year);
+    console.log(`  📜 Lade Badge-Historie für User ${userId}...`);
     
-    // KEINE historischen Sprint-Daten mehr laden
-    console.log(`✅ Sprint-Daten nur für ${year} geladen`);
+    // Filtere historische Flüge (vor 2025) für diesen User
+    const userHistoricalFlights = allClubFlights.filter(flight => {
+      if (flight.user?.id !== userId) return false;
+      
+      const flightDate = new Date(flight.scoring_date || flight.takeoff_time);
+      const flightYear = flightDate.getFullYear();
+      
+      // Nur Flüge von Juni 2023 bis Dezember 2024 für Badge-Historie
+      return flightYear >= 2023 && flightYear <= 2024;
+    });
+
+    historyCache.set(userId, userHistoricalFlights);
+    console.log(`    → ${userHistoricalFlights.length} historische Flüge gefunden`);
     
-    return sprints;
-  } catch (error) {
-    console.error('❌ Fehler beim Laden der Sprint-Daten:', error);
-    return [];
-  }
+    return userHistoricalFlights;
+  };
 }
 
 /**
- * Verarbeitet Mitglieder in Batches
+ * Verarbeitet Mitglieder mit optimiertem Daten-Loading
  */
-async function processMembersInBatches(members, flightsByUser, sprintsByUser, currentYear) {
+async function processMembersOptimized(members, flightsByUser, sprintsByUser, loadBadgeHistory, currentYear) {
   const processedMembers = [];
   const batchSize = 5;
 
@@ -202,12 +159,43 @@ async function processMembersInBatches(members, flightsByUser, sprintsByUser, cu
 
     const batchPromises = batch.map(async (member) => {
       try {
-        return await processSingleMember(
-          member, 
-          flightsByUser.get(member.id) || [], 
-          sprintsByUser.get(member.id) || [],
+        const userId = member.id;
+        const userFlights2025 = flightsByUser.get(userId) || [];
+        const userSprints2025 = sprintsByUser.get(userId) || [];
+
+        // Filtere eigene Flüge (nicht als Co-Pilot)
+        const ownFlights2025 = userFlights2025.filter(flight => 
+          !checkIfPilotIsCoPilot(flight, userId)
+        );
+
+        console.log(`  ${member.name}: ${ownFlights2025.length} Flüge, ${userSprints2025.length} Sprints in 2025`);
+
+        // Badge-Berechnung mit Lazy-Loading der Historie
+        let badgeAnalysis;
+        if (ownFlights2025.length > 0) {
+          // Lade historische Daten NUR für Badge-Berechnung
+          const historicalFlights = await loadBadgeHistory(userId);
+          
+          badgeAnalysis = await calculateUserSeasonBadgesOptimized(
+            userId,
+            member.name,
+            [...historicalFlights, ...ownFlights2025], // Kombiniere für Badge-Analyse
+            ownFlights2025  // Nur 2025 für aktuelle Saison
+          );
+        } else {
+          // Keine Flüge = keine Badges
+          badgeAnalysis = createEmptyBadgeResult(userId, member.name);
+        }
+
+        // Verarbeite Member-Daten (nur mit 2025 Daten)
+        return processMemberData2025(
+          member,
+          ownFlights2025,
+          userSprints2025,
+          badgeAnalysis,
           currentYear
         );
+
       } catch (error) {
         console.error(`❌ Fehler bei ${member.name}:`, error.message);
         return null;
@@ -224,191 +212,93 @@ async function processMembersInBatches(members, flightsByUser, sprintsByUser, cu
 }
 
 /**
- * Verarbeitet einen einzelnen Piloten
+ * Verarbeitet Member-Daten nur mit Saison 2025
  */
-async function processSingleMember(member, userFlights, userSprints, currentYear) {
-  const userId = member.id;
-
-  // Filtere eigene Flüge (nicht als Co-Pilot)
-  const ownFlights = userFlights.filter(flight => !checkIfPilotIsCoPilot(flight, userId));
+function processMemberData2025(member, flights2025, sprints2025, badgeAnalysis, currentYear) {
+  // Verarbeite nur 2025 Flugdaten
+  const processedFlights = flights2025.map(flight => processFlightData(flight));
   
-  console.log(`  ${member.name}: ${ownFlights.length} eigene Flüge, ${userSprints.length} Sprints`);
+  // Berechne Ranking-Flüge (nur 2025)
+  const rankingFlights = processedFlights
+    .filter(flight => countsForScoring(flight, false));
 
-  // Sortiere Flüge nach Jahr
-  const currentYearFlights = ownFlights.filter(f =>
-    new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear
-  );
+  // Berechne Punkte (vereinfacht ohne Historie)
+  calculateFlightPoints2025(rankingFlights, member.name);
 
-  // Badge-Berechnung
-  const badgeAnalysis = await calculateBadges(userId, member.name, ownFlights, currentYearFlights);
-
-  // Sprint-Daten verarbeiten
-  const processedSprints = processSprintData(userSprints, currentYear);
-
-  // Mitglied-Daten zusammenstellen
-  return await processMemberDataOptimized(
-    member,
-    currentYear,
-    currentYearFlights,
-    ownFlights.filter(f => new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear - 1),
-    ownFlights.filter(f => new Date(f.scoring_date || f.takeoff_time).getFullYear() < currentYear),
-    ownFlights,
-    processedSprints,
-    badgeAnalysis
-  );
-}
-
-/**
- * Berechnet Badges für einen Piloten
- */
-async function calculateBadges(userId, userName, allFlights, currentYearFlights) {
-  try {
-    return await calculateUserSeasonBadgesOptimized(
-      userId,
-      userName,
-      allFlights,
-      currentYearFlights
-    );
-  } catch (error) {
-    console.warn(`⚠️ Optimierte Badge-Berechnung fehlgeschlagen für ${userName}, verwende Fallback:`, error.message);
-    const { calculateUserSeasonBadgesWithConfig } = await import('../services/multi-level-badge-evaluator.js');
-    return await calculateUserSeasonBadgesWithConfig(
-      userId,
-      userName,
-      allFlights,
-      currentYearFlights
-    );
-  }
-}
-
-/**
- * Verarbeitet Sprint-Daten für einen Piloten
- */
-function processSprintData(sprints, currentYear) {
-  if (!sprints || sprints.length === 0) return [];
-
-  // Filtere nach Jahr und verbessere Datenstruktur
-  const currentYearSprints = sprints.filter(sprint => {
-    const sprintYear = new Date(sprint.scoring_date || sprint.takeoff_time).getFullYear();
-    return sprintYear === currentYear;
-  });
-
-  // Sortiere nach verschiedenen Kriterien
-  const bySpeed = [...currentYearSprints].sort((a, b) => 
-    (b.contest?.speed || 0) - (a.contest?.speed || 0)
-  );
-  
-  const byDistance = [...currentYearSprints].sort((a, b) => 
-    (b.contest?.distance || 0) - (a.contest?.distance || 0)
-  );
-
-  // Berechne Sprint-Statistiken für den Piloten
-  const stats = {
-    totalSprints: currentYearSprints.length,
-    bestSpeed: bySpeed[0]?.contest?.speed || 0,
-    bestDistance: byDistance[0]?.contest?.distance || 0,
-    averageSpeed: currentYearSprints.reduce((sum, s) => sum + (s.contest?.speed || 0), 0) / currentYearSprints.length || 0,
-    totalPoints: currentYearSprints.reduce((sum, s) => sum + (s.sgPoints || 0), 0)
-  };
-
-  return {
-    all: currentYearSprints,
-    bySpeed: bySpeed.slice(0, 5), // Top 5 nach Geschwindigkeit
-    byDistance: byDistance.slice(0, 5), // Top 5 nach Distanz
-    stats: stats
-  };
-}
-
-/**
- * Optimierte Mitglieder-Verarbeitung (erweitert um Sprint-Daten)
- */
-async function processMemberDataOptimized(
-  member,
-  currentYear,
-  currentYearFlights,
-  previousYearFlights,
-  historicalFlights,
-  allUserFlights,
-  sprintData,
-  badgeAnalysis
-) {
-  // Bestehende Flugdaten-Verarbeitung
-  const rankingFlights = currentYearFlights
-    .filter(flight => countsForScoring(flight, false))
-    .map(flight => processFlightData(flight));
-
-  const currentYearFlightsProcessed = currentYearFlights
-    .map(flight => processFlightData(flight));
-
-  const historicalFlightsProcessed = historicalFlights
-    .map(flight => processFlightData(flight));
-
-  // Pilotenfaktor-Berechnung
-  let bestHistoricalDistance = 0;
-  historicalFlightsProcessed.forEach(flight => {
-    if (flight.km > bestHistoricalDistance) {
-      bestHistoricalDistance = flight.km;
-    }
-  });
-  const bestHistoricalFactor = calculatePilotFactor(bestHistoricalDistance);
-
-  // Punkte-Berechnung
-  const allFlightsForProgression = [
-    ...historicalFlightsProcessed,
-    ...currentYearFlightsProcessed
-  ].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  calculateFlightPointsWithHistory(rankingFlights, member.name, allFlightsForProgression);
-
-  // Die besten 3 Flüge auswählen
+  // Die besten 3 Flüge
   rankingFlights.sort((a, b) => b.points - a.points);
   const bestFlights = rankingFlights.slice(0, APP_CONFIG.BEST_FLIGHTS_COUNT);
   const totalPoints = bestFlights.reduce((sum, flight) => sum + flight.points, 0);
 
-  // Aktueller Pilotenfaktor
+  // Aktueller Pilotenfaktor basierend auf 2025
   const currentBestDistance = rankingFlights.length > 0 ?
     Math.max(...rankingFlights.map(f => f.km)) : 0;
   const currentPilotFactor = calculatePilotFactor(currentBestDistance);
 
-  // Rückgabe mit erweiterten Sprint-Daten
+  // Sprint-Statistiken für 2025
+  const sprintStats = calculatePilotSprintStats(sprints2025);
+
   return {
     name: member.name,
     userId: member.id,
     totalPoints: totalPoints,
     flights: bestFlights,
-    allFlights: currentYearFlightsProcessed,
+    allFlights: processedFlights,
     rankingFlights: rankingFlights,
-    historicalFlights: historicalFlightsProcessed,
+    historicalFlights: [], // Keine historischen Daten mehr
     
-    // NEU: Strukturierte Sprint-Daten
-    sprintData: sprintData.all || [],
-    sprintStats: sprintData.stats || {},
-    topSpeedSprints: sprintData.bySpeed || [],
-    topDistanceSprints: sprintData.byDistance || [],
+    // Sprint-Daten 2025
+    sprintData: sprints2025,
+    sprintStats: sprintStats,
+    topSpeedSprints: sprints2025
+      .sort((a, b) => (b.contest?.speed || 0) - (a.contest?.speed || 0))
+      .slice(0, 5),
+    topDistanceSprints: sprints2025
+      .sort((a, b) => (b.contest?.distance || 0) - (a.contest?.distance || 0))
+      .slice(0, 5),
     
     pilotFactor: currentPilotFactor,
-    historicalPilotFactor: bestHistoricalFactor,
+    historicalPilotFactor: HISTORICAL_PILOT_FACTORS[member.name] || 4.0,
     
-    // Badge-Daten
-    badges: Array.isArray(badgeAnalysis.badges) ? badgeAnalysis.badges : [],
-    seasonBadges: Array.isArray(badgeAnalysis.seasonBadges) ? badgeAnalysis.seasonBadges : [],
+    // Badge-Daten (mit Historie berechnet, aber nur Season-Badges zählen)
+    badges: badgeAnalysis.badges || [],
+    seasonBadges: badgeAnalysis.seasonBadges || [],
     badgeCount: badgeAnalysis.badgeCount || 0,
     badgeCategoryCount: badgeAnalysis.badgeCategoryCount || 0,
-    allTimeBadges: Array.isArray(badgeAnalysis.allTimeBadges) ? badgeAnalysis.allTimeBadges : [],
+    allTimeBadges: badgeAnalysis.allTimeBadges || [],
     allTimeBadgeCount: badgeAnalysis.allTimeBadgeCount || 0,
-    priorSeasonCount: badgeAnalysis.priorSeasonCount || 0,
-    badgeStats: badgeAnalysis.badgeStats || {},
     flightsWithBadges: badgeAnalysis.flightsWithBadges || 0,
-    flightsAnalyzed: badgeAnalysis.flightsAnalyzed || 0,
-    multiLevelBadgeCount: badgeAnalysis.multiLevelBadgeCount || 0,
-    verifiedBadgeCount: badgeAnalysis.verifiedBadgeCount || 0
+    flightsAnalyzed: flights2025.length,
+    
+    // Jahr-Markierung
+    season: currentYear
   };
 }
 
 /**
- * Berechnet Club-weite Statistiken (erweitert um Sprint-Statistiken)
+ * Vereinfachte Punkteberechnung nur mit 2025 Daten
  */
-function calculateClubStatistics(members) {
+function calculateFlightPoints2025(flights, pilotName) {
+  const configHistoricalFactor = HISTORICAL_PILOT_FACTORS[pilotName] || HISTORICAL_PILOT_FACTORS.DEFAULT;
+
+  flights.forEach(flight => {
+    // Verwende den konfigurierten historischen Faktor direkt
+    const effectivePilotFactor = configHistoricalFactor;
+    const aircraftFactor = getAircraftFactor(flight.aircraftType);
+    const points = flight.km * effectivePilotFactor * aircraftFactor * flight.takeoffFactor;
+
+    flight.points = points;
+    flight.pFactor = effectivePilotFactor;
+    flight.pilotFactor = effectivePilotFactor;
+    flight.flzFaktor = aircraftFactor;
+    flight.aircraftFactor = aircraftFactor;
+  });
+}
+
+/**
+ * Berechnet Saison-Statistiken (nur 2025)
+ */
+function calculateSeasonStatistics(members, season) {
   let totalFlights = 0;
   let totalKm = 0;
   let longestFlight = 0;
@@ -423,13 +313,11 @@ function calculateClubStatistics(members) {
   members.forEach(member => {
     if (!member) return;
 
-    // Flug-Statistiken
+    // Nur wenn Flüge in 2025 vorhanden
     if (member.allFlights && member.allFlights.length > 0) {
       activePilots.add(member.name);
       
       member.allFlights.forEach(flight => {
-        if (!flight) return;
-
         totalFlights++;
         totalKm += flight.km || 0;
 
@@ -467,7 +355,80 @@ function calculateClubStatistics(members) {
     totalSprints,
     maxSprintSpeed,
     maxSprintSpeedPilot,
-    season: new Date().getFullYear()
+    season: season
+  };
+}
+
+/**
+ * Berechnet Sprint-Statistiken für einen Piloten
+ */
+function calculatePilotSprintStats(sprints) {
+  if (!sprints || sprints.length === 0) {
+    return {
+      totalSprints: 0,
+      bestSpeed: 0,
+      bestDistance: 0,
+      averageSpeed: 0,
+      totalPoints: 0
+    };
+  }
+
+  const speeds = sprints.map(s => s.contest?.speed || 0);
+  const distances = sprints.map(s => s.contest?.distance || 0);
+
+  return {
+    totalSprints: sprints.length,
+    bestSpeed: Math.max(...speeds),
+    bestDistance: Math.max(...distances),
+    averageSpeed: speeds.reduce((a, b) => a + b, 0) / speeds.length,
+    totalPoints: sprints.reduce((sum, s) => sum + (s.sgPoints || 0), 0)
+  };
+}
+
+// Hilfsfunktionen
+function groupFlightsByUser(flights) {
+  const flightsByUser = new Map();
+
+  flights.forEach(flight => {
+    const userId = flight.user?.id;
+    if (!userId) return;
+
+    if (!flightsByUser.has(userId)) {
+      flightsByUser.set(userId, []);
+    }
+    flightsByUser.get(userId).push(flight);
+  });
+
+  return flightsByUser;
+}
+
+function groupSprintsByUser(sprints) {
+  const sprintsByUser = new Map();
+
+  sprints.forEach(sprint => {
+    const userId = sprint.pilotId || sprint.user_id;
+    if (!userId) return;
+
+    if (!sprintsByUser.has(userId)) {
+      sprintsByUser.set(userId, []);
+    }
+    sprintsByUser.get(userId).push(sprint);
+  });
+
+  return sprintsByUser;
+}
+
+function createEmptyBadgeResult(userId, userName) {
+  return {
+    userId,
+    userName,
+    badges: [],
+    seasonBadges: [],
+    badgeCount: 0,
+    seasonBadgeCount: 0,
+    badgeCategoryCount: 0,
+    flightsAnalyzed: 0,
+    flightsWithBadges: 0
   };
 }
 
@@ -495,33 +456,6 @@ export function processFlightData(flight) {
     flightYear: new Date(date).getFullYear(),
     rawData: flight
   };
-}
-
-// Alle weiteren bestehenden Funktionen bleiben unverändert...
-export function calculateFlightPointsWithHistory(flights, pilotName, allFlights) {
-  const allFlightsWithFactors = calculateProgressivePilotFactors(allFlights);
-
-  const flightFactorMap = new Map();
-  allFlightsWithFactors.forEach(flight => {
-    const key = `${flight.date}_${flight.km}`;
-    flightFactorMap.set(key, flight.pilotFactor);
-  });
-
-  const configHistoricalFactor = HISTORICAL_PILOT_FACTORS[pilotName] || HISTORICAL_PILOT_FACTORS.DEFAULT;
-
-  flights.forEach(flight => {
-    const key = `${flight.date}_${flight.km}`;
-    const progressiveFactor = flightFactorMap.get(key) || 4.0;
-    const effectivePilotFactor = Math.min(progressiveFactor, configHistoricalFactor);
-    const aircraftFactor = getAircraftFactor(flight.aircraftType);
-    const points = flight.km * effectivePilotFactor * aircraftFactor * flight.takeoffFactor;
-
-    flight.points = points;
-    flight.pFactor = effectivePilotFactor;
-    flight.pilotFactor = effectivePilotFactor;
-    flight.flzFaktor = aircraftFactor;
-    flight.aircraftFactor = aircraftFactor;
-  });
 }
 
 export function calculatePilotFactor(distance) {
@@ -566,29 +500,10 @@ export function getCoPliotName(flight) {
   return null;
 }
 
-function calculateProgressivePilotFactors(allFlights) {
-  if (!Array.isArray(allFlights) || allFlights.length === 0) return [];
-
-  const sortedFlights = [...allFlights].sort((a, b) => {
-    const dateA = new Date(a.date || a.scoring_date || 0);
-    const dateB = new Date(b.date || b.scoring_date || 0);
-    return dateA - dateB;
-  });
-
-  let currentBestDistance = 0;
-  let currentPilotFactor = 4.0;
-
-  sortedFlights.forEach((flight, index) => {
-    flight.pilotFactor = currentPilotFactor;
-    flight.pFactor = currentPilotFactor;
-
-    if (flight.km > currentBestDistance) {
-      currentBestDistance = flight.km;
-      currentPilotFactor = calculatePilotFactor(currentBestDistance);
-    }
-  });
-
-  return sortedFlights;
+// Für Kompatibilität
+export function calculateFlightPointsWithHistory(flights, pilotName, allFlights) {
+  // Nutze die vereinfachte Version
+  calculateFlightPoints2025(flights, pilotName);
 }
 
 export { formatISODateTime };
