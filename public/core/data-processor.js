@@ -251,24 +251,6 @@ function groupFlightsByUser(flights) {
   return flightsByUser;
 }
 
-/**
- * Gruppiert Sprints nach User ID
- */
-function groupSprintsByUser(sprints) {
-  const sprintsByUser = new Map();
-  
-  sprints.forEach(sprint => {
-    const userId = sprint.pilotId || sprint.user_id;
-    if (!userId) return;
-    
-    if (!sprintsByUser.has(userId)) {
-      sprintsByUser.set(userId, []);
-    }
-    sprintsByUser.get(userId).push(sprint);
-  });
-  
-  return sprintsByUser;
-}
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
