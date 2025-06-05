@@ -192,7 +192,7 @@ async function processMembersOptimized(members, flightsByUser, sprintsByUser, lo
         if (ownFlights2025.length > 0) {
           // Lade historische Daten NUR für Badge-Berechnung
           //const historicalFlights = await loadBadgeHistory(userId);
-          const historicalFlights = await loadBadgeHistoryForUser(userId);
+          const historicalFlights = await loadBadgeHistory(userId);
  
           
           badgeAnalysis = await calculateUserSeasonBadgesOptimized(
