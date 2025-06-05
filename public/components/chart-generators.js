@@ -856,7 +856,7 @@ export function renderWeGlidePointsChart(pilots, containerId = 'weglide-points-c
                 const index = context.dataIndex;
                 const pilot = pilotPointsData[index];
                 return [
-                  `${formatNumber(context.parsed.x)} Punkte`,
+                  `${formatNumber(context.parsed.y)} Punkte`,
                   `Gesamt-km: ${formatNumber(pilot.totalKm.toFixed(1))} km`,
                   `${pilot.flightCount} ${pilot.flightCount === 1 ? 'Flug' : 'Flüge'} gewertet`
                 ];
