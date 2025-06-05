@@ -13,6 +13,7 @@ import { renderRankingTable, renderLatestClubFlights } from '../components/ranki
 import { renderAllCharts } from '../components/chart-generators.js';
 import { renderBadgeRanking } from '../components/badges-component.js';
 import { loadPilotBadgesWithYearVerification } from '../services/badge-loader-service.js';
+import { dataLoadingManager } from '../services/data-loading-manager.js';
 
 /**
  * SVG-Icons Collection für das Projekt
@@ -138,6 +139,9 @@ class SGSaentisCupApp {
 
       // Daten laden
       await this.loadInitialData();
+
+      // Zeige Loading-Statistiken
+        dataLoadingManager.printStats();
 
       // Tooltips nach vollständiger UI-Initialisierung
       setTimeout(() => {
@@ -793,6 +797,7 @@ class SGSaentisCupApp {
     try {
       // Cache leeren
       apiClient.clearCache();
+      dataLoadingManager.clearCache();
 
       // Neue Daten laden
       const newData = await fetchAllWeGlideData();
