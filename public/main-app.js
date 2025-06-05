@@ -698,19 +698,18 @@ class SGSaentisCupApp {
       
       // Daten aus dem data Objekt extrahieren
       const pilots = data.pilots;
-      //const stats = data.stats;
+      const stats = data.stats;
       const sprintStats = data.sprintStats;
 
       // Badge-Daten für alle Piloten laden (nur wenn noch nicht vorhanden)
-      //const pilotsWithoutBadges = data.filter(pilot => pilot.badgeCount === undefined);
       const pilotsWithoutBadges = pilots.filter(pilot => pilot.badgeCount === undefined);
       if (pilotsWithoutBadges.length > 0) {
         console.log('🏅 Lade Badge-Daten für Piloten...');
 
         // Badge-Daten parallel laden
         const batchSize = 3;
-        for (let i = 0; i < data.length; i += batchSize) {
-          const batch = data.slice(i, i + batchSize);
+        for (let i = 0; i < pilots.length; i += batchSize) {
+          const batch = pilots.slice(i, i + batchSize);
 
           await Promise.all(
             batch.map(async (pilot) => {
@@ -740,18 +739,16 @@ class SGSaentisCupApp {
           );
 
           // Kleine Pause zwischen Batches
-          if (i + batchSize < data.length) {
+          if (i + batchSize < pilots.length) {
             await new Promise(resolve => setTimeout(resolve, 200));
           }
         }
       }
 
-      // Statistiken berechnen (NUR aktuelle Saison)
+      // Verwende die Statistiken aus data-processor anstatt sie neu zu berechnen
+      this.pilotData = pilots;
       this.stats = stats || this.calculateAllFlightsStats(pilots);
-
-      this.pilotData = data;
-      this.stats = stats;
-      this.dataSource = data && data.length > 0 ? 'WeGlide API' : 'Lokale Daten';
+      this.dataSource = pilots && pilots.length > 0 ? 'WeGlide API' : 'Lokale Daten';
       this.badgesLoaded = true;
 
       console.log('Datasource:', this.dataSource);
@@ -760,7 +757,7 @@ class SGSaentisCupApp {
       this.updateUI();
 
       // Global verfügbar machen für andere Komponenten
-      window.pilotData = data;
+      window.pilotData = pilots;
 
     } catch (error) {
       console.error('Fehler beim Laden der Daten:', error);
