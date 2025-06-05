@@ -227,25 +227,128 @@ async function processMembersOptimized(members, flightsByUser, historicalFlights
  * Verarbeitet Member-Daten nur mit Saison 2025
  */
 /**
- * Verarbeitet Member-Daten mit historischen Daten für Pilotenfaktor
+ * Berechnet die Pilotenfaktoren für alle Flüge mit chronologischer Entwicklung
+ * Der Faktor ändert sich erst NACH dem Flug, der die neue Schwelle erreicht
+ * 
+ * @param {Array} flights - Array von Flügen
+ * @param {string} pilotName - Name des Piloten
+ * @param {number} historicalFactor - Historischer Faktor aus der Konfiguration (wenn vorhanden)
+ */
+function calculatePilotFactorsChronologically(flights, pilotName, historicalFactor = null) {
+  // Sortiere Flüge chronologisch (älteste zuerst)
+  const sortedFlights = [...flights].sort((a, b) => {
+    const dateA = new Date(a.date || a.scoring_date || a.takeoff_time);
+    const dateB = new Date(b.date || b.scoring_date || b.takeoff_time);
+    return dateA - dateB;
+  });
+
+  let currentMaxDistance = 0;
+  let currentPilotFactor;
+
+  // Wenn ein historischer Faktor existiert, verwende diesen als Startpunkt
+  if (historicalFactor && historicalFactor !== HISTORICAL_PILOT_FACTORS.DEFAULT) {
+    currentPilotFactor = historicalFactor;
+    // Setze eine hypothetische Startdistanz basierend auf dem historischen Faktor
+    // Dies simuliert, dass der Pilot bereits Flüge vor WeGlide hatte
+    if (historicalFactor === 1.0) currentMaxDistance = 1000;
+    else if (historicalFactor === 1.2) currentMaxDistance = 700;
+    else if (historicalFactor === 1.4) currentMaxDistance = 500;
+    else if (historicalFactor === 1.6) currentMaxDistance = 300;
+    else if (historicalFactor === 2.0) currentMaxDistance = 100;
+    else if (historicalFactor === 3.0) currentMaxDistance = 50;
+    
+    console.log(`📌 ${pilotName} hat historischen Faktor ${historicalFactor} (geschätzte Vorleistung: ${currentMaxDistance}km)`);
+  } else {
+    // Kein historischer Faktor - starte bei 4.0
+    currentPilotFactor = 4.0;
+    console.log(`📌 ${pilotName} hat keinen historischen Faktor - Start bei 4.0`);
+  }
+
+  // Gehe durch alle Flüge chronologisch
+  sortedFlights.forEach((flight, index) => {
+    // Verwende den aktuellen Faktor für diesen Flug
+    flight.pilotFactor = currentPilotFactor;
+    flight.pFactor = currentPilotFactor;
+    
+    // Debug-Info
+    console.log(`Flug ${index + 1}: ${formatDateForDisplay(flight.date)} - ${flight.km}km - Faktor: ${currentPilotFactor} (Max bisher: ${currentMaxDistance}km)`);
+    
+    // Prüfe ob dieser Flug eine neue Bestleistung ist
+    if (flight.km > currentMaxDistance) {
+      const previousMaxDistance = currentMaxDistance;
+      currentMaxDistance = flight.km;
+      
+      // Berechne den neuen Faktor basierend auf der neuen Bestdistanz
+      const newFactor = calculatePilotFactor(currentMaxDistance);
+      
+      // Wenn sich der Faktor ändert, gilt er erst ab dem NÄCHSTEN Flug
+      if (newFactor !== currentPilotFactor) {
+        console.log(`  → Neue Schwelle erreicht! ${previousMaxDistance}km → ${currentMaxDistance}km`);
+        console.log(`     Faktor ändert sich von ${currentPilotFactor} auf ${newFactor} (ab nächstem Flug)`);
+        currentPilotFactor = newFactor;
+      }
+    }
+  });
+
+  return sortedFlights;
+}
+
+/**
+ * Überarbeitete processMemberData Funktion
  */
 function processMemberData2025(member, flights2025, historicalFlights, sprints2025, badgeAnalysis, currentYear) {
-  // Verarbeite alle Flugdaten
-  const processedFlights = flights2025.map(flight => processFlightData(flight));
-  const processedHistoricalFlights = historicalFlights.map(flight => processFlightData(flight));
+  // Hole den historischen Pilotenfaktor (falls vorhanden)
+  const configuredHistoricalFactor = HISTORICAL_PILOT_FACTORS[member.name];
+  const hasHistoricalFactor = configuredHistoricalFactor && configuredHistoricalFactor !== HISTORICAL_PILOT_FACTORS.DEFAULT;
+  
+  // Kombiniere historische und aktuelle Flüge für chronologische Berechnung
+  const allFlightsRaw = [...historicalFlights, ...flights2025];
+  
+  // Sortiere chronologisch
+  allFlightsRaw.sort((a, b) => {
+    const dateA = new Date(a.date || a.scoring_date || a.takeoff_time);
+    const dateB = new Date(b.date || b.scoring_date || b.takeoff_time);
+    return dateA - dateB;
+  });
 
-  // Berechne den aktuellen Pilotenfaktor basierend auf historischen Daten
-  const allFlights = [...processedHistoricalFlights, ...processedFlights];
-  const bestDistance = allFlights.length > 0 ?
-    Math.max(...allFlights.map(f => f.km)) : 0;
-  const dynamicPilotFactor = calculatePilotFactor(bestDistance);
-
-  // Berechne Ranking-Flüge (nur 2025)
+  // Verarbeite Flugdaten
+  const allFlights = allFlightsRaw.map(flight => processFlightData(flight));
+  
+  // Berechne Pilotenfaktoren chronologisch MIT historischem Faktor
+  calculatePilotFactorsChronologically(allFlights, member.name, configuredHistoricalFactor);
+  
+  // Trenne wieder in historische und aktuelle Flüge
+  const processedFlights = allFlights.filter(f => f.flightYear === currentYear);
+  const processedHistoricalFlights = allFlights.filter(f => f.flightYear < currentYear);
+  
+  // Finde den aktuellen Pilotenfaktor (vom letzten Flug oder historisch)
+  let currentPilotFactor;
+  if (allFlights.length > 0) {
+    currentPilotFactor = allFlights[allFlights.length - 1].pilotFactor;
+  } else if (hasHistoricalFactor) {
+    // Keine Flüge, aber historischer Faktor vorhanden
+    currentPilotFactor = configuredHistoricalFactor;
+    console.log(`${member.name}: Keine WeGlide-Flüge, verwende historischen Faktor ${currentPilotFactor}`);
+  } else {
+    // Weder Flüge noch historischer Faktor
+    currentPilotFactor = 4.0;
+  }
+  
+  // Berechne Ranking-Flüge (nur 2025) mit bereits gesetzten Faktoren
   const rankingFlights = processedFlights
     .filter(flight => countsForScoring(flight, false));
 
-  // Berechne Punkte mit dem dynamischen Pilotenfaktor
-  calculateFlightPointsWithDynamicFactor(rankingFlights, member.name, dynamicPilotFactor);
+  // Berechne Punkte für jeden Flug
+  rankingFlights.forEach(flight => {
+    const aircraftFactor = getAircraftFactor(flight.aircraftType);
+    const points = flight.km * flight.pilotFactor * aircraftFactor * flight.takeoffFactor;
+    
+    flight.points = points;
+    flight.flzFaktor = aircraftFactor;
+    flight.aircraftFactor = aircraftFactor;
+    
+    console.log(`Flug vom ${formatDateForDisplay(flight.date)}: ${flight.km}km × ${flight.pilotFactor} × ${aircraftFactor.toFixed(3)} × ${flight.takeoffFactor} = ${points.toFixed(2)} Punkte`);
+  });
 
   // Die besten 3 Flüge
   rankingFlights.sort((a, b) => b.points - a.points);
@@ -255,6 +358,10 @@ function processMemberData2025(member, flights2025, historicalFlights, sprints20
   // Sprint-Statistiken für 2025
   const sprintStats = calculatePilotSprintStats(sprints2025);
 
+  // Beste historische Distanz
+  const bestHistoricalDistance = allFlights.length > 0 ?
+    Math.max(...allFlights.map(f => f.km)) : 0;
+
   return {
     name: member.name,
     userId: member.id,
@@ -262,7 +369,7 @@ function processMemberData2025(member, flights2025, historicalFlights, sprints20
     flights: bestFlights,
     allFlights: processedFlights,
     rankingFlights: rankingFlights,
-    historicalFlights: processedHistoricalFlights, // Historische Daten verfügbar
+    historicalFlights: processedHistoricalFlights,
 
     // Sprint-Daten 2025
     sprintData: sprints2025,
@@ -275,11 +382,17 @@ function processMemberData2025(member, flights2025, historicalFlights, sprints20
       .slice(0, 5),
 
     // Pilotenfaktoren
-    pilotFactor: dynamicPilotFactor,
-    historicalPilotFactor: HISTORICAL_PILOT_FACTORS[member.name] || HISTORICAL_PILOT_FACTORS.DEFAULT,
-    bestHistoricalDistance: bestDistance,
+    pilotFactor: currentPilotFactor, // Aktueller Faktor
+    historicalPilotFactor: configuredHistoricalFactor || HISTORICAL_PILOT_FACTORS.DEFAULT,
+    hasConfiguredHistoricalFactor: hasHistoricalFactor,
+    bestHistoricalDistance: bestHistoricalDistance,
+    pilotFactorHistory: allFlights.map(f => ({ // Historie für Debugging
+      date: formatDateForDisplay(f.date),
+      km: f.km,
+      factor: f.pilotFactor
+    })),
 
-    // Badge-Daten (mit Historie berechnet, aber nur Season-Badges zählen)
+    // Badge-Daten
     badges: badgeAnalysis.badges || [],
     seasonBadges: badgeAnalysis.seasonBadges || [],
     badgeCount: badgeAnalysis.badgeCount || 0,
@@ -293,6 +406,83 @@ function processMemberData2025(member, flights2025, historicalFlights, sprints20
     season: currentYear
   };
 }
+
+/**
+ * Debug-Funktion um die Pilotenfaktor-Entwicklung zu prüfen
+ */
+function debugPilotFactorDevelopment(pilotName) {
+  const pilot = window.pilotData?.find(p => p.name === pilotName);
+  if (!pilot) {
+    console.error(`Pilot ${pilotName} nicht gefunden`);
+    return;
+  }
+
+  console.log(`\n🔍 Pilotenfaktor-Entwicklung für ${pilotName}`);
+  console.log('================================================');
+  
+  // Zeige historischen Faktor wenn vorhanden
+  if (pilot.hasConfiguredHistoricalFactor) {
+    console.log(`📌 Historischer Faktor (vor WeGlide): ${pilot.historicalPilotFactor}`);
+    console.log('------------------------------------------------');
+  }
+  
+  if (pilot.pilotFactorHistory && pilot.pilotFactorHistory.length > 0) {
+    console.log('Datum          | Distanz | P-Faktor | Bemerkung');
+    console.log('---------------|---------|----------|----------');
+    
+    let lastFactor = pilot.hasConfiguredHistoricalFactor ? pilot.historicalPilotFactor : 0;
+    pilot.pilotFactorHistory.forEach((entry, index) => {
+      const factorChanged = entry.factor !== lastFactor;
+      let bemerkung = '';
+      
+      if (index === 0 && pilot.hasConfiguredHistoricalFactor) {
+        bemerkung = '(Start mit hist. Faktor)';
+      } else if (factorChanged && index > 0) {
+        bemerkung = '← Neuer Faktor!';
+      }
+      
+      console.log(
+        `${entry.date.padEnd(14)} | ${entry.km.toFixed(0).padStart(7)} | ${entry.factor.toFixed(1).padStart(8)} | ${bemerkung}`
+      );
+      
+      lastFactor = entry.factor;
+    });
+  } else {
+    console.log('Keine Flüge in WeGlide erfasst');
+  }
+  
+  console.log('================================================');
+  console.log(`Aktueller Pilotenfaktor: ${pilot.pilotFactor}`);
+  console.log(`Beste Distanz (WeGlide): ${pilot.bestHistoricalDistance} km`);
+  
+  if (pilot.hasConfiguredHistoricalFactor && pilot.pilotFactorHistory.length === 0) {
+    console.log(`ℹ️  Pilot nutzt historischen Faktor, da keine WeGlide-Flüge vorhanden`);
+  }
+}
+
+// Globale Debug-Funktion verfügbar machen
+window.debugPilotFactor = debugPilotFactorDevelopment;
+
+// Zusätzliche Debug-Funktion für alle Piloten mit historischen Faktoren
+window.debugHistoricalFactors = function() {
+  console.log('\n📌 Piloten mit historischen Faktoren:');
+  console.log('=====================================');
+  
+  const pilotsWithHistorical = window.pilotData?.filter(p => p.hasConfiguredHistoricalFactor) || [];
+  
+  if (pilotsWithHistorical.length === 0) {
+    console.log('Keine Piloten mit historischen Faktoren gefunden');
+    return;
+  }
+  
+  pilotsWithHistorical.forEach(pilot => {
+    console.log(`\n${pilot.name}:`);
+    console.log(`  Historischer Faktor: ${pilot.historicalPilotFactor}`);
+    console.log(`  Aktueller Faktor: ${pilot.pilotFactor}`);
+    console.log(`  WeGlide-Flüge: ${pilot.allFlights?.length || 0}`);
+    console.log(`  Beste Distanz: ${pilot.bestHistoricalDistance} km`);
+  });
+};
 
 /**
  * Berechnet Flugpunkte mit dynamischem Pilotenfaktor
