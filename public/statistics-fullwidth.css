@@ -120,8 +120,8 @@
 
 /* Monatlicher Verlauf Chart - etwas höher */
 #statistics #monthly-progress-chart {
-  min-height: 550px;
-  height: 550px;
+  min-height: 450px;
+  height: 470px;
 }
 
 #statistics #monthly-progress-chart canvas {
