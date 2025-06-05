@@ -1,0 +1,206 @@
+/* =========================================
+   STATISTIK-CHARTS - VOLLBREITE LAYOUT
+   ========================================= */
+
+/* Überschreibe das Grid-Layout für Statistiken */
+#statistics .charts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxl);
+  padding: var(--spacing-xl);
+}
+
+/* Jeder Chart-Container nimmt die volle Breite ein */
+#statistics .chart-item-container {
+  width: 100%;
+  max-width: 100%;
+  background: var(--background-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  min-height: 500px;
+  height: 500px;
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition);
+}
+
+/* Hover-Effekt für Chart-Container */
+#statistics .chart-item-container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-teal);
+}
+
+/* Canvas-Elemente in Charts - volle Höhe */
+#statistics .chart-item-container canvas {
+  width: 100% !important;
+  height: calc(100% - 60px) !important; /* Platz für Titel abziehen */
+  max-height: 440px !important;
+}
+
+/* Chart-Titel Styling */
+#statistics .chart-title {
+  text-align: center;
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-dark);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--border-light);
+}
+
+/* Placeholder für leere Charts */
+#statistics .chart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-section);
+  border-radius: var(--border-radius);
+}
+
+/* Fallback-Tabellen auch vollbreite */
+#statistics .chart-item-container table {
+  width: 100%;
+  margin-top: var(--spacing-lg);
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 1024px) {
+  #statistics .chart-item-container {
+    min-height: 450px;
+    height: 450px;
+  }
+  
+  #statistics .chart-item-container canvas {
+    max-height: 390px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #statistics .charts-grid {
+    padding: var(--spacing-md);
+    gap: var(--spacing-xl);
+  }
+  
+  #statistics .chart-item-container {
+    min-height: 400px;
+    height: 400px;
+    padding: var(--spacing-md);
+  }
+  
+  #statistics .chart-item-container canvas {
+    max-height: 340px !important;
+  }
+  
+  #statistics .chart-title {
+    font-size: 16px;
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  #statistics .chart-item-container {
+    min-height: 350px;
+    height: 350px;
+  }
+  
+  #statistics .chart-item-container canvas {
+    max-height: 290px !important;
+  }
+}
+
+/* Spezielle Styles für horizontale Bar-Charts */
+#statistics #km-chart canvas,
+#statistics #top-speed-chart canvas {
+  min-height: 450px !important;
+}
+
+/* Monatlicher Verlauf Chart - etwas höher */
+#statistics #monthly-progress-chart {
+  min-height: 550px;
+  height: 550px;
+}
+
+#statistics #monthly-progress-chart canvas {
+  max-height: 490px !important;
+}
+
+/* Print Styles */
+@media print {
+  #statistics .charts-grid {
+    display: block;
+  }
+  
+  #statistics .chart-item-container {
+    page-break-inside: avoid;
+    height: auto;
+    min-height: 400px;
+    margin-bottom: var(--spacing-xl);
+  }
+}
+
+/* Animation beim Laden */
+#statistics .chart-item-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+#statistics .chart-item-container:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+#statistics .chart-item-container:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+#statistics .chart-item-container:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+#statistics .chart-item-container:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+#statistics .chart-item-container:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+#statistics .chart-item-container:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+/* Verbesserte No-Data Anzeige */
+#statistics .no-data {
+  text-align: center;
+  padding: var(--spacing-xxxl);
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 16px;
+}
+
+/* Chart Container Border-Highlight für verschiedene Chart-Typen */
+#statistics #points-chart {
+  border-left: 4px solid var(--primary-medium);
+}
+
+#statistics #flights-per-pilot-chart {
+  border-left: 4px solid #9b59b6;
+}
+
+#statistics #km-chart {
+  border-left: 4px solid #4caf50;
+}
+
+#statistics #top-speed-chart {
+  border-left: 4px solid #039be5;
+}
+
+#statistics #weglide-points-chart {
+  border-left: 4px solid #2ecca7;
+}
+
+#statistics #monthly-progress-chart {
+  border-left: 4px solid #ff9800;
+}

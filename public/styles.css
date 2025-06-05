@@ -285,10 +285,10 @@ footer,
   position: absolute;
   top: var(--spacing-top);
   right: var(--spacing-right);
-  background: transparent; /* Kein Hintergrund */
+  background: #ffffff; /* Kein Hintergrund */
   color: var(--text-secondary); /* Graue Textfarbe */
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 4px 8px;
   border-radius: 4px;
   text-transform: none; /* Normale Groß-/Kleinschreibung */
