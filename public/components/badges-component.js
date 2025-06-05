@@ -529,7 +529,7 @@ function createBadgeItemHTML(badge, allBadgesOfSameType = []) {
             getEmojiIcon(badge)
         }
                 </div>
-                <span class="verification-mark" title="Verifiziert" style="color:rgb(18, 26, 23);">✓</span>
+
             </div>
             <div class="badge-info">
                 <div class="badge-header-line">
@@ -627,7 +627,6 @@ function createMultiLevelBadgeCard(baseBadge, allLevels) {
          style="cursor: pointer;">
       <div class="badge-icon-stacked">
         ${stackedIcons}
-        <span class="verification-mark" title="Verifiziert" style="color:rgb(3, 36, 58);">✓</span>
       </div>
       <div class="badge-info">
         <div class="badge-header-line">

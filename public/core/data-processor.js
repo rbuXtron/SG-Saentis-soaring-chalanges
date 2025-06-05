@@ -1,24 +1,14 @@
 // /public/js/core/data-processor.js
 /**
-/ /public/js/core/data-processor.js
-/**
  * SG Säntis Cup - Datenverarbeitungsmodul
- * Version 2.0 - Mit optimiertem Club-Flüge Loading
+ * Version 3.0 - Mit optimiertem Club-Flüge Loading, Sprint-Daten und optimierter Badge-Berechnung
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
-// ÄNDERN: Importiere die enhanced Version
-//import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator-enhanced.js';
-// Entferne die alten Imports:
-// import { calculateSeasonBadges } from '../services/badge-season-calculator.js';
-// import { calculateSeasonBadgesReverse } from '../services/badge-reverse-calculator.js';
-//import { calculateSeasonBadgesFinal } from '../services/badge-season-calculator-final.js';
-//import { calculateSeasonBadges } from '../services/badge-calculator-unified.js';
-import { calculateUserSeasonBadges } from '../services/badge-calculator-v2.js';
-import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-badge-evaluator.js';
 import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator.js';
-
-
+// Fallback falls optimized-badge-evaluator.js noch nicht existiert:
+// import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-badge-evaluator.js';
+// import { calculateUserSeasonBadges } from '../services/badge-calculator-v2.js';
 
 import {
   APP_CONFIG,
@@ -34,12 +24,12 @@ import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
- * Version 2.0 - Mit optimiertem Loading
+ * Version 3.0 - Mit optimiertem Loading und Sprint-Daten
  */
 export async function fetchAllWeGlideData() {
   try {
     console.log('====================================');
-    console.log('🚀 Starte optimiertes Daten-Loading');
+    console.log('🚀 Starte optimiertes Daten-Loading v3.0');
     console.log('====================================');
 
     // 1. Club-Daten abrufen (nur für Metadaten)
@@ -124,17 +114,36 @@ export async function fetchAllWeGlideData() {
             new Date(f.scoring_date || f.takeoff_time).getFullYear() === currentYear
           );
 
+          // Debug Badge-Input
+          console.log(`  Badge-Analyse für ${member.name}:`, {
+            historicalFlights: ownFlights.length,
+            currentYearFlights: currentYearFlights.length
+          });
 
+          // Badge-Berechnung mit ALLEN Flügen (für Historie)
+          let badgeAnalysis;
+          try {
+            // Versuche zuerst die optimierte Version
+            badgeAnalysis = await calculateUserSeasonBadgesOptimized(
+              userId,
+              member.name,
+              ownFlights,  // Alle Flüge für Historie
+              currentYearFlights  // Nur aktuelle Saison
+            );
+          } catch (error) {
+            console.warn(`⚠️ Optimierte Badge-Berechnung fehlgeschlagen für ${member.name}, verwende Fallback:`, error.message);
+            // Fallback auf die Standard-Version
+            const { calculateUserSeasonBadgesWithConfig } = await import('../services/multi-level-badge-evaluator.js');
+            badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
+              userId,
+              member.name,
+              ownFlights,
+              currentYearFlights
+            );
+          }
 
-           // Dann je nach Bedarf verwenden
-          const useOptimized = true; // Toggle für Tests
-          const badgeAnalysis = useOptimized
-            ? await calculateUserSeasonBadgesOptimized(userId, member.name, ownFlights, currentYearFlights)
-            : await calculateUserSeasonBadgesWithConfig(userId, member.name, ownFlights, currentYearFlights);
-
-          // Sprint-Daten separat laden (nur wenn nötig)
-          let sprintData = [];
-          // Sprint-Daten könnten aus den vorhandenen Flügen extrahiert werden
+          // Sprint-Daten aus vorhandenen Flügen extrahieren
+          const sprintData = extractSprintDataFromFlights(ownFlights);
 
           // Mitglied verarbeiten
           return await processMemberDataOptimized(
@@ -160,7 +169,6 @@ export async function fetchAllWeGlideData() {
       console.log(`  Fortschritt: ${Math.min(i + batchSize, members.length)}/${members.length} Piloten`);
     }
 
-
     // 5. Statistiken berechnen
     console.log('\n📊 Schritt 5: Berechne Gesamt-Statistiken...');
     const stats = calculateClubStatistics(processedMembers);
@@ -180,6 +188,58 @@ export async function fetchAllWeGlideData() {
     console.error('❌ Kritischer Fehler beim Abrufen der WeGlide-Daten:', error);
     return [];
   }
+}
+
+/**
+ * Extrahiert Sprint-Daten aus normalen Flügen
+ */
+function extractSprintDataFromFlights(flights) {
+  if (!flights || !Array.isArray(flights)) return [];
+  
+  const sprintData = [];
+  
+  flights.forEach(flight => {
+    // Sprint-Daten können in verschiedenen Locations sein
+    let speed = 0;
+    let distance = 0;
+    let points = 0;
+    
+    if (flight.contest) {
+      speed = flight.contest.speed || 0;
+      distance = flight.contest.distance || 0;
+      points = flight.contest.points || 0;
+    }
+    
+    // Fallback auf processierte Daten
+    if (!speed && flight.speed) {
+      speed = flight.speed;
+      distance = flight.km || 0;
+      points = flight.originalPoints || 0;
+    }
+    
+    if (speed > 0) {
+      sprintData.push({
+        id: flight.id,
+        contest: {
+          speed: speed,
+          distance: distance,
+          points: points
+        },
+        scoring_date: flight.scoring_date || flight.takeoff_time,
+        takeoff_time: flight.takeoff_time,
+        aircraft: flight.aircraft || { name: flight.aircraft?.name || 'Unbekannt' },
+        takeoff_airport: flight.takeoff_airport || { name: flight.takeoff_airport?.name || 'Unbekannt' },
+        user: flight.user
+      });
+    }
+  });
+  
+  // Sortiere nach Geschwindigkeit (höchste zuerst)
+  sprintData.sort((a, b) => (b.contest?.speed || 0) - (a.contest?.speed || 0));
+  
+  console.log(`  📊 ${sprintData.length} Sprint-Daten extrahiert`);
+  
+  return sprintData;
 }
 
 /**
