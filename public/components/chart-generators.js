@@ -37,9 +37,9 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
     });
   }
 
-  // NEU: Gruppiere nach Pilot und nimm nur den besten Flug
+  // Gruppiere nach Pilot und nimm nur den besten Flug
   const bestFlightsByPilot = new Map();
-
+  
   allFlights.forEach(flight => {
     const currentBest = bestFlightsByPilot.get(flight.pilotName);
     if (!currentBest || flight.km > currentBest.km) {
@@ -62,12 +62,11 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
     return;
   }
 
-  // Maximalen KM-Wert finden
-  const maxKm = topFlights[0].km;
+  // Debug: Prüfe die Datenstruktur
+  console.log('Top Flights Data:', topFlights[0]); // Debug-Ausgabe
 
-  // Rest des Codes bleibt gleich...
+  // Chart.js verwenden, falls verfügbar
   if (window.Chart && typeof Chart !== 'undefined') {
-    // Chart.js Implementation
     const canvas = document.createElement('canvas');
     chartContainer.appendChild(canvas);
     const ctx = canvas.getContext('2d');
@@ -77,8 +76,8 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
       data: {
         labels: topFlights.map(f => f.pilotName),
         datasets: [{
-          label: 'Beste Distanz (km)',  // Label angepasst
-          data: topFlights.map(f => f.km),
+          label: 'Beste Distanz (km)',
+          data: topFlights.map(f => f.km), // Stelle sicher, dass hier die km-Werte sind
           backgroundColor: 'rgba(76, 175, 80, 0.7)',
           borderColor: 'rgba(76, 175, 80, 1)',
           borderWidth: 1
@@ -87,25 +86,29 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'x', // Horizontale Balken
         scales: {
-          x: {
+          y: {
             beginAtZero: true,
             title: {
               display: true,
               text: 'Kilometer'
             }
           },
-          y: {
+          x: {
             title: {
               display: false
+            },
+            ticks: {
+              autoSkip: false,
+              maxRotation: 45,
+              minRotation: 45
             }
           }
         },
         plugins: {
           title: {
             display: true,
-            text: 'Top km Leistungen - Bester Flug pro Pilot', // Titel angepasst
+            text: 'Top km Leistungen - Bester Flug pro Pilot',
             font: {
               size: 16
             }
@@ -118,12 +121,52 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
               label: function (context) {
                 const index = context.dataIndex;
                 const flight = topFlights[index];
-                return [
-                  `${formatNumber(context.parsed.x.toFixed(1))} km`,
-                  `Flugzeug: ${flight.aircraftType || 'Unbekannt'}`,
-                  `Datum: ${formatDateForDisplay(flight.date)}`,
-                  `Geschwindigkeit: ${flight.speed ? flight.speed.toFixed(1) + ' km/h' : 'N/A'}`
-                ];
+                
+                // Mehrere Fallback-Optionen für den km-Wert
+                let kmValue = 0;
+                
+                // Option 1: Von context.parsed.y (Chart.js Wert)
+                if (context.parsed && typeof context.parsed.y === 'number') {
+                  kmValue = context.parsed.y;
+                }
+                // Option 2: Von context.raw (Rohdaten)
+                else if (typeof context.raw === 'number') {
+                  kmValue = context.raw;
+                }
+                // Option 3: Direkt vom flight Objekt
+                else if (flight && typeof flight.km === 'number') {
+                  kmValue = flight.km;
+                }
+                
+                // Debug-Ausgabe
+                console.log('Tooltip Debug:', {
+                  index: index,
+                  parsed: context.parsed,
+                  raw: context.raw,
+                  flight: flight,
+                  kmValue: kmValue
+                });
+                
+                // Tooltip-Array erstellen
+                const tooltipLines = [`${formatNumber(kmValue.toFixed(1))} km`];
+                
+                // Weitere Informationen nur hinzufügen, wenn vorhanden
+                if (flight) {
+                  if (flight.aircraftType) {
+                    tooltipLines.push(`Flugzeug: ${flight.aircraftType}`);
+                  }
+                  if (flight.date) {
+                    tooltipLines.push(`Datum: ${formatDateForDisplay(flight.date)}`);
+                  }
+                  if (flight.speed && flight.speed > 0) {
+                    tooltipLines.push(`Geschwindigkeit: ${flight.speed.toFixed(1)} km/h`);
+                  }
+                  if (flight.points && flight.points > 0) {
+                    tooltipLines.push(`Punkte: ${flight.points.toFixed(2)}`);
+                  }
+                }
+                
+                return tooltipLines;
               }
             }
           }
@@ -139,20 +182,6 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
         }
       }
     });
-  } else {
-    // Fallback ohne Chart.js
-    // Titel erstellen
-    const titleElement = document.createElement('h3');
-    titleElement.className = 'chart-title';
-    titleElement.textContent = 'Top km Leistungen - Bester Flug pro Pilot'; // Titel angepasst
-    titleElement.style.textAlign = 'center';
-    titleElement.style.margin = '10px 0 15px 0';
-    titleElement.style.fontSize = '16px';
-    titleElement.style.fontWeight = 'bold';
-    titleElement.style.color = '#333';
-    chartContainer.appendChild(titleElement);
-
-    // Rest des Fallback-Codes bleibt gleich...
   }
 }
 
@@ -252,7 +281,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'x', // Horizontale Balken
+        //indexAxis: 'x', // Horizontale Balken
         scales: {
           x: {
             beginAtZero: true,
@@ -283,6 +312,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
               label: function (context) {
                 const index = context.dataIndex;
                 const flight = topFlights[index];
+
                 return [
                   `${flight.points.toFixed(1)} Punkte`,
                   `Geschwindigkeit: ${flight.speed.toFixed(1)} km/h`,
