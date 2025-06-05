@@ -850,22 +850,7 @@ function calculatePilotSprintStats(sprints) {
   };
 }
 
-// Hilfsfunktionen
-function groupFlightsByUser(flights) {
-  const flightsByUser = new Map();
 
-  flights.forEach(flight => {
-    const userId = flight.user?.id;
-    if (!userId) return;
-
-    if (!flightsByUser.has(userId)) {
-      flightsByUser.set(userId, []);
-    }
-    flightsByUser.get(userId).push(flight);
-  });
-
-  return flightsByUser;
-}
 
 function groupSprintsByUser(sprints) {
   const sprintsByUser = new Map();
