@@ -781,7 +781,10 @@ class SGSaentisCupApp {
   /**
    * Aktualisiert die Daten
    */
-  async refreshData() {
+  /**
+ * Aktualisiert die Daten
+ */
+async refreshData() {
     const refreshButton = document.getElementById('refresh-button');
     if (refreshButton) {
       refreshButton.disabled = true;
@@ -803,15 +806,25 @@ class SGSaentisCupApp {
       dataLoadingManager.clearCache();
 
       // Neue Daten laden
-      const newData = await fetchAllWeGlideData();
+      const data = await fetchAllWeGlideData();
 
-      if (newData && newData.length > 0) {
-        // Badge-Daten neu laden
+      // KORRIGIERT: Prüfe auf data.pilots statt data.length
+      if (!data || !data.pilots || !Array.isArray(data.pilots) || data.pilots.length === 0) {
+        throw new Error('Keine Daten erhalten');
+      }
+
+      const newPilots = data.pilots;
+      const newStats = data.stats;
+      const newSprintStats = data.sprintStats;
+
+      // Badge-Daten neu laden für Piloten ohne Badges
+      const pilotsWithoutBadges = newPilots.filter(pilot => pilot.badgeCount === undefined);
+      if (pilotsWithoutBadges.length > 0) {
         console.log('🏅 Aktualisiere Badge-Daten...');
 
         const batchSize = 10;
-        for (let i = 0; i < newData.length; i += batchSize) {
-          const batch = newData.slice(i, i + batchSize);
+        for (let i = 0; i < pilotsWithoutBadges.length; i += batchSize) {
+          const batch = pilotsWithoutBadges.slice(i, i + batchSize);
 
           await Promise.all(
             batch.map(async (pilot) => {
@@ -833,27 +846,26 @@ class SGSaentisCupApp {
             })
           );
 
-          if (i + batchSize < newData.length) {
+          if (i + batchSize < pilotsWithoutBadges.length) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
-
-        this.pilotData = newData;
-        this.stats = this.calculateAllFlightsStats(newData);
-        this.dataSource = 'WeGlide API (aktualisiert)';
-        this.badgesLoaded = true;
-
-        // UI aktualisieren
-        this.updateUI();
-
-        // Erfolgs-Nachricht anzeigen
-        showNotification('update-success', 'Daten erfolgreich aktualisiert', 3000);
-
-        // Global verfügbar machen für andere Komponenten
-        window.pilotData = newData;
-      } else {
-        throw new Error('Keine Daten erhalten');
       }
+
+      this.pilotData = newPilots;
+      this.stats = newStats || this.calculateAllFlightsStats(newPilots);
+      this.dataSource = 'WeGlide API (aktualisiert)';
+      this.badgesLoaded = true;
+
+      // UI aktualisieren
+      this.updateUI();
+
+      // Erfolgs-Nachricht anzeigen
+      showNotification('update-success', 'Daten erfolgreich aktualisiert', 3000);
+
+      // Global verfügbar machen für andere Komponenten
+      window.pilotData = newPilots;
+
     } catch (error) {
       console.error('Fehler bei der Aktualisierung:', error);
       showNotification('api-error-message', `Fehler bei der Aktualisierung: ${error.message}`, 5000, true);
