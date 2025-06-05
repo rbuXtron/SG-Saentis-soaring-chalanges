@@ -47,7 +47,29 @@ export default async function handler(req, res) {
 
         // NEU: Sprint Endpunkt
         else if (path === 'sprint' || endpoint === 'sprint') {
-            finalPath = 'sprint';
+            finalPath = 'flight';
+            // Sprint-spezifische Parameter setzen
+            queryParams.contest = 'sprint';
+            queryParams.club_id_in = '1281'; // SG Säntis Club ID
+            queryParams.order_by = '-scoring_date';
+            queryParams.not_scored = 'false';
+            queryParams.story = 'false';
+            queryParams.valid = 'false';
+            queryParams.skip = queryParams.skip || '0';
+            queryParams.limit = queryParams.limit || '100';
+            queryParams.include_story = 'true';
+            queryParams.include_stats = 'false';
+            queryParams.format = 'json';
+            
+            // Parameter-Konvertierung
+            if (otherParams.user_id) {
+                queryParams.user_id_in = otherParams.user_id;
+                delete queryParams.user_id;
+            }
+            if (otherParams.season) {
+                queryParams.season_in = otherParams.season;
+                delete queryParams.season;
+            }
         }
         // NEU: User Endpunkt
         else if (path && path.startsWith('user/')) {

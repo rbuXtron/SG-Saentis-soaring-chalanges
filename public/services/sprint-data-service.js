@@ -71,23 +71,29 @@ export class SprintDataService {
         }
         
         try {
-            // WeGlide Sprint API für spezifisches Jahr
-            const sprints = await apiClient.fetchData('/api/proxy', {
+            // WeGlide Sprint API - nutzt flight endpoint mit contest=sprint
+            const response = await apiClient.fetchData('/api/proxy', {
                 path: 'sprint',
                 user_id_in: userId,
-                season_in: year,  // Wichtig: Nur dieses Jahr
+                season_in: year,
                 limit: 100
             });
             
-            if (!Array.isArray(sprints)) {
-                console.warn(`Keine Sprint-Daten für User ${userId} in ${year}`);
+            // Die Antwort ist ein Objekt mit flights Array
+            let sprints = [];
+            if (response && response.flights && Array.isArray(response.flights)) {
+                sprints = response.flights;
+            } else if (Array.isArray(response)) {
+                sprints = response;
+            } else {
+                console.warn(`Unerwartetes Sprint-Datenformat für User ${userId}:`, response);
                 return [];
             }
             
-            // Zusätzlicher Filter für Sicherheit
+            // Zusätzlicher Filter für Sicherheit - nur Sprint-Contest Flüge
             const filteredSprints = sprints.filter(sprint => {
                 const sprintYear = new Date(sprint.scoring_date || sprint.takeoff_time).getFullYear();
-                return sprintYear === year;
+                return sprintYear === year && sprint.contest && sprint.contest.type === 'sprint';
             });
             
             // In Cache speichern
