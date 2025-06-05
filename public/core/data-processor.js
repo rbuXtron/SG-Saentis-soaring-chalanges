@@ -19,8 +19,9 @@ import {
 import { formatISODateTime, formatDateForDisplay } from '../utils/utils.js';
 import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 
-
-// In data-processor.js - Füge diese Funktionen hinzu (z.B. nach Zeile 20)
+// =============================================================================
+// HELPER FUNKTIONEN
+// =============================================================================
 
 /**
  * Lädt gecachte historische Daten aus dem LocalStorage
@@ -129,6 +130,18 @@ function hideBackgroundLoadingIndicator() {
     setTimeout(() => {
       indicator.remove();
     }, 300);
+  }
+}
+
+/**
+ * UI Update Funktion - wird von main-app.js definiert
+ */
+function updateUIWithData(data) {
+  // Diese Funktion wird in main-app.js überschrieben
+  if (window.sgApp && window.sgApp.updateUI) {
+    window.sgApp.pilotData = data.pilots;
+    window.sgApp.stats = data.stats;
+    window.sgApp.updateUI();
   }
 }
 
@@ -251,12 +264,51 @@ function groupFlightsByUser(flights) {
   return flightsByUser;
 }
 
+/**
+ * Gruppiert Sprints nach User ID
+ */
+function groupSprintsByUser(sprints) {
+  const sprintsByUser = new Map();
+  
+  sprints.forEach(sprint => {
+    const userId = sprint.pilotId || sprint.user_id;
+    if (!userId) return;
+    
+    if (!sprintsByUser.has(userId)) {
+      sprintsByUser.set(userId, []);
+    }
+    sprintsByUser.get(userId).push(sprint);
+  });
+  
+  return sprintsByUser;
+}
+
+function getAirfieldFactor(airfieldName) {
+  return AIRFIELD_FACTORS[airfieldName] || AIRFIELD_FACTORS.DEFAULT;
+}
+
+function createEmptyBadgeResult(userId, userName) {
+  return {
+    userId,
+    userName,
+    badges: [],
+    seasonBadges: [],
+    badgeCount: 0,
+    seasonBadgeCount: 0,
+    badgeCategoryCount: 0,
+    flightsAnalyzed: 0,
+    flightsWithBadges: 0
+  };
+}
+
+// =============================================================================
+// HAUPT-EXPORT FUNKTIONEN
+// =============================================================================
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
  * Version 5.0 - Lädt historische Daten für Pilotenfaktor, Badge-Details nur bei Bedarf
  */
-// In data-processor.js - Neue fetchAllWeGlideData Implementierung
 export async function fetchAllWeGlideData() {
   try {
     console.log('====================================');
@@ -325,6 +377,9 @@ export async function fetchAllWeGlideData() {
     // Trigger UI Update
     if (window.updateUIWithData) {
       window.updateUIWithData(initialResult);
+    } else {
+      // Fallback für main-app.js Integration
+      updateUIWithData(initialResult);
     }
     
     // PHASE 2: Lade historische Daten im Hintergrund
@@ -373,6 +428,9 @@ export async function fetchAllWeGlideData() {
     return { pilots: [], stats: {}, sprintStats: {} };
   }
 }
+
+// Rest des Codes bleibt unverändert...
+// [Hier folgen alle anderen Export-Funktionen wie createBadgeHistoryLoader, processMembersOptimized, etc.]
 
 /**
  * Erstellt einen Lazy-Loader für Badge-Historie
