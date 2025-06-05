@@ -78,7 +78,7 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'y', // WICHTIG: Horizontale Balken
+        indexAxis: 'x', // WICHTIG: Horizontale Balken
         scales: {
           x: {
             beginAtZero: true,
@@ -280,9 +280,11 @@ export function renderTopKmChart(pilots, containerId = 'km-chart') {
   }
 }
 
+// In chart-generators.js - Ersetzen Sie die bestehende renderTopSpeedChart Funktion mit dieser Version:
+
 /**
- * Rendert eine Chart für die Top Sprint-Geschwindigkeiten
- * ANGEPASST: Nutzt jetzt sprintData statt allFlights
+ * Rendert eine Chart für die Top Sprint-Leistungen
+ * AKTUALISIERT: Nutzt jetzt die echten Sprint-Contest Daten
  * @param {Array} pilots - Array mit Pilotendaten
  * @param {string} containerId - ID des Container-Elements
  */
@@ -293,37 +295,51 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
   // Container leeren
   chartContainer.innerHTML = '';
 
-  // Alle Sprint-Daten sammeln
-  let allSprintFlights = [];
-  if (Array.isArray(pilots)) {
-    pilots.forEach(pilot => {
-      if (!pilot || !pilot.sprintData) return;
-
-      // Sprint-Daten können entweder in sprintData oder topSpeedSprints sein
-      const sprints = pilot.sprintData || pilot.topSpeedSprints || [];
-      
-      if (Array.isArray(sprints)) {
-        sprints.forEach(sprint => {
-          if (!sprint || !sprint.contest || !sprint.contest.speed || sprint.contest.speed <= 0) return;
-
-          allSprintFlights.push({
-            pilotName: pilot.name,
-            flightId: sprint.id,
-            speed: sprint.contest.speed,
-            distance: sprint.contest.distance,
-            points: sprint.contest.points,
-            date: sprint.scoring_date || sprint.takeoff_time,
-            aircraftType: sprint.aircraft ? sprint.aircraft.name : 'Unbekannt',
-            takeoffAirport: sprint.takeoff_airport ? sprint.takeoff_airport.name : 'Unbekannt',
-            region: sprint.takeoff_airport && sprint.takeoff_airport.region ? sprint.takeoff_airport.region : ''
-          });
-        });
-      }
-    });
+  // Prüfe ob Sprint-Daten vorhanden sind
+  const pilotsWithSprints = pilots.filter(p => p.sprintData && p.sprintData.length > 0);
+  
+  if (pilotsWithSprints.length === 0) {
+    // Wenn keine Sprint-Daten vorhanden, versuche sie zu laden
+    const noData = document.createElement('div');
+    noData.className = 'no-data';
+    noData.innerHTML = `
+      <p>Sprint-Daten werden geladen...</p>
+      <p style="font-size: 12px; margin-top: 10px; color: #666;">
+        Falls diese Meldung bestehen bleibt, sind möglicherweise keine Sprint-Daten verfügbar.
+      </p>
+    `;
+    noData.style.textAlign = 'center';
+    noData.style.padding = '20px';
+    chartContainer.appendChild(noData);
+    
+    // Versuche Sprint-Daten automatisch zu laden
+    loadSprintDataAndUpdateChart(pilots, containerId);
+    return;
   }
 
-  // Nach Geschwindigkeit sortieren (höchste zuerst)
-  allSprintFlights.sort((a, b) => b.speed - a.speed);
+  // Alle Sprint-Daten sammeln
+  let allSprintFlights = [];
+  
+  pilotsWithSprints.forEach(pilot => {
+    pilot.sprintData.forEach(sprint => {
+      if (!sprint || !sprint.contest) return;
+      
+      allSprintFlights.push({
+        pilotName: pilot.name,
+        flightId: sprint.id,
+        points: sprint.contest.points || 0,
+        speed: sprint.contest.speed || 0,
+        distance: sprint.contest.distance || 0,
+        date: sprint.scoring_date || sprint.takeoff_time,
+        aircraftType: sprint.aircraft ? sprint.aircraft.name : 'Unbekannt',
+        takeoffAirport: sprint.takeoff_airport ? sprint.takeoff_airport.name : 'Unbekannt',
+        region: sprint.takeoff_airport && sprint.takeoff_airport.region ? sprint.takeoff_airport.region : ''
+      });
+    });
+  });
+
+  // Nach Sprint-PUNKTEN sortieren (nicht nach Geschwindigkeit!)
+  allSprintFlights.sort((a, b) => b.points - a.points);
 
   // Top 15 nehmen
   const topFlights = allSprintFlights.slice(0, APP_CONFIG.CHART_LIMITS.TOP_SPEED || 15);
@@ -331,7 +347,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
   if (topFlights.length === 0) {
     const noData = document.createElement('div');
     noData.className = 'no-data';
-    noData.textContent = 'Keine Geschwindigkeitsdaten verfügbar.';
+    noData.textContent = 'Keine Sprint-Wertungen vorhanden.';
     noData.style.textAlign = 'center';
     noData.style.padding = '20px';
     chartContainer.appendChild(noData);
@@ -349,23 +365,23 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       data: {
         labels: topFlights.map(f => f.pilotName),
         datasets: [{
-          label: 'Geschwindigkeit (km/h)',
-          data: topFlights.map(f => f.speed),
-          backgroundColor: 'rgba(3, 155, 229, 0.7)',
-          borderColor: 'rgba(3, 155, 229, 1)',
+          label: 'Sprint-Punkte',
+          data: topFlights.map(f => f.points),
+          backgroundColor: 'rgba(255, 152, 0, 0.7)', // Orange für Sprint-Punkte
+          borderColor: 'rgba(255, 152, 0, 1)',
           borderWidth: 1
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'y', // WICHTIG: Horizontale Balken
+        indexAxis: 'x', // Horizontale Balken
         scales: {
           x: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Geschwindigkeit (km/h)'
+              text: 'Sprint-Punkte'
             }
           },
           y: {
@@ -377,7 +393,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
         plugins: {
           title: {
             display: true,
-            text: 'Top Sprint Leistungen',
+            text: 'Top Sprint-Wertungen (Saison 2025)',
             font: {
               size: 16
             }
@@ -391,10 +407,11 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
                 const index = context.dataIndex;
                 const flight = topFlights[index];
                 return [
-                  `${formatNumber(context.parsed.x.toFixed(1))} km/h`,
+                  `${flight.points.toFixed(1)} Punkte`,
+                  `Geschwindigkeit: ${flight.speed.toFixed(1)} km/h`,
+                  `Distanz: ${flight.distance.toFixed(1)} km`,
                   `Flugzeug: ${flight.aircraftType}`,
                   `Datum: ${formatDateForDisplay(flight.date)}`,
-                  `Distanz: ${flight.distance ? flight.distance.toFixed(1) + ' km' : 'N/A'}`,
                   `Startplatz: ${flight.takeoffAirport}`
                 ];
               }
@@ -413,15 +430,13 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       }
     });
   } else {
-    // Fallback bleibt wie vorher...
-
-    // Maximale Geschwindigkeit finden
-    const maxSpeed = topFlights[0].speed;
+    // Fallback ohne Chart.js
+    const maxPoints = topFlights[0].points;
 
     // Titel erstellen
     const titleElement = document.createElement('h3');
     titleElement.className = 'chart-title';
-    titleElement.textContent = 'Top Sprint Leistungen';
+    titleElement.textContent = 'Top Sprint-Wertungen (Saison 2025)';
     titleElement.style.textAlign = 'center';
     titleElement.style.margin = '10px 0 15px 0';
     titleElement.style.fontSize = '16px';
@@ -429,12 +444,25 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
     titleElement.style.color = '#333';
     chartContainer.appendChild(titleElement);
 
+    // Info-Box
+    const infoBox = document.createElement('div');
+    infoBox.style.padding = '10px';
+    infoBox.style.backgroundColor = '#fff3cd';
+    infoBox.style.border = '1px solid #ffeeba';
+    infoBox.style.borderRadius = '4px';
+    infoBox.style.marginBottom = '15px';
+    infoBox.style.fontSize = '14px';
+    infoBox.innerHTML = `
+      <strong>Sprint-Wertung:</strong> Punkte basieren auf Geschwindigkeit × Distanz
+    `;
+    chartContainer.appendChild(infoBox);
+
     // Wrapper für die Chart-Items
     const wrapper = document.createElement('div');
     wrapper.className = 'speed-chart-wrapper';
     wrapper.style.padding = '5px 5px';
     wrapper.style.height = 'auto';
-    wrapper.style.maxHeight = 'calc(100% - 60px)';
+    wrapper.style.maxHeight = 'calc(100% - 100px)';
     chartContainer.appendChild(wrapper);
 
     // Balken erstellen
@@ -453,29 +481,29 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       const barContainer = document.createElement('div');
       barContainer.className = 'bar-container';
 
-      // Balken mit helleren Farben für Speed-Chart
+      // Balken mit Sprint-Farben
       const bar = document.createElement('div');
       bar.className = 'bar';
       bar.style.width = '0%'; // Start bei 0 für Animation
 
-      // Helle Farben für Speed-Chart für bessere Lesbarkeit des Texts
+      // Orange-Töne für Sprint-Wertung
       if (index === 0) {
-        bar.style.background = 'rgba(3, 155, 229, 0.5)'; // Helles Blau
+        bar.style.background = 'rgba(255, 152, 0, 0.8)'; // Kräftiges Orange
       } else if (index === 1) {
-        bar.style.background = 'rgba(3, 244, 188, 0.5)'; // Helleres Blau
+        bar.style.background = 'rgba(255, 183, 77, 0.7)'; // Helleres Orange
       } else if (index === 2) {
-        bar.style.background = 'rgba(41, 246, 127, 0.5)'; // Noch helleres Blau
+        bar.style.background = 'rgba(255, 213, 79, 0.6)'; // Noch helleres Orange
       } else {
-        bar.style.background = 'rgba(79, 195, 247, 0.5)'; // Standardblau für alle anderen
+        bar.style.background = 'rgba(255, 224, 130, 0.5)'; // Standard Orange
       }
 
-      // Wert-Label mit verbesserter Lesbarkeit
+      // Wert-Label mit Sprint-Punkten
       const valueLabel = document.createElement('div');
       valueLabel.className = 'value-label';
-      valueLabel.textContent = `${Math.round(flight.speed)} km/h`;
-      valueLabel.style.color = '#333'; // Dunkle Textfarbe für bessere Lesbarkeit
+      valueLabel.textContent = `${flight.points.toFixed(1)} Pkt`;
+      valueLabel.style.color = '#333';
       valueLabel.style.fontWeight = 'bold';
-      valueLabel.style.textShadow = '0 0 2px white'; // Weißer Schatten für bessere Lesbarkeit
+      valueLabel.style.textShadow = '0 0 2px white';
 
       // Elemente zusammenfügen
       barContainer.appendChild(bar);
@@ -483,17 +511,17 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       item.appendChild(nameLabel);
       item.appendChild(barContainer);
 
-
       // Tooltip-Inhalt erstellen
       const tooltipContent = `
-      <div><strong>${flight.pilotName}</strong></div>
-      <div>Flugzeug: ${flight.aircraftType || 'Unbekannt'}</div>
-      <div>Datum: ${formatDateForDisplay(flight.date)}</div>
-      <div>Geschwindigkeit: ${flight.speed.toFixed(1)} km/h</div>
-      <div>Distanz: ${flight.distance ? flight.distance.toFixed(1) + ' km' : 'keine Angabe'}</div>
-      <div>Startplatz: ${flight.takeoffAirport || 'Unbekannt'}</div>
-      ${flight.region ? `<div>Region: ${flight.region}</div>` : ''}
-    `;
+        <div><strong>${flight.pilotName}</strong></div>
+        <div><strong>Sprint-Punkte: ${flight.points.toFixed(1)}</strong></div>
+        <div>Geschwindigkeit: ${flight.speed.toFixed(1)} km/h</div>
+        <div>Distanz: ${flight.distance.toFixed(1)} km</div>
+        <div>Flugzeug: ${flight.aircraftType || 'Unbekannt'}</div>
+        <div>Datum: ${formatDateForDisplay(flight.date)}</div>
+        <div>Startplatz: ${flight.takeoffAirport || 'Unbekannt'}</div>
+        ${flight.region ? `<div>Region: ${flight.region}</div>` : ''}
+      `;
 
       // Tooltip-Funktionalität hinzufügen
       const tooltip = document.createElement('div');
@@ -555,7 +583,7 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
     setTimeout(() => {
       wrapper.querySelectorAll('.bar').forEach((bar, index) => {
         const flight = topFlights[index];
-        const percentWidth = (flight.speed / maxSpeed * 100);
+        const percentWidth = (flight.points / maxPoints * 100);
 
         // Mit leichter Verzögerung für jeden Balken
         setTimeout(() => {
@@ -564,6 +592,95 @@ export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
       });
     }, 100);
   }
+}
+
+/**
+ * Hilfsfunktion zum automatischen Laden der Sprint-Daten
+ */
+async function loadSprintDataAndUpdateChart(pilots, containerId) {
+  console.log('Versuche Sprint-Daten zu laden...');
+  
+  try {
+    // Sprint-Daten für alle Piloten laden
+    const currentYear = new Date().getFullYear();
+    const batchSize = 3;
+    let loadedCount = 0;
+    
+    for (let i = 0; i < pilots.length; i += batchSize) {
+      const batch = pilots.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (pilot) => {
+        try {
+          const response = await fetch(`/api/proxy?path=sprint&user_id_in=${pilot.userId}&season_in=${currentYear}&limit=100`);
+          
+          if (response.ok) {
+            const sprintData = await response.json();
+            
+            if (Array.isArray(sprintData)) {
+              pilot.sprintData = sprintData;
+              pilot.sprintStats = calculateSprintStats(sprintData);
+              
+              if (sprintData.length > 0) {
+                loadedCount++;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Fehler beim Laden der Sprint-Daten für ${pilot.name}:`, error);
+        }
+      });
+      
+      await Promise.all(batchPromises);
+      
+      // Kleine Pause zwischen Batches
+      if (i + batchSize < pilots.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    console.log(`Sprint-Daten für ${loadedCount} Piloten geladen`);
+    
+    // Chart neu rendern
+    if (loadedCount > 0) {
+      renderTopSpeedChart(pilots, containerId);
+    }
+    
+  } catch (error) {
+    console.error('Fehler beim Laden der Sprint-Daten:', error);
+  }
+}
+
+/**
+ * Sprint-Statistiken berechnen
+ */
+function calculateSprintStats(sprints) {
+  if (!sprints || sprints.length === 0) {
+    return {
+      totalSprints: 0,
+      totalPoints: 0,
+      maxPoints: 0,
+      avgPoints: 0,
+      maxSpeed: 0,
+      avgSpeed: 0,
+      maxDistance: 0,
+      totalDistance: 0
+    };
+  }
+  
+  const points = sprints.map(s => s.contest?.points || 0);
+  const speeds = sprints.map(s => s.contest?.speed || 0).filter(s => s > 0);
+  const distances = sprints.map(s => s.contest?.distance || 0).filter(d => d > 0);
+  
+  return {
+    totalSprints: sprints.length,
+    totalPoints: points.reduce((sum, p) => sum + p, 0),
+    maxPoints: Math.max(...points, 0),
+    avgPoints: points.length > 0 ? points.reduce((sum, p) => sum + p, 0) / points.length : 0,
+    maxSpeed: speeds.length > 0 ? Math.max(...speeds) : 0,
+    avgSpeed: speeds.length > 0 ? speeds.reduce((sum, s) => sum + s, 0) / speeds.length : 0,
+    maxDistance: distances.length > 0 ? Math.max(...distances) : 0,
+    totalDistance: distances.reduce((sum, d) => sum + d, 0)
+  };
 }
 
 /**
