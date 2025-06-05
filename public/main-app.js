@@ -681,8 +681,8 @@ class SGSaentisCupApp {
       const data = await fetchAllWeGlideData();
       console.log('Daten geladen:', data);
 
-      // Prüfen ob Daten vorhanden sind
-      if (!data || !Array.isArray(data)) {
+      // Prüfen ob Daten vorhanden sind - KORRIGIERT: data ist ein Objekt mit pilots Array
+      if (!data || !data.pilots || !Array.isArray(data.pilots)) {
         console.warn('Keine gültigen Daten erhalten, verwende leeres Array');
         this.pilotData = [];
         this.stats = this.calculateAllFlightsStats([]);
@@ -695,6 +695,11 @@ class SGSaentisCupApp {
         this.showErrorMessage('Keine Daten von der API erhalten. Bitte später erneut versuchen.');
         return;
       }
+      
+      // Daten aus dem data Objekt extrahieren
+      const pilots = data.pilots;
+      //const stats = data.stats;
+      const sprintStats = data.sprintStats;
 
       // Badge-Daten für alle Piloten laden (nur wenn noch nicht vorhanden)
       const pilotsWithoutBadges = data.filter(pilot => pilot.badgeCount === undefined);
@@ -741,7 +746,7 @@ class SGSaentisCupApp {
       }
 
       // Statistiken berechnen (NUR aktuelle Saison)
-      const stats = this.calculateAllFlightsStats(data);
+      this.stats = stats || this.calculateAllFlightsStats(pilots);
 
       this.pilotData = data;
       this.stats = stats;
