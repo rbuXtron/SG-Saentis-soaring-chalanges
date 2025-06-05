@@ -2,6 +2,7 @@
 /**
  * Sprint Data Service für SG Säntis Cup
  * Lädt und verarbeitet Sprint-Daten von WeGlide
+ * Version 2.0 - Nur aktuelle Jahr (2025)
  */
 
 import { apiClient } from './weglide-api-service.js';
@@ -10,13 +11,17 @@ export class SprintDataService {
     constructor() {
         this.sprintCache = new Map();
         this.cacheExpiry = 30 * 60 * 1000; // 30 Minuten
+        this.currentYear = new Date().getFullYear(); // 2025
     }
 
     /**
-     * Lädt Sprint-Daten für alle Mitglieder
+     * Lädt Sprint-Daten für alle Mitglieder - NUR aktuelles Jahr
      */
-    async loadAllMembersSprints(members, year = new Date().getFullYear()) {
-        console.log(`📊 Lade Sprint-Daten für ${members.length} Mitglieder (${year})`);
+    async loadAllMembersSprints(members, year = null) {
+        // Forciere aktuelles Jahr wenn nicht explizit anders angegeben
+        const targetYear = year || this.currentYear;
+        
+        console.log(`📊 Lade Sprint-Daten für ${members.length} Mitglieder (Jahr: ${targetYear})`);
         
         const allSprints = [];
         const batchSize = 5;
@@ -26,11 +31,13 @@ export class SprintDataService {
             
             const batchPromises = batch.map(async (member) => {
                 try {
-                    const sprints = await this.loadUserSprints(member.id, year);
+                    // Lade nur Sprints für das spezifizierte Jahr
+                    const sprints = await this.loadUserSprints(member.id, targetYear);
                     return sprints.map(sprint => ({
                         ...sprint,
                         pilotName: member.name,
-                        pilotId: member.id
+                        pilotId: member.id,
+                        year: targetYear
                     }));
                 } catch (error) {
                     console.warn(`⚠️ Fehler beim Laden der Sprints für ${member.name}:`, error);
@@ -44,11 +51,13 @@ export class SprintDataService {
             console.log(`  Fortschritt: ${Math.min(i + batchSize, members.length)}/${members.length}`);
         }
         
-        return this.processSprintData(allSprints);
+        console.log(`✅ ${allSprints.length} Sprint-Einträge für ${targetYear} geladen`);
+        
+        return this.processSprintData(allSprints, targetYear);
     }
 
     /**
-     * Lädt Sprint-Daten für einen einzelnen User
+     * Lädt Sprint-Daten für einen einzelnen User für ein spezifisches Jahr
      */
     async loadUserSprints(userId, year) {
         const cacheKey = `${userId}-${year}`;
@@ -62,26 +71,34 @@ export class SprintDataService {
         }
         
         try {
-            // WeGlide Sprint API verwenden
+            // WeGlide Sprint API für spezifisches Jahr
             const sprints = await apiClient.fetchData('/api/proxy', {
                 path: 'sprint',
                 user_id_in: userId,
-                season_in: year,
+                season_in: year,  // Wichtig: Nur dieses Jahr
                 limit: 100
             });
             
             if (!Array.isArray(sprints)) {
-                console.warn(`Keine Sprint-Daten für User ${userId}`);
+                console.warn(`Keine Sprint-Daten für User ${userId} in ${year}`);
                 return [];
             }
             
+            // Zusätzlicher Filter für Sicherheit
+            const filteredSprints = sprints.filter(sprint => {
+                const sprintYear = new Date(sprint.scoring_date || sprint.takeoff_time).getFullYear();
+                return sprintYear === year;
+            });
+            
             // In Cache speichern
             this.sprintCache.set(cacheKey, {
-                data: sprints,
+                data: filteredSprints,
                 timestamp: Date.now()
             });
             
-            return sprints;
+            console.log(`  ${filteredSprints.length} Sprints für User ${userId} in ${year}`);
+            
+            return filteredSprints;
         } catch (error) {
             console.error(`Fehler beim Laden der Sprints für User ${userId}:`, error);
             
@@ -91,7 +108,7 @@ export class SprintDataService {
     }
 
     /**
-     * Fallback: Extrahiert Sprint-Daten aus normalen Flügen
+     * Fallback: Extrahiert Sprint-Daten aus normalen Flügen für ein spezifisches Jahr
      */
     async extractSprintsFromFlights(userId, year) {
         try {
@@ -99,6 +116,10 @@ export class SprintDataService {
             
             return flights
                 .filter(flight => {
+                    // Nur Flüge aus dem gewünschten Jahr
+                    const flightYear = new Date(flight.scoring_date || flight.takeoff_time).getFullYear();
+                    if (flightYear !== year) return false;
+                    
                     // Nur Flüge mit gültigen Contest-Daten
                     return flight.contest && 
                            flight.contest.speed > 0 && 
@@ -118,7 +139,8 @@ export class SprintDataService {
                     landing_time: flight.landing_time,
                     aircraft: flight.aircraft,
                     takeoff_airport: flight.takeoff_airport,
-                    is_from_flight: true // Markierung dass es aus Flugdaten extrahiert wurde
+                    is_from_flight: true,
+                    year: year
                 }));
         } catch (error) {
             console.error(`Fallback Sprint-Extraktion fehlgeschlagen:`, error);
@@ -127,11 +149,18 @@ export class SprintDataService {
     }
 
     /**
-     * Verarbeitet und bereichert Sprint-Daten
+     * Verarbeitet und bereichert Sprint-Daten für ein spezifisches Jahr
      */
-    processSprintData(sprints) {
+    processSprintData(sprints, year) {
+        // Filtere nochmals zur Sicherheit
+        const yearSprints = sprints.filter(sprint => {
+            const sprintYear = sprint.year || 
+                new Date(sprint.scoring_date || sprint.takeoff_time).getFullYear();
+            return sprintYear === year;
+        });
+
         // Berechne zusätzliche Metriken
-        return sprints.map(sprint => {
+        return yearSprints.map(sprint => {
             const duration = this.calculateDuration(sprint.takeoff_time, sprint.landing_time);
             const speedCategory = this.categorizeSpeed(sprint.contest?.speed || 0);
             
@@ -139,75 +168,29 @@ export class SprintDataService {
                 ...sprint,
                 duration,
                 speedCategory,
-                // Berechne Sprint-Punkte nach SG Säntis Regeln (falls gewünscht)
-                sgPoints: this.calculateSGSprintPoints(sprint)
+                // Berechne Sprint-Punkte nach SG Säntis Regeln
+                sgPoints: this.calculateSGSprintPoints(sprint),
+                verifiedYear: year
             };
         });
     }
 
     /**
-     * Berechnet SG Säntis spezifische Sprint-Punkte
+     * Generiert Sprint-Statistiken für ein spezifisches Jahr
      */
-    calculateSGSprintPoints(sprint) {
-        if (!sprint.contest) return 0;
+    generateSprintStatistics(sprints, year = null) {
+        const targetYear = year || this.currentYear;
         
-        const speed = sprint.contest.speed || 0;
-        const distance = sprint.contest.distance || 0;
-        
-        // Beispielhafte Punkteberechnung
-        // Kann nach Club-Regeln angepasst werden
-        let points = 0;
-        
-        // Geschwindigkeitsbonus
-        if (speed > 150) points += 50;
-        else if (speed > 120) points += 30;
-        else if (speed > 100) points += 20;
-        else if (speed > 80) points += 10;
-        
-        // Distanzbonus
-        if (distance > 500) points += 50;
-        else if (distance > 300) points += 30;
-        else if (distance > 200) points += 20;
-        else if (distance > 100) points += 10;
-        
-        return points;
-    }
+        // Filtere nach Jahr
+        const yearSprints = sprints.filter(sprint => {
+            const sprintYear = sprint.year || sprint.verifiedYear ||
+                new Date(sprint.scoring_date || sprint.takeoff_time).getFullYear();
+            return sprintYear === targetYear;
+        });
 
-    /**
-     * Kategorisiert Geschwindigkeit
-     */
-    categorizeSpeed(speed) {
-        if (speed >= 150) return 'exceptional';
-        if (speed >= 120) return 'excellent';
-        if (speed >= 100) return 'very_good';
-        if (speed >= 80) return 'good';
-        if (speed >= 60) return 'average';
-        return 'below_average';
-    }
-
-    /**
-     * Berechnet Flugdauer
-     */
-    calculateDuration(takeoff, landing) {
-        if (!takeoff || !landing) return 0;
-        
-        const start = new Date(takeoff);
-        const end = new Date(landing);
-        const durationMs = end - start;
-        
-        return {
-            hours: Math.floor(durationMs / (1000 * 60 * 60)),
-            minutes: Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60)),
-            totalMinutes: Math.floor(durationMs / (1000 * 60))
-        };
-    }
-
-    /**
-     * Generiert Sprint-Statistiken
-     */
-    generateSprintStatistics(sprints) {
-        if (!sprints || sprints.length === 0) {
+        if (!yearSprints || yearSprints.length === 0) {
             return {
+                year: targetYear,
                 totalSprints: 0,
                 averageSpeed: 0,
                 maxSpeed: 0,
@@ -216,13 +199,15 @@ export class SprintDataService {
                 maxDistance: 0,
                 topDistancePilot: '',
                 speedCategories: {},
-                monthlyDistribution: {}
+                monthlyDistribution: {},
+                pilotRankings: new Map()
             };
         }
 
-        // Basis-Statistiken
+        // Berechne Statistiken nur für das spezifische Jahr
         const stats = {
-            totalSprints: sprints.length,
+            year: targetYear,
+            totalSprints: yearSprints.length,
             averageSpeed: 0,
             maxSpeed: 0,
             topSpeedPilot: '',
@@ -234,11 +219,10 @@ export class SprintDataService {
             pilotRankings: new Map()
         };
 
-        // Berechne Statistiken
         let totalSpeed = 0;
         let totalDistance = 0;
 
-        sprints.forEach(sprint => {
+        yearSprints.forEach(sprint => {
             const speed = sprint.contest?.speed || 0;
             const distance = sprint.contest?.distance || 0;
             
@@ -261,7 +245,7 @@ export class SprintDataService {
             const category = sprint.speedCategory || this.categorizeSpeed(speed);
             stats.speedCategories[category] = (stats.speedCategories[category] || 0) + 1;
             
-            // Monthly Distribution
+            // Monthly Distribution (nur für das aktuelle Jahr)
             const month = new Date(sprint.scoring_date).toLocaleDateString('de-DE', { 
                 month: 'short', 
                 year: 'numeric' 
@@ -276,7 +260,8 @@ export class SprintDataService {
                     totalSpeed: 0,
                     maxSpeed: 0,
                     totalDistance: 0,
-                    maxDistance: 0
+                    maxDistance: 0,
+                    year: targetYear
                 });
             }
             
@@ -289,8 +274,8 @@ export class SprintDataService {
         });
 
         // Durchschnitte berechnen
-        stats.averageSpeed = sprints.length > 0 ? totalSpeed / sprints.length : 0;
-        stats.averageDistance = sprints.length > 0 ? totalDistance / sprints.length : 0;
+        stats.averageSpeed = yearSprints.length > 0 ? totalSpeed / yearSprints.length : 0;
+        stats.averageDistance = yearSprints.length > 0 ? totalDistance / yearSprints.length : 0;
 
         // Pilot Rankings finalisieren
         stats.pilotRankings.forEach(pilot => {
@@ -300,7 +285,60 @@ export class SprintDataService {
                 pilot.totalDistance / pilot.sprintCount : 0;
         });
 
+        console.log(`📊 Sprint-Statistiken für ${targetYear}:`, {
+            total: stats.totalSprints,
+            maxSpeed: `${stats.maxSpeed.toFixed(1)} km/h`,
+            pilots: stats.pilotRankings.size
+        });
+
         return stats;
+    }
+
+    // Hilfsfunktionen bleiben gleich...
+    calculateSGSprintPoints(sprint) {
+        if (!sprint.contest) return 0;
+        
+        const speed = sprint.contest.speed || 0;
+        const distance = sprint.contest.distance || 0;
+        
+        let points = 0;
+        
+        // Geschwindigkeitsbonus
+        if (speed > 150) points += 50;
+        else if (speed > 120) points += 30;
+        else if (speed > 100) points += 20;
+        else if (speed > 80) points += 10;
+        
+        // Distanzbonus
+        if (distance > 500) points += 50;
+        else if (distance > 300) points += 30;
+        else if (distance > 200) points += 20;
+        else if (distance > 100) points += 10;
+        
+        return points;
+    }
+
+    categorizeSpeed(speed) {
+        if (speed >= 150) return 'exceptional';
+        if (speed >= 120) return 'excellent';
+        if (speed >= 100) return 'very_good';
+        if (speed >= 80) return 'good';
+        if (speed >= 60) return 'average';
+        return 'below_average';
+    }
+
+    calculateDuration(takeoff, landing) {
+        if (!takeoff || !landing) return 0;
+        
+        const start = new Date(takeoff);
+        const end = new Date(landing);
+        const durationMs = end - start;
+        
+        return {
+            hours: Math.floor(durationMs / (1000 * 60 * 60)),
+            minutes: Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60)),
+            totalMinutes: Math.floor(durationMs / (1000 * 60))
+        };
     }
 
     /**

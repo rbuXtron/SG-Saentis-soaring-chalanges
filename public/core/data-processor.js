@@ -173,22 +173,19 @@ function groupSprintsByUser(sprints) {
 }
 
 /**
- * Lädt Sprint-Daten für alle Mitglieder
+ * Lädt Sprint-Daten für alle Mitglieder - NUR für das aktuelle Jahr
  */
 async function loadAllSprintData(members, year) {
   try {
-    // Verwende den Sprint-Service für optimiertes Loading
+    // Lade nur Sprint-Daten für das aktuelle Jahr (2025)
     const sprints = await sprintDataService.loadAllMembersSprints(members, year);
     
-    // Zusätzlich: Lade historische Sprint-Daten für Vergleiche
-    const previousYear = year - 1;
-    const historicalSprints = await sprintDataService.loadAllMembersSprints(members, previousYear);
+    // KEINE historischen Sprint-Daten mehr laden
+    console.log(`✅ Sprint-Daten nur für ${year} geladen`);
     
-    // Kombiniere aktuelle und historische Daten
-    return [...sprints, ...historicalSprints];
+    return sprints;
   } catch (error) {
     console.error('❌ Fehler beim Laden der Sprint-Daten:', error);
-    // Fallback: Extrahiere aus Flügen
     return [];
   }
 }
