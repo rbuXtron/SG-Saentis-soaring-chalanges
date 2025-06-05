@@ -277,7 +277,7 @@ function processMemberData2025(member, flights2025, historicalFlights, sprints20
     // Pilotenfaktoren
     pilotFactor: dynamicPilotFactor,
     historicalPilotFactor: HISTORICAL_PILOT_FACTORS[member.name] || HISTORICAL_PILOT_FACTORS.DEFAULT,
-    bestHistoricalDistance: bestHistoricalDistance,
+    bestHistoricalDistance: bestDistance,
 
     // Badge-Daten (mit Historie berechnet, aber nur Season-Badges zählen)
     badges: badgeAnalysis.badges || [],
