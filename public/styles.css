@@ -1837,7 +1837,7 @@ footer,
 }
 
 .chart-placeholder {
-  min-height: 480px;
+  min-height: 470px;
   display: flex;
   align-items: center;
   justify-content: center;
