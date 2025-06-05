@@ -546,7 +546,7 @@ class SGSaentisCupApp {
         <p class="tooltip-text">Die drei besten Flüge werden für die Gesamtwertung herangezogen.</p>
         
         <div class="section-title">Pilotenfaktor (P-Faktor)</div>
-        <p class="tooltip-text">Basiert auf der größten bisher geflogenen Distanz:</p>
+        <p class="tooltip-text">Basiert auf der größten geflogenen Distanz (alle Flüge seit 2023):</p>
         <table class="faktor-table">
           <thead>
             <tr>
