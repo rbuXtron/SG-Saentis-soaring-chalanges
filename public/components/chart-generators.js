@@ -824,7 +824,7 @@ export function renderWeGlidePointsChart(pilots, containerId = 'weglide-points-c
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'x', // Horizontale Balken
+        //indexAxis: 'x', // Horizontale Balken
         scales: {
           x: {
             beginAtZero: true,
