@@ -24,7 +24,7 @@ export class SprintDataService {
         console.log(`📊 Lade Sprint-Daten für ${members.length} Mitglieder (Jahr: ${targetYear})`);
         
         const allSprints = [];
-        const batchSize = 5;
+        const batchSize = 10;
         
         for (let i = 0; i < members.length; i += batchSize) {
             const batch = members.slice(i, i + batchSize);

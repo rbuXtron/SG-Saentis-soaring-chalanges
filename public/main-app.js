@@ -707,7 +707,7 @@ class SGSaentisCupApp {
         console.log('🏅 Lade Badge-Daten für Piloten...');
 
         // Badge-Daten parallel laden
-        const batchSize = 3;
+        const batchSize = 10;
         for (let i = 0; i < pilots.length; i += batchSize) {
           const batch = pilots.slice(i, i + batchSize);
 
@@ -740,7 +740,7 @@ class SGSaentisCupApp {
 
           // Kleine Pause zwischen Batches
           if (i + batchSize < pilots.length) {
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
       }
@@ -809,7 +809,7 @@ class SGSaentisCupApp {
         // Badge-Daten neu laden
         console.log('🏅 Aktualisiere Badge-Daten...');
 
-        const batchSize = 3;
+        const batchSize = 10;
         for (let i = 0; i < newData.length; i += batchSize) {
           const batch = newData.slice(i, i + batchSize);
 
@@ -834,7 +834,7 @@ class SGSaentisCupApp {
           );
 
           if (i + batchSize < newData.length) {
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
 
@@ -1599,6 +1599,46 @@ Verfügbare Befehle:
   window.pilotData               - Alle Pilotendaten
   window.sgApp                   - App-Instanz
     `);
+  }
+};
+
+// In main-app.js ergänzen
+function showBackgroundLoadingIndicator() {
+  // Kleiner, nicht-blockierender Indikator
+  const indicator = document.createElement('div');
+  indicator.id = 'background-loading';
+  indicator.className = 'background-loading-indicator';
+  indicator.innerHTML = `
+    <div class="loading-pulse"></div>
+    <span>Lade historische Daten...</span>
+  `;
+  
+  document.body.appendChild(indicator);
+}
+
+function hideBackgroundLoadingIndicator() {
+  const indicator = document.getElementById('background-loading');
+  if (indicator) {
+    indicator.classList.add('fade-out');
+    setTimeout(() => indicator.remove(), 300);
+  }
+}
+
+// Erweiterung für updateUI
+window.updateUIWithData = function(data) {
+  // Update UI sofort mit verfügbaren Daten
+  if (window.sgApp) {
+    window.sgApp.pilotData = data.pilots;
+    window.sgApp.stats = data.stats;
+    window.sgApp.updateUI();
+    
+    // Zeige Hinweis wenn Daten unvollständig
+    if (!data.isComplete) {
+      showNotification('data-loading', 'Historische Daten werden im Hintergrund geladen...', 0);
+    } else {
+      hideNotification('data-loading');
+      showNotification('update-success', 'Alle Daten vollständig geladen!', 3000);
+    }
   }
 };
 

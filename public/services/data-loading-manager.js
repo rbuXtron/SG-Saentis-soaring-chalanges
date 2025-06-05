@@ -116,7 +116,7 @@ class DataLoadingManager {
         console.log(`  📡 ${toLoad.length} müssen geladen werden`);
 
         // Lade neue Details parallel (mit Limit)
-        const batchSize = 10;
+        const batchSize = 20;
         const results = new Map();
 
         // Füge gecachte Ergebnisse hinzu
@@ -138,7 +138,7 @@ class DataLoadingManager {
 
             // Rate limiting
             if (i + batchSize < toLoad.length) {
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
 
