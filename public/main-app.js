@@ -702,7 +702,8 @@ class SGSaentisCupApp {
       const sprintStats = data.sprintStats;
 
       // Badge-Daten für alle Piloten laden (nur wenn noch nicht vorhanden)
-      const pilotsWithoutBadges = data.filter(pilot => pilot.badgeCount === undefined);
+      //const pilotsWithoutBadges = data.filter(pilot => pilot.badgeCount === undefined);
+      const pilotsWithoutBadges = pilots.filter(pilot => pilot.badgeCount === undefined);
       if (pilotsWithoutBadges.length > 0) {
         console.log('🏅 Lade Badge-Daten für Piloten...');
 
