@@ -8,7 +8,7 @@
 import { apiClient } from './weglide-api-service.js';
 
 const SEASON_START = new Date('2024-10-01');
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 /**
  * Lädt und analysiert alle Badges eines Piloten basierend auf seinen Flügen

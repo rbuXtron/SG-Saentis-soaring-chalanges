@@ -22,6 +22,8 @@ import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 // KONSTANTEN
 // =============================================================================
 
+const DEBUG = false; // Debug-Modus ein/ausschalten
+
 const CACHE_CONFIG = {
   KEY: 'sgSaentis_historicalFlights',
   MAX_AGE: 24 * 60 * 60 * 1000, // 24 Stunden
@@ -31,6 +33,13 @@ const CACHE_CONFIG = {
 
 const HISTORICAL_YEARS = [2023, 2024];
 const CURRENT_YEAR = new Date().getFullYear();
+
+// Debug-Funktion
+function debug(...args) {
+  if (DEBUG) {
+    console.log(...args);
+  }
+}
 
 // =============================================================================
 // CACHE FUNKTIONEN
@@ -43,7 +52,7 @@ async function loadCachedHistoricalData() {
   try {
     const cached = localStorage.getItem(CACHE_CONFIG.KEY);
     if (!cached) {
-      console.log('📭 Kein Cache für historische Daten gefunden');
+      debug('📭 Kein Cache für historische Daten gefunden');
       return [];
     }
     
@@ -51,15 +60,15 @@ async function loadCachedHistoricalData() {
     const cacheAge = Date.now() - timestamp;
     
     if (cacheAge > CACHE_CONFIG.MAX_AGE) {
-      console.log('⏰ Cache für historische Daten ist abgelaufen');
+      debug('⏰ Cache für historische Daten ist abgelaufen');
       localStorage.removeItem(CACHE_CONFIG.KEY);
       return [];
     }
     
-    console.log(`✅ ${data.length} historische Flüge aus Cache geladen (${Math.round(cacheAge / 1000 / 60)} Minuten alt)`);
+    debug(`✅ ${data.length} historische Flüge aus Cache geladen (${Math.round(cacheAge / 1000 / 60)} Minuten alt)`);
     return data;
   } catch (error) {
-    console.error('Fehler beim Laden des Caches:', error);
+    debug('Fehler beim Laden des Caches:', error);
     return [];
   }
 }
@@ -74,14 +83,14 @@ async function cacheHistoricalData(flights) {
       data: flights
     };
     localStorage.setItem(CACHE_CONFIG.KEY, JSON.stringify(cacheData));
-    console.log(`💾 ${flights.length} historische Flüge im Cache gespeichert`);
+    debug(`💾 ${flights.length} historische Flüge im Cache gespeichert`);
   } catch (error) {
-    console.error('Fehler beim Cachen der Daten:', error);
+    debug('Fehler beim Cachen der Daten:', error);
     try {
       localStorage.removeItem(CACHE_CONFIG.KEY);
-      console.log('🗑️ Alter Cache gelöscht');
+      debug('🗑️ Alter Cache gelöscht');
     } catch (e) {
-      console.error('Cache konnte nicht gelöscht werden:', e);
+      debug('Cache konnte nicht gelöscht werden:', e);
     }
   }
 }
@@ -154,7 +163,7 @@ function updateUIWithData(data) {
  * Lädt Flüge für mehrere Nutzer parallel
  */
 async function loadFlightsForMembers(members, years, label) {
-  console.log(`📂 Lade ${label}...`);
+  debug(`📂 Lade ${label}...`);
   
   const allFlights = [];
   const yearArray = Array.isArray(years) ? years : [years];
@@ -175,7 +184,7 @@ async function loadFlightsForMembers(members, years, label) {
           user: { id: member.id, name: member.name }
         }));
       } catch (error) {
-        console.error(`Fehler bei ${member.name}:`, error);
+        if (DEBUG) console.error(`Fehler bei ${member.name}:`, error);
         return [];
       }
     });
@@ -184,14 +193,14 @@ async function loadFlightsForMembers(members, years, label) {
     allFlights.push(...batchResults.flat());
     
     const progress = Math.min(i + CACHE_CONFIG.BATCH_SIZE, members.length);
-    console.log(`  ${label}: ${progress}/${members.length} Piloten`);
+    debug(`  ${label}: ${progress}/${members.length} Piloten`);
     
     if (i + CACHE_CONFIG.BATCH_SIZE < members.length) {
       await new Promise(resolve => setTimeout(resolve, CACHE_CONFIG.RATE_LIMIT_DELAY));
     }
   }
   
-  console.log(`✅ ${allFlights.length} Flüge geladen`);
+  debug(`✅ ${allFlights.length} Flüge geladen`);
   return allFlights;
 }
 
@@ -244,10 +253,10 @@ function calculatePilotFactorsChronologically(flights, pilotName, historicalFact
       3.0: 50
     };
     currentMaxDistance = factorDistanceMap[historicalFactor] || 0;
-    console.log(`📌 ${pilotName} hat historischen Faktor ${historicalFactor} (geschätzte Vorleistung: ${currentMaxDistance}km)`);
+    debug(`📌 ${pilotName} hat historischen Faktor ${historicalFactor} (geschätzte Vorleistung: ${currentMaxDistance}km)`);
   } else {
     currentPilotFactor = 4.0;
-    console.log(`📌 ${pilotName} hat keinen historischen Faktor - Start bei 4.0`);
+    debug(`📌 ${pilotName} hat keinen historischen Faktor - Start bei 4.0`);
   }
 
   // Chronologische Verarbeitung
@@ -260,7 +269,7 @@ function calculatePilotFactorsChronologically(flights, pilotName, historicalFact
       const newFactor = calculatePilotFactor(currentMaxDistance);
       
       if (newFactor !== currentPilotFactor) {
-        console.log(`  → Neue Schwelle erreicht! Faktor ändert sich von ${currentPilotFactor} auf ${newFactor}`);
+        debug(`  → Neue Schwelle erreicht! Faktor ändert sich von ${currentPilotFactor} auf ${newFactor}`);
         currentPilotFactor = newFactor;
       }
     }
@@ -473,6 +482,8 @@ async function processMembersOptimized(members, flightsByUser, historicalFlights
           !checkIfPilotIsCoPilot(flight, userId)
         );
 
+        debug(`  ${member.name}: ${ownFlights2025.length} Flüge 2025, ${ownHistoricalFlights.length} historische Flüge, ${userSprints2025.length} Sprints`);
+
         // Badge-Berechnung
         let badgeAnalysis;
         if (ownFlights2025.length > 0) {
@@ -497,7 +508,7 @@ async function processMembersOptimized(members, flightsByUser, historicalFlights
         );
 
       } catch (error) {
-        console.error(`❌ Fehler bei ${member.name}:`, error.message);
+        if (DEBUG) console.error(`❌ Fehler bei ${member.name}:`, error.message);
         return null;
       }
     });
@@ -505,7 +516,7 @@ async function processMembersOptimized(members, flightsByUser, historicalFlights
     const batchResults = await Promise.all(batchPromises);
     processedMembers.push(...batchResults.filter(m => m !== null));
 
-    console.log(`  Fortschritt: ${Math.min(i + CACHE_CONFIG.BATCH_SIZE, members.length)}/${members.length} Piloten`);
+    debug(`  Fortschritt: ${Math.min(i + CACHE_CONFIG.BATCH_SIZE, members.length)}/${members.length} Piloten`);
   }
 
   return processedMembers;
@@ -613,7 +624,7 @@ function createBadgeHistoryLoader(allClubFlights) {
       return historyCache.get(userId);
     }
 
-    console.log(`  📜 Lade Badge-Historie für User ${userId}...`);
+    debug(`  📜 Lade Badge-Historie für User ${userId}...`);
 
     const userHistoricalFlights = allClubFlights.filter(flight => {
       if (flight.user?.id !== userId) return false;
@@ -625,7 +636,7 @@ function createBadgeHistoryLoader(allClubFlights) {
     });
 
     historyCache.set(userId, userHistoricalFlights);
-    console.log(`    → ${userHistoricalFlights.length} historische Flüge gefunden`);
+    debug(`    → ${userHistoricalFlights.length} historische Flüge gefunden`);
 
     return userHistoricalFlights;
   };
@@ -640,12 +651,12 @@ function createBadgeHistoryLoader(allClubFlights) {
  */
 export async function fetchAllWeGlideData() {
   try {
-    console.log('====================================');
-    console.log('🚀 Starte Zwei-Phasen Daten-Loading v6.0');
-    console.log('====================================');
+    debug('====================================');
+    debug('🚀 Starte Zwei-Phasen Daten-Loading v6.0');
+    debug('====================================');
 
     // Phase 1: Schnelles Initial-Loading
-    console.log('\n📋 Phase 1: Schnell-Start mit Cache und aktueller Saison...');
+    debug('\n📋 Phase 1: Schnell-Start mit Cache und aktueller Saison...');
     
     const clubData = await apiClient.fetchClubData();
     const members = clubData.user || [];
@@ -661,12 +672,12 @@ export async function fetchAllWeGlideData() {
     let historicalFlightsByUser = new Map();
     
     if (cachedHistoricalData.length > 0) {
-      console.log('✅ Verwende gecachte historische Daten');
+      debug('✅ Verwende gecachte historische Daten');
       historicalFlightsByUser = groupByUserId(cachedHistoricalData);
     }
     
     // Sprint-Daten laden
-    console.log('\n🏃 Lade Sprint-Daten 2025...');
+    debug('\n🏃 Lade Sprint-Daten 2025...');
     const sprintData2025 = await sprintDataService.loadAllMembersSprints(members, CURRENT_YEAR);
     const sprintsByUser = groupByUserId(sprintData2025, 'sprint');
     
@@ -698,7 +709,7 @@ export async function fetchAllWeGlideData() {
     updateUIWithData(initialResult);
     
     // Phase 2: Historische Daten im Hintergrund
-    console.log('\n📋 Phase 2: Lade historische Daten im Hintergrund...');
+    debug('\n📋 Phase 2: Lade historische Daten im Hintergrund...');
     showBackgroundLoadingIndicator();
     
     const fullHistoricalFlights = await loadFlightsForMembers(members, HISTORICAL_YEARS, 'Historische Daten');
@@ -719,7 +730,7 @@ export async function fetchAllWeGlideData() {
     stats = calculateSeasonStatistics(processedMembers, CURRENT_YEAR);
     
     hideBackgroundLoadingIndicator();
-    console.log('\n✅ Vollständige Datenverarbeitung abgeschlossen!');
+    debug('\n✅ Vollständige Datenverarbeitung abgeschlossen!');
     
     return {
       pilots: processedMembers,
@@ -729,7 +740,7 @@ export async function fetchAllWeGlideData() {
     };
 
   } catch (error) {
-    console.error('❌ Kritischer Fehler:', error);
+    if (DEBUG) console.error('❌ Kritischer Fehler:', error);
     hideBackgroundLoadingIndicator();
     return { pilots: [], stats: {}, sprintStats: {} };
   }

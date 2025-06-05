@@ -12,7 +12,7 @@ const SEASON_START_DATE = new Date('2024-10-01'); // Saisonbeginn Oktober 2024
 const SEASON_START_YEAR = 2024;
 const SEASON_START_MONTH = 10; // Oktober
 const CURRENT_YEAR = new Date().getFullYear();
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 /**
  * Cache für Flugdetails

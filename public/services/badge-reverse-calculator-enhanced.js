@@ -10,7 +10,7 @@ import { apiClient } from './weglide-api-service.js';
 
 const SEASON_END = new Date('2024-09-30T23:59:59');    // 30. September 2024, 23:59
 const SEASON_START = new Date('2024-10-01T00:00:00');  // 1. Oktober 2024, 00:00
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 /**
  * Cache für Flugdetails
