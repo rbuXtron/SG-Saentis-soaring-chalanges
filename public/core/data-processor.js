@@ -1,7 +1,7 @@
 // /public/js/core/data-processor.js
 /**
  * SG Säntis Cup - Datenverarbeitungsmodul
- * Version 5.0 - Optimiert: Historische Daten nur für Badge-Berechnung
+ * Version 5.0 - Optimiert: Historische Daten für Pilotenfaktor und Badge-Berechnung
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
@@ -21,7 +21,7 @@ import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 
 /**
  * Lädt alle Daten der SG Säntis Mitglieder von WeGlide
- * Version 5.0 - Lädt nur aktuelle Saison, außer für Badge-Verifikation
+ * Version 5.0 - Lädt historische Daten für Pilotenfaktor, Badge-Details nur bei Bedarf
  */
 export async function fetchAllWeGlideData() {
   try {
@@ -29,15 +29,13 @@ export async function fetchAllWeGlideData() {
     console.log('🚀 Starte optimiertes Daten-Loading v5.0');
     console.log('====================================');
 
+    const currentYear = new Date().getFullYear(); // 2025
 
     // 1. Club-Daten abrufen
     console.log('\n📋 Schritt 1: Lade Club-Metadaten...');
     const clubData = await apiClient.fetchClubData();
 
-
-
-
-// 2. Aktuelle Saison-Flüge laden für normale Auswertungen
+    // 2. Aktuelle Saison-Flüge laden für normale Auswertungen
     console.log('\n✈️ Schritt 2: Lade Saison 2025 Flüge...');
     const startTime = Date.now();
 
@@ -50,7 +48,6 @@ export async function fetchAllWeGlideData() {
     }
 
     // Filtere Flüge nach Zeiträumen
-    const currentYear = new Date().getFullYear();
     const allClubFlights = clubFlightsResponse.flights;
     
     // Aktuelle Saison Flüge (2025)
@@ -77,18 +74,15 @@ export async function fetchAllWeGlideData() {
     const historicalFlightsByUser = groupFlightsByUser(historicalFlights);
     console.log(`📊 ${flightsByUser.size} Piloten mit Flügen in 2025`);
 
-
-
-    // 4. Sprint-Daten NUR für 2025
+    // 4. Sprint-Daten NUR für 2025 (separate Behandlung für Charts)
     console.log('\n🏃 Schritt 4: Lade Sprint-Daten 2025...');
     const sprintData2025 = await sprintDataService.loadAllMembersSprints(members, currentYear);
     const sprintsByUser = groupSprintsByUser(sprintData2025);
-    console.log(`✅ ${sprintData2025.length} Sprint-Einträge für 2025`);
+    console.log(`✅ ${sprintData2025.length} Sprint-Einträge für 2025 (nur für Charts)`);
 
     // 5. Badge-Historie separat laden (nur wenn benötigt)
     console.log('\n🏅 Schritt 5: Bereite Badge-Historie vor...');
     // Erstelle eine Funktion die bei Bedarf geladen wird
-    //const loadBadgeHistoryForUser = createBadgeHistoryLoader(clubFlightsResponse.flights);
     const loadBadgeHistoryForUser = createBadgeHistoryLoader(allClubFlights);
 
     // 6. Verarbeite jeden Piloten
@@ -114,10 +108,6 @@ export async function fetchAllWeGlideData() {
     console.log(`  • ${stats.totalFlights} Flüge`);
     console.log(`  • ${stats.totalKm.toFixed(0)} km Gesamtstrecke`);
     console.log(`  • ${stats.longestFlight.toFixed(0)} km längster Flug (${stats.longestFlightPilot})`);
-    console.log(`  • ${sprintStats.totalSprints} Sprint-Wertungen`);
-    if (sprintStats.maxSpeed > 0) {
-      console.log(`  • ${sprintStats.maxSpeed.toFixed(1)} km/h Höchstgeschwindigkeit (${sprintStats.topSpeedPilot})`);
-    }
     console.log('====================================\n');
 
     return {
@@ -167,7 +157,7 @@ function createBadgeHistoryLoader(allClubFlights) {
 /**
  * Verarbeitet Mitglieder mit optimiertem Daten-Loading
  */
-async function processMembersOptimized(members, flightsByUser, sprintsByUser, loadBadgeHistory, currentYear) {
+async function processMembersOptimized(members, flightsByUser, historicalFlightsByUser, sprintsByUser, loadBadgeHistoryForUser, currentYear) {
   const processedMembers = [];
   const batchSize = 5;
 
@@ -178,27 +168,29 @@ async function processMembersOptimized(members, flightsByUser, sprintsByUser, lo
       try {
         const userId = member.id;
         const userFlights2025 = flightsByUser.get(userId) || [];
+        const userHistoricalFlights = historicalFlightsByUser.get(userId) || [];
         const userSprints2025 = sprintsByUser.get(userId) || [];
 
         // Filtere eigene Flüge (nicht als Co-Pilot)
         const ownFlights2025 = userFlights2025.filter(flight => 
           !checkIfPilotIsCoPilot(flight, userId)
         );
+        const ownHistoricalFlights = userHistoricalFlights.filter(flight => 
+          !checkIfPilotIsCoPilot(flight, userId)
+        );
 
-        console.log(`  ${member.name}: ${ownFlights2025.length} Flüge, ${userSprints2025.length} Sprints in 2025`);
+        console.log(`  ${member.name}: ${ownFlights2025.length} Flüge 2025, ${ownHistoricalFlights.length} historische Flüge, ${userSprints2025.length} Sprints`);
 
         // Badge-Berechnung mit Lazy-Loading der Historie
         let badgeAnalysis;
         if (ownFlights2025.length > 0) {
-          // Lade historische Daten NUR für Badge-Berechnung
-          //const historicalFlights = await loadBadgeHistory(userId);
-          const historicalFlights = await loadBadgeHistory(userId);
- 
+          // Lade zusätzliche historische Details NUR für Badge-Berechnung
+          const detailedHistoricalFlights = await loadBadgeHistoryForUser(userId);
           
           badgeAnalysis = await calculateUserSeasonBadgesOptimized(
             userId,
             member.name,
-            [...historicalFlights, ...ownFlights2025], // Kombiniere für Badge-Analyse
+            [...detailedHistoricalFlights, ...ownFlights2025], // Kombiniere für Badge-Analyse
             ownFlights2025  // Nur 2025 für aktuelle Saison
           );
         } else {
@@ -206,10 +198,11 @@ async function processMembersOptimized(members, flightsByUser, sprintsByUser, lo
           badgeAnalysis = createEmptyBadgeResult(userId, member.name);
         }
 
-        // Verarbeite Member-Daten (nur mit 2025 Daten)
+        // Verarbeite Member-Daten mit historischen Flügen für Pilotenfaktor
         return processMemberData2025(
           member,
           ownFlights2025,
+          ownHistoricalFlights,  // NEU: Historische Flüge für Pilotenfaktor
           userSprints2025,
           badgeAnalysis,
           currentYear
