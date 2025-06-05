@@ -263,7 +263,20 @@ function createBadgeStatsBox(pilots) {
 
     // Berechne Statistiken
     const totalBadgesThisYear = pilots.reduce((sum, pilot) => sum + (pilot.badgeCount || 0), 0);
-    const totalVerifiedBadges = pilots.reduce((sum, pilot) => sum + (pilot.verifiedBadgeCount || 0), 0);
+    
+    // KORREKTUR: Zähle verifizierte Badges basierend auf den tatsächlichen Badge-Daten
+    let totalVerifiedBadges = 0;
+    pilots.forEach(pilot => {
+        if (pilot.badges && Array.isArray(pilot.badges)) {
+            pilot.badges.forEach(badge => {
+                // Ein Badge gilt als verifiziert wenn es eine flight_id hat
+                if (badge.flight_id) {
+                    totalVerifiedBadges++;
+                }
+            });
+        }
+    });
+    
     const totalBadgesAllTime = pilots.reduce((sum, pilot) => sum + (pilot.allTimeBadgeCount || 0), 0);
     const pilotsWithBadges = pilots.filter(pilot => pilot.badgeCount > 0).length;
 
