@@ -88,7 +88,8 @@ export async function fetchAllWeGlideData() {
     // 5. Badge-Historie separat laden (nur wenn benötigt)
     console.log('\n🏅 Schritt 5: Bereite Badge-Historie vor...');
     // Erstelle eine Funktion die bei Bedarf geladen wird
-    const loadBadgeHistoryForUser = createBadgeHistoryLoader(clubFlightsResponse.flights);
+    //const loadBadgeHistoryForUser = createBadgeHistoryLoader(clubFlightsResponse.flights);
+    const loadBadgeHistoryForUser = createBadgeHistoryLoader(allClubFlights);
 
     // 6. Verarbeite jeden Piloten
     console.log('\n👥 Schritt 6: Verarbeite Piloten-Daten...');
