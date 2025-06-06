@@ -137,7 +137,7 @@ export async function calculateUserSeasonBadgesOptimized(userId, userName, histo
 
         verifiedBadgeCount = processedBadges.filter(b => b.flight_id).length;
 
-        console.log(`  ✅ ${userName}: ${totalSeasonPoints} Season-Punkte, ${totalSeasonBadgePoints} Badge-Punkte gesamt`);
+        console.log(`  ✅ ${userName}: ${totalSeasonPoints} Season-Punkte, ${totalAllTimeBadgePoints} Badge-Punkte gesamt`);
 
         return {
             userId,
