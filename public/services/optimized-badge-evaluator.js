@@ -124,10 +124,18 @@ export async function calculateUserSeasonBadgesOptimized(userId, userName, histo
             }
         }
 
+        // Initialisiere alle Variablen am Anfang
+        let totalSeasonPoints = 0;
+        let totalSeasonBadgePoints = 0;
+        let totalAllTimeBadgePoints = 0;
+        let verifiedBadgeCount = 0;
+
         // Berechne finale Statistiken
-        const totalSeasonPoints = processedBadges.reduce((sum, b) => sum + b.seasonPoints, 0);
-        const totalSeasonBadgePoints = seasonBadges.reduce((sum, b) => sum + (b.points || 0), 0);
-        const totalAllTimeBadgePoints = achievements.reduce((sum, b) => sum + (b.points || 0), 0);
+        totalSeasonPoints = processedBadges.reduce((sum, b) => sum + b.seasonPoints, 0);
+        totalSeasonBadgePoints = seasonBadges.reduce((sum, b) => sum + (b.points || 0), 0);
+        totalAllTimeBadgePoints = achievements.reduce((sum, b) => sum + (b.points || 0), 0);
+
+        verifiedBadgeCount = processedBadges.filter(b => b.flight_id).length;
 
         console.log(`  ✅ ${userName}: ${totalSeasonPoints} Season-Punkte, ${totalSeasonBadgePoints} Badge-Punkte gesamt`);
 
