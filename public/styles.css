@@ -281,23 +281,129 @@ footer,
     0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* =========================================
+   MOBILE FIX FÜR STAT-PILOT-TAG POSITION
+   ========================================= */
+
+/* Basis-Styles (unverändert) */
 .stat-pilot-tag {
   position: absolute;
   top: var(--spacing-top);
   right: var(--spacing-right);
-  background: #ffffff; /* Kein Hintergrund */
-  color: var(--text-secondary); /* Graue Textfarbe */
+  background: #ffffff;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   padding: 4px 8px;
   border-radius: 4px;
-  text-transform: none; /* Normale Groß-/Kleinschreibung */
+  text-transform: none;
   letter-spacing: normal;
   box-shadow: none;
   z-index: 10;
   transition: all var(--transition);
   white-space: nowrap;
   cursor: help;
+}
+
+/* Mobile Anpassungen für Tablets (Portrait) */
+@media (max-width: 768px) and (orientation: portrait) {
+  .stat-pilot-tag {
+    top: 8px;  /* Reduziert von 100px */
+    right: 8px; /* Reduziert von 12px */
+    font-size: 13px;
+    padding: 3px 6px;
+  }
+  
+  /* Stat-Card braucht relative Position */
+  .stat-card-with-pilot {
+    position: relative;
+    min-height: 100px; /* Sicherstellen, dass genug Platz vorhanden ist */
+  }
+}
+
+/* Mobile Anpassungen für Smartphones (Portrait) */
+@media (max-width: 480px) and (orientation: portrait) {
+  .stat-pilot-tag {
+    top: 6px;   /* Noch weiter reduziert */
+    right: 6px; /* Noch weiter reduziert */
+    font-size: 12px;
+    padding: 2px 5px;
+  }
+  
+  /* Bei sehr kleinen stat-cards */
+  .stat-card {
+    position: relative; /* Sicherstellen, dass Position für absolute Kinder funktioniert */
+  }
+  
+  .stat-card-with-pilot {
+    min-height: 80px;
+    padding-top: 24px; /* Extra Platz oben für den Tag */
+  }
+  
+  /* Stat-Value und Label anpassen, um Überlappung zu vermeiden */
+  .stat-card-with-pilot .stat-value {
+    margin-top: 8px;
+  }
+}
+
+/* Sehr kleine Bildschirme (unter 360px Breite) */
+@media (max-width: 360px) and (orientation: portrait) {
+  .stat-pilot-tag {
+    top: 4px;
+    right: 4px;
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  
+  .stat-card-with-pilot {
+    padding-top: 20px;
+  }
+}
+
+/* Alternative Lösung: Bei sehr schmalen Viewports den Tag unter den Wert verschieben */
+@media (max-width: 320px) {
+  .stat-pilot-tag {
+    position: static; /* Zurück zum normalen Flow */
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+  
+  .stat-card-with-pilot {
+    text-align: center;
+    padding-top: var(--spacing-md);
+  }
+  
+  .stat-card-with-pilot .stat-value {
+    margin-bottom: 2px;
+  }
+}
+
+/* Hover-Effekte beibehalten */
+.stat-pilot-tag:hover {
+  transform: scale(1.05);
+  color: var(--primary-dark);
+  box-shadow: none;
+}
+
+.stat-pilot-tag:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* Animation für wichtige Stats beibehalten */
+.stat-card.stat-important .stat-pilot-tag {
+  animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+/* Optional: Für Landscape-Modus auf Mobilgeräten */
+@media (max-height: 500px) and (orientation: landscape) {
+  .stat-pilot-tag {
+    top: 6px;
+    right: 6px;
+    font-size: 12px;
+    padding: 2px 5px;
+  }
 }
 
 .stat-pilot-tag:hover {
