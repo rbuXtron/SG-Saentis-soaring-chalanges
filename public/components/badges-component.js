@@ -184,7 +184,7 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     </td>
     <td class="badges-total-col">
         <div class="badges-total-display">
-            <span class="badges-total-value">${pilot.allTimeBadgeCount || 0}</span>
+            <span class="badges-total-value">${pilot.allTimeBadgePoints || 0}</span>
         </div>
     </td>
     <td class="badges-details-col">
