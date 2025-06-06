@@ -453,6 +453,11 @@ function processMemberData(member, flights2025, historicalFlights, sprints2025, 
     allTimeBadgeCount: badgeAnalysis.allTimeBadgeCount || 0,
     flightsWithBadges: badgeAnalysis.flightsWithBadges || 0,
     flightsAnalyzed: flights2025.length,
+    
+    // NEU: Badge-Punkte von badgeAnalysis übernehmen
+    seasonBadgePoints: badgeAnalysis.seasonBadgePoints || 0,
+    allTimeBadgePoints: badgeAnalysis.allTimeBadgePoints || 0,
+    verifiedBadgeCount: badgeAnalysis.verifiedBadgeCount || 0,
 
     season: currentYear
   };
@@ -609,7 +614,11 @@ function createEmptyBadgeResult(userId, userName) {
     flightsAnalyzed: 0,
     flightsWithBadges: 0,
     allTimeBadges: [],
-    allTimeBadgeCount: 0
+    allTimeBadgeCount: 0,
+    // NEU: Badge-Punkte mit 0 initialisieren
+    seasonBadgePoints: 0,
+    allTimeBadgePoints: 0,
+    verifiedBadgeCount: 0
   };
 }
 
