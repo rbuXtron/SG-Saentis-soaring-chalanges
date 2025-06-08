@@ -5,7 +5,7 @@
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
-import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator.js';
+import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator-v3.js';
 import { sprintDataService } from '../services/sprint-data-service.js';
 import {
   APP_CONFIG,
