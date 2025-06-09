@@ -14,7 +14,7 @@ async function loadHistoricalBadgeData() {
     try {
         //const response = await fetch('./data/historical-badges-2024.json');
         //const response = await fetch('./data/historical-badges.json');
-        const response = await fetch('../../data/historical-badges.json');
+        const response = await fetch('../data/historical-badges.json');
         historicalBadgeData = await response.json();
         console.log('✅ Historische Badge-Daten geladen:', historicalBadgeData.metadata);
         return historicalBadgeData;
