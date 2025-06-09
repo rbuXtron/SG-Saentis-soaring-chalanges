@@ -12,15 +12,38 @@ async function loadHistoricalBadgeData() {
     if (historicalBadgeData) return historicalBadgeData;
     
     try {
-        //const response = await fetch('./data/historical-badges-2024.json');
-        //const response = await fetch('./data/historical-badges.json');
-        const response = await fetch('../data/historical-badges.json');
-        historicalBadgeData = await response.json();
-        console.log('✅ Historische Badge-Daten geladen:', historicalBadgeData.metadata);
-        return historicalBadgeData;
+        // Korrekter Pfad relativ zum public Ordner
+        const response = await fetch('./data/historical-badges-2024.json');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        
+        // Versuche JSON zu parsen
+        try {
+            historicalBadgeData = JSON.parse(text);
+            console.log('✅ Historische Badge-Daten geladen:', historicalBadgeData.metadata);
+            return historicalBadgeData;
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError);
+            console.error('Response text:', text.substring(0, 100) + '...');
+            throw new Error('Invalid JSON in historical badge data');
+        }
+        
     } catch (error) {
         console.error('❌ Fehler beim Laden der historischen Badge-Daten:', error);
-        return { metadata: {}, badges: {} };
+        
+        // Fallback auf leere Struktur
+        return { 
+            metadata: {
+                error: error.message,
+                fallback: true
+            }, 
+            pilots: {},
+            badgeDefinitions: {}
+        };
     }
 }
 
@@ -36,7 +59,15 @@ export async function calculateUserSeasonBadgesSimplified(userId, userName) {
         
         // Lade historische Daten
         const historical = await loadHistoricalBadgeData();
-        const userHistoricalBadges = historical.badges[userId] || {};
+        
+        // Prüfe ob Struktur korrekt ist
+        let userHistoricalBadges = {};
+        if (historical.pilots && historical.pilots[userId]) {
+            userHistoricalBadges = historical.pilots[userId].badges || {};
+            console.log(`  → Historische Daten gefunden für ${historical.pilots[userId].name}`);
+        } else {
+            console.log(`  → Keine historischen Daten für User ${userId}`);
+        }
         
         // Lade aktuelle Achievements
         const achievements = await dataLoadingManager.loadUserAchievements(userId);
@@ -48,7 +79,7 @@ export async function calculateUserSeasonBadgesSimplified(userId, userName) {
         });
         
         console.log(`  → ${seasonBadges.length} Badges in Saison 2024/2025`);
-        console.log(`  → Historische Daten: ${Object.keys(userHistoricalBadges).length} Badges`);
+        console.log(`  → Historische Badges: ${Object.keys(userHistoricalBadges).length}`);
         
         // Verarbeite Badges
         const processedBadges = [];
@@ -102,6 +133,10 @@ export async function calculateUserSeasonBadgesSimplified(userId, userName) {
             multiLevelCount,
             singleLevelCount,
             historicalBadgesFound: Object.keys(userHistoricalBadges).length,
+            // NEU: Kompatibilitäts-Felder
+            flightsAnalyzed: 0,
+            flightsInSeason: 0,
+            flightsWithBadges: 0,
             // Weitere Statistiken
             totalBadges: achievements.length,
             allTimeBadges: achievements,
@@ -129,6 +164,9 @@ function createEmptyResult(userId, userName) {
         multiLevelCount: 0,
         singleLevelCount: 0,
         historicalBadgesFound: 0,
+        flightsAnalyzed: 0,
+        flightsInSeason: 0,
+        flightsWithBadges: 0,
         totalBadges: 0,
         allTimeBadges: [],
         seasonBadgePoints: 0,
@@ -139,3 +177,18 @@ function createEmptyResult(userId, userName) {
 
 // Export für Integration
 export default calculateUserSeasonBadgesSimplified;
+
+// Debug-Funktion
+export async function debugHistoricalData() {
+    const data = await loadHistoricalBadgeData();
+    console.log('📊 Historische Badge-Daten:', data);
+    
+    if (data.pilots) {
+        console.log(`Anzahl Piloten: ${Object.keys(data.pilots).length}`);
+        
+        // Zeige erste 5 Piloten
+        Object.entries(data.pilots).slice(0, 5).forEach(([userId, pilot]) => {
+            console.log(`- ${pilot.name} (${userId}): ${Object.keys(pilot.badges).length} Badges`);
+        });
+    }
+}
