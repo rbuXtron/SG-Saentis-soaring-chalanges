@@ -50,7 +50,9 @@ export const AIRCRAFT_DMST_INDEX = {
   "Libelle": 96,
   "MG 23": 76,
   "HpH 304 CZ": 119,
-  "Mg 19": 77
+  "Mg 19": 77,
+  "ASH 25 M": 123,
+  ""
 };
 
 /**
