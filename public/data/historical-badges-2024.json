@@ -69,7 +69,10 @@
         "nomad": 1,
         "tourist": 1,
         "vintage_viper": 1,
-        "no_need_to_circle": 1
+        "no_need_to_circle": 1,
+        "point_hunter": 1,
+        "aeronaut": 1,
+        "endurance": 1
       }
     },
     "9979": {
@@ -95,7 +98,11 @@
         "sky_streak": 1,
         "aircraft_hopper": 1,
         "zugvogel": 1,
-        "aeronaut": 1
+        "aeronaut": 1,
+        "consistency": 1,
+        "endurance": 1,
+        "nomad": 2,
+        "explorer": 1
       }
     },
     "10518": {
