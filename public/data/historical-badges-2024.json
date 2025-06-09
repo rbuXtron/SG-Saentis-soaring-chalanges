@@ -144,7 +144,9 @@
       "badges": {
         "endurance": 1,
         "sprinter": 3,
-        "astronaut": 3
+        "astronaut": 3,
+        "cockpit_crew": 1,
+        "always_by_your_side" :1
       }
     },
     "10847": {
