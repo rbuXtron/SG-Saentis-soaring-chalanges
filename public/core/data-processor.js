@@ -5,7 +5,8 @@
  */
 
 import { apiClient } from '../services/weglide-api-service.js';
-import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator-v3.js';
+//import { calculateUserSeasonBadgesOptimized } from '../services/optimized-badge-evaluator-v3.js';
+import { calculateUserSeasonBadgesSimplified } from '../services/simplified-badge-evaluator.js';
 import { sprintDataService } from '../services/sprint-data-service.js';
 import {
   APP_CONFIG,
@@ -493,12 +494,13 @@ async function processMembersOptimized(members, flightsByUser, historicalFlights
         let badgeAnalysis;
         if (ownFlights2025.length > 0) {
           const detailedHistoricalFlights = await loadBadgeHistoryForUser(userId);
-          badgeAnalysis = await calculateUserSeasonBadgesOptimized(
-            userId,
-            member.name,
-            [...detailedHistoricalFlights, ...ownFlights2025],
-            ownFlights2025
-          );
+          //badgeAnalysis = await calculateUserSeasonBadgesOptimized(
+          //  userId,
+          //  member.name,
+          //  [...detailedHistoricalFlights, ...ownFlights2025],
+          //  ownFlights2025
+          //);
+          badgeAnalysis = await calculateUserSeasonBadgesSimplified(userId, member.name);
         } else {
           badgeAnalysis = createEmptyBadgeResult(userId, member.name);
         }
