@@ -49,8 +49,14 @@
         "consistency": 10,
         "pythagoras": 1,
         "zugvogel": 3,
-        "sky_streak": 1
-      }
+        "sky_streak": 1,
+        "segment_specialist": 1,
+        "point_hunter": 1,
+        "astronaut":2,
+        "no_need_to_circle": 2,
+        "cockpit_crew": 2,
+        "explorer": 1       
+            }
     },
     "11468": {
       "name": "Heinz Bärfuss",
