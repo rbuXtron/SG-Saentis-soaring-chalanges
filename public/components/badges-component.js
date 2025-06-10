@@ -328,7 +328,8 @@ function createBadgeGalleryHTML(pilot) {
         badges: pilot.badges,
         badgeCount: pilot.badgeCount,
         seasonBadges: pilot.seasonBadges,
-        typeOfBadges: typeof pilot.badges
+        typeOfBadges: typeof pilot.badges,
+        flightsWithBadges: pilot.flightsWithBadges
     });
 
     let html = `
