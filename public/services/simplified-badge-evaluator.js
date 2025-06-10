@@ -134,9 +134,9 @@ export async function calculateUserSeasonBadgesSimplified(userId, userName) {
             singleLevelCount,
             historicalBadgesFound: Object.keys(userHistoricalBadges).length,
             // NEU: Kompatibilitäts-Felder
-            flightsAnalyzed: flights2025.length,
-            flightsInSeason: flights2025.length,
-            flightsWithBadges: flights2025.length > 0 ? Math.min(flights2025.length, Math.max(1, Math.floor(totalSeasonPoints * 0.7))) : 0,
+            flightsAnalyzed: seasonBadges.length,
+            flightsInSeason: seasonBadges.length,
+            flightsWithBadges: seasonBadges.length > 0 ? Math.min(seasonBadges.length, Math.max(1, Math.floor(totalSeasonPoints * 0.7))) : 0,
             // Weitere Statistiken
             totalBadges: achievements.length,
             allTimeBadges: achievements,
