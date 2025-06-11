@@ -66,8 +66,9 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     const header = document.createElement('div');
     header.className = 'ranking-header';
     header.innerHTML = `
-        <h2 class="section-title"><img src="./images/weglide-badge-logo.png" alt="WeGlide Badge" class="section-logo" 
-     style="width: 42px; height: 48px; margin-right: 8px; vertical-align: middle;"> WeGlide Badges Saison 2024/2025</h2>
+        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award" class="section-logo" style="width: 52px; height: 58px; margin-bottom: var(--spacing-md); 
+            display: block; margin-left: auto; margin-right: auto;">
+        <h2 class="section-title"> WeGlide Badge Avard Saison 2024/2025</h2>
         <div class="ranking-subtitle">
             Gesammelte Abzeichen seit Oktober 2024
         </div>
