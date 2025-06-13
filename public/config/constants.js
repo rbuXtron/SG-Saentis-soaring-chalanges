@@ -36,7 +36,7 @@ export const CLUB = {
  */
 export const AIRCRAFT_DMST_INDEX = {
   "JS1-21": 126,
-  "ASH 25E": 123,
+  "ASH 25E": 122,
   "HpH 304 MS Shark": 119,
   "LS 9": 117,
   "LS 6": 117,
@@ -51,7 +51,7 @@ export const AIRCRAFT_DMST_INDEX = {
   "MG 23": 76,
   "HpH 304 CZ": 119,
   "Mg 19": 77,
-  "ASH 25 M": 123
+  "ASH 25 M": 122
 
 };
 
@@ -62,7 +62,8 @@ export const AIRCRAFT_DMST_INDEX = {
  */
 function calculateAircraftFactors(dmstIndex) {
   const factor1 = 100 / dmstIndex;
-  const factor2 = Math.pow(100 / dmstIndex, 2);
+  //const factor2 = Math.pow(100 / dmstIndex, 2);
+  const factor2 = factor1 ** 2; 
   
   return {
     index: dmstIndex,
@@ -380,3 +381,5 @@ export function validateAircraftFactors() {
     console.log('✅ Alle Flugzeugfaktoren sind korrekt!');
   }
 }
+debugAircraftFactors();
+validateAircraftFactors();
