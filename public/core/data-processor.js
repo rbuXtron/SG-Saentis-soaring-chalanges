@@ -23,7 +23,7 @@ import { checkIfPilotIsCoPilot } from './flight-analyzer.js';
 // KONSTANTEN
 // =============================================================================
 
-const DEBUG = false; // Debug-Modus ein/ausschalten
+const DEBUG = true; // Debug-Modus ein/ausschalten
 
 const CACHE_CONFIG = {
   KEY: 'sgSaentis_historicalFlights',
