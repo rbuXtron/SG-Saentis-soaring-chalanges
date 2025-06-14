@@ -114,6 +114,7 @@ class WeGlideApiClient {
         }
 
         const data = await response.json();
+        console.log(`[API] Erfolgreich geladen: ${endpoint}`, data);
 
         // Cache speichern
         if (API.CACHE.ENABLED) {
