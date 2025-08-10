@@ -907,7 +907,9 @@ export function renderWeGlidePointsChart(pilots, containerId = 'weglide-points-c
   }
 }
 
-export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
+
+
+/* export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
@@ -1036,7 +1038,198 @@ export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progre
       }
     });
   }
+} */
+
+  export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
+  const chartContainer = document.getElementById(containerId);
+  if (!chartContainer) return;
+
+  chartContainer.innerHTML = '';
+
+  // Hilfsfunktion um Kalenderwoche zu berechnen
+  function getWeekNumber(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+    return weekNo;
+  }
+
+  // Sammle Wochendaten
+  const weeklyData = {};
+
+  pilots.forEach(pilot => {
+    if (!pilot.allFlights) return;
+
+    pilot.allFlights.forEach(flight => {
+      const date = new Date(flight.date);
+      const year = date.getFullYear();
+      const week = getWeekNumber(date);
+      const weekKey = `${year}-W${String(week).padStart(2, '0')}`;
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = {
+          year: year,
+          week: week,
+          flights: 0,
+          totalKm: 0,
+          maxKm: 0,
+          pilots: new Set(),
+          firstDate: date
+        };
+      }
+
+      weeklyData[weekKey].flights++;
+      weeklyData[weekKey].totalKm += flight.km || 0;
+      weeklyData[weekKey].maxKm = Math.max(weeklyData[weekKey].maxKm, flight.km || 0);
+      weeklyData[weekKey].pilots.add(pilot.name);
+    });
+  });
+
+  // Sortiere Wochen
+  const sortedWeeks = Object.keys(weeklyData).sort();
+
+  if (sortedWeeks.length === 0) {
+    chartContainer.innerHTML = '<div class="no-data">Keine Wochendaten verfügbar</div>';
+    return;
+  }
+
+  // Chart.js
+  if (window.Chart && typeof Chart !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    chartContainer.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: sortedWeeks.map(week => {
+          const data = weeklyData[week];
+          // Zeige KW und Jahr für bessere Lesbarkeit
+          return `KW ${data.week}/${String(data.year).slice(-2)}`;
+        }),
+        datasets: [
+          {
+            label: 'Anzahl Flüge',
+            data: sortedWeeks.map(w => weeklyData[w].flights),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            yAxisID: 'y',
+            tension: 0.1,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          },
+          {
+            label: 'Durchschnitt km',
+            data: sortedWeeks.map(w => {
+              const data = weeklyData[w];
+              return data.flights > 0 ? (data.totalKm / data.flights) : 0;
+            }),
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            yAxisID: 'y1',
+            tension: 0.1,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          },
+          {
+            label: 'Längster Flug',
+            data: sortedWeeks.map(w => weeklyData[w].maxKm),
+            borderColor: 'rgb(255, 205, 86)',
+            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+            yAxisID: 'y1',
+            tension: 0.1,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'Saisonverlauf - Wöchentliche Entwicklung',
+            font: { size: 16 }
+          },
+          tooltip: {
+            callbacks: {
+              title: function(context) {
+                const week = sortedWeeks[context[0].dataIndex];
+                const data = weeklyData[week];
+                // Berechne Start- und Enddatum der Woche
+                const weekStart = new Date(data.year, 0, 1 + (data.week - 1) * 7);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                return [
+                  `Kalenderwoche ${data.week}/${data.year}`,
+                  `(${weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} - ${weekEnd.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })})`
+                ];
+              },
+              afterLabel: function (context) {
+                const week = sortedWeeks[context.dataIndex];
+                const data = weeklyData[week];
+                return [
+                  `Aktive Piloten: ${data.pilots.size}`,
+                  `Gesamt km: ${formatNumber(data.totalKm.toFixed(1))} km`
+                ];
+              }
+            }
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Kalenderwoche'
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45,
+              autoSkip: true,
+              maxTicksLimit: 20 // Zeige max. 20 Labels für bessere Lesbarkeit
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Anzahl Flüge'
+            },
+            beginAtZero: true
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Kilometer'
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
 }
+
 
 /**
  * Rendert alle Charts
