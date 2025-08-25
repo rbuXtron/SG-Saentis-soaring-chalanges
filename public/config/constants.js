@@ -52,8 +52,8 @@ export const AIRCRAFT_DMST_INDEX = {
   "HpH 304 CZ": 119,
   "Mg 19": 77,
   "Arcus T": 120,
-  "ASH 25 M": 122
-
+  "ASH 25 M": 122,
+  "JS1C TJ 21m": 126
 };
 
 /**
