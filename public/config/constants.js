@@ -46,7 +46,9 @@ export const AIRCRAFT_DMST_INDEX = {
   "DG 400": 109,
   "DG 300 WL": 105,
   "DG 300": 104,
-  "DG 500": 100,  // Referenz-Flugzeug
+  "DG 500": 104,  // Referenz-Flugzeug
+  "DG 500 20m": 104,
+  "DG 1000S 18m": 106,
   "Libelle": 96,
   "MG 23": 76,
   "HpH 304 CZ": 119,
@@ -64,8 +66,8 @@ export const AIRCRAFT_DMST_INDEX = {
 function calculateAircraftFactors(dmstIndex) {
   const factor1 = 100 / dmstIndex;
   //const factor2 = Math.pow(100 / dmstIndex, 2);
-  const factor2 = factor1 ** 2; 
-  
+  const factor2 = factor1 ** 2;
+
   return {
     index: dmstIndex,
     factor1: factor1,
@@ -93,12 +95,12 @@ export function getAircraftFactor(aircraftType) {
 
   // Prüfe, ob der Flugzeugtyp in den Faktoren vorhanden ist
   console.log(`🔍 Suche Flugzeugfaktor für "${aircraftType}"...  "${AIRCRAFT_FACTORS}`);
-  
+
   // Direkte Übereinstimmung
   if (AIRCRAFT_FACTORS[normalizedType]) {
     return AIRCRAFT_FACTORS[normalizedType].factor2;
   }
-  
+
   // Versuche case-insensitive Suche
   const typeUpper = normalizedType.toUpperCase();
   for (const [key, value] of Object.entries(AIRCRAFT_FACTORS)) {
@@ -106,7 +108,7 @@ export function getAircraftFactor(aircraftType) {
       return value.factor2;
     }
   }
-  
+
   // Versuche partielle Übereinstimmung
   for (const [key, value] of Object.entries(AIRCRAFT_FACTORS)) {
     if (normalizedType.includes(key) || key.includes(normalizedType)) {
@@ -114,7 +116,7 @@ export function getAircraftFactor(aircraftType) {
       return value.factor2;
     }
   }
-  
+
   // Standard-Faktor für unbekannte Typen
   console.warn(`Flugzeugtyp "${aircraftType}" nicht in DMST-Index gefunden. Verwende Standardfaktor 1.0`);
   return 1.0;
@@ -139,7 +141,7 @@ export function debugAircraftFactors() {
   console.log('================================================');
   console.log('Flugzeug         | Index | Factor1  | Factor2');
   console.log('------------------------------------------------');
-  
+
   Object.entries(AIRCRAFT_FACTORS)
     .sort((a, b) => b[1].index - a[1].index) // Nach Index sortieren (höchster zuerst)
     .forEach(([aircraft, factors]) => {
@@ -149,7 +151,7 @@ export function debugAircraftFactors() {
       const factor2 = factors.factor2.toFixed(5);
       console.log(`${name} | ${index} | ${factor1} | ${factor2}`);
     });
-  
+
   console.log('================================================');
   console.log('Formel: factor2 = (100 / DMST_Index)²');
   console.log('Je höher der Index, desto niedriger der Faktor');
@@ -159,7 +161,7 @@ export function debugAircraftFactors() {
 export function calculateFlightPoints(distance, pilotFactor, aircraftType, airfieldFactor) {
   const aircraftFactor = getAircraftFactor(aircraftType);
   const points = distance * pilotFactor * aircraftFactor * airfieldFactor;
-  
+
   return {
     points: points,
     factors: {
@@ -186,16 +188,21 @@ export const PILOT_FACTORS = [
 ];
 
 // Liste der Fluglehrer (Ausnahmen für Co-Piloten Regeln)
-export const FLIGHT_INSTRUCTORS = [
-  "Guido Halter",
-  "Kurt Sauter",
-  "Werner Rissi",
-  "Heinz Bärfuss",
-  "Roman Bühler",
-  "Roman Andreas Buehler",
-  "Roger Larpin",
-  "Sg Saentis"
-];
+export const FLIGHT_INSTRUCTORS = {
+  "Guido Halter": 1.2,
+  "Kurt Sauter": 2.0,
+  "Werner Rissi": 1.4,
+  "Heinz Bärfuss": 1.2,
+  "Roman Bühler": 1.2,
+  "Roman Andreas Buehler": 1.2,
+  "Roger Larpin": 2,
+  "Sg Saentis": 1.4,
+  "Sg Santis": 1.4,
+  "Roman Bühler": 1.2,
+  "Juerg Weiss": 2,
+  "Heinz Brem": 2
+
+};
 
 // Historische Pilotenfaktoren
 export const HISTORICAL_PILOT_FACTORS = {
@@ -208,6 +215,7 @@ export const HISTORICAL_PILOT_FACTORS = {
   "Fabian Schäfer": 1.4,
   "Heinz Bärfuss": 1.2,
   "Herbert Stoffel": 2.0,
+  "Kurt Sauter": 2.0,
   "DEFAULT": 4.0
 };
 
@@ -362,22 +370,32 @@ export function calculateAircraftFactorFromIndex(dmstIndex) {
   return Math.pow(100 / dmstIndex, 2);
 }
 
+// Prüft ob jemand Fluglehrer ist
+export function isFlightInstructor(name) {
+  return name in FLIGHT_INSTRUCTORS;
+}
+
+// Gibt den Schulungsfaktor zurück wenn mit Fluglehrer geflogen
+export function getInstructorFlightFactor(coPilotName) {
+  return FLIGHT_INSTRUCTORS[coPilotName] || null;
+}
+
 // Validierung der bestehenden Faktoren (optional)
 export function validateAircraftFactors() {
   console.log('Validiere Flugzeugfaktoren...');
   let allCorrect = true;
-  
+
   Object.entries(AIRCRAFT_FACTORS).forEach(([aircraft, data]) => {
     const calculated = calculateAircraftFactorFromIndex(data.index);
     const stored = data.factor2;
     const diff = Math.abs(calculated - stored);
-    
+
     if (diff > 0.00001) {
       console.warn(`❌ ${aircraft}: Gespeichert=${stored}, Berechnet=${calculated}, Diff=${diff}`);
       allCorrect = false;
     }
   });
-  
+
   if (allCorrect) {
     console.log('✅ Alle Flugzeugfaktoren sind korrekt!');
   }

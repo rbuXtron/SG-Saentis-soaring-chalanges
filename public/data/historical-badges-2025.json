@@ -1,0 +1,881 @@
+{
+  "metadata": {
+    "season": "2025",
+    "lastUpdated": "2025-10-02 10:12:23",
+    "description": "Höchste erreichte Multi-Level Badge Punkte - Saison 2024/2025",
+    "dataUntil": "2026-09-30",
+    "clubId": 1281,
+    "clubName": "SG Säntis",
+    "multiLevelBadgeCount": 24,
+    "multiLevelBadges": [
+      "aeronaut",
+      "aircraft_hopper",
+      "always_by_your_side",
+      "astronaut",
+      "cockpit_crew",
+      "consistency",
+      "day_winner",
+      "endurance",
+      "euclid",
+      "explorer",
+      "flying_in_circles",
+      "globe_trotter",
+      "no_need_to_circle",
+      "nomad",
+      "point_hunter",
+      "pythagoras",
+      "segment_specialist",
+      "sky_streak",
+      "sprinter",
+      "tourist",
+      "training_lap",
+      "vintage_viper",
+      "walk_of_fame",
+      "zugvogel"
+    ]
+  },
+  "pilots": {
+    "9604": {
+      "name": "Guido Halter",
+      "badges": {
+        "sprinter": 3,
+        "endurance": 2,
+        "nomad": 3,
+        "flying_in_circles": 2,
+        "training_lap": 1,
+        "tourist": 2,
+        "aeronaut": 3,
+        "point_hunter": 2,
+        "astronaut": 3,
+        "no_need_to_circle": 4,
+        "cockpit_crew": 3,
+        "aircraft_hopper": 2,
+        "always_by_your_side": 2,
+        "consistency": 4,
+        "pythagoras": 1,
+        "zugvogel": 2,
+        "sky_streak": 1,
+        "vintage_viper": 2,
+        "euclid": 1,
+        "explorer": 3,
+        "segment_specialist": 3
+      }
+    },
+    "11468": {
+      "name": "Heinz Bärfuss",
+      "badges": {
+        "consistency": 1,
+        "segment_specialist": 1,
+        "sprinter": 2,
+        "astronaut": 2,
+        "endurance": 2,
+        "aeronaut": 2,
+        "nomad": 1,
+        "tourist": 1,
+        "zugvogel": 2,
+        "vintage_viper": 1,
+        "no_need_to_circle": 1,
+        "cockpit_crew": 1,
+        "point_hunter": 2,
+        "always_by_your_side": 1
+      }
+    },
+    "10518": {
+      "name": "Roman Andreas Buehler",
+      "badges": {
+        "astronaut": 2,
+        "sprinter": 2,
+        "aeronaut": 1,
+        "nomad": 2,
+        "cockpit_crew": 2,
+        "endurance": 2,
+        "consistency": 2,
+        "tourist": 1,
+        "always_by_your_side": 1,
+        "no_need_to_circle": 1,
+        "point_hunter": 1,
+        "explorer": 1,
+        "segment_specialist": 1,
+        "zugvogel": 2
+      }
+    },
+    "18175": {
+      "name": "Stefan Gertsch",
+      "badges": {
+        "astronaut": 2,
+        "consistency": 2,
+        "endurance": 2,
+        "sprinter": 2,
+        "nomad": 3,
+        "segment_specialist": 1,
+        "tourist": 1,
+        "vintage_viper": 1,
+        "aircraft_hopper": 1,
+        "no_need_to_circle": 1,
+        "zugvogel": 1,
+        "aeronaut": 1,
+        "sky_streak": 1,
+        "pythagoras": 1,
+        "point_hunter": 1,
+        "explorer": 2
+      }
+    },
+    "9979": {
+      "name": "Wolfgang Rapp",
+      "badges": {
+        "sprinter": 2,
+        "astronaut": 2,
+        "endurance": 1,
+        "segment_specialist": 1,
+        "zugvogel": 1,
+        "point_hunter": 1,
+        "aeronaut": 1
+      }
+    },
+    "17293": {
+      "name": "Andreas Graf",
+      "badges": {
+        "astronaut": 2,
+        "endurance": 1,
+        "nomad": 2,
+        "aircraft_hopper": 1,
+        "consistency": 1,
+        "tourist": 1,
+        "zugvogel": 1,
+        "sky_streak": 1,
+        "aeronaut": 1,
+        "segment_specialist": 1,
+        "sprinter": 1
+      }
+    },
+    "10758": {
+      "name": "Rainer Ender",
+      "badges": {
+        "endurance": 1,
+        "point_hunter": 1,
+        "sprinter": 2,
+        "astronaut": 2,
+        "aeronaut": 1,
+        "no_need_to_circle": 1,
+        "zugvogel": 1
+      }
+    },
+    "24353": {
+      "name": "Dominic Saladin",
+      "badges": {
+        "endurance": 2,
+        "astronaut": 2,
+        "sky_streak": 1,
+        "aeronaut": 1,
+        "zugvogel": 1,
+        "consistency": 1
+      }
+    },
+    "10847": {
+      "name": "Moritz Giger",
+      "badges": {
+        "astronaut": 2,
+        "vintage_viper": 1,
+        "nomad": 1,
+        "tourist": 1,
+        "zugvogel": 1,
+        "aircraft_hopper": 1,
+        "cockpit_crew": 1,
+        "endurance": 2,
+        "aeronaut": 1
+      }
+    },
+    "23559": {
+      "name": "Florian Sutter",
+      "badges": {
+        "vintage_viper": 1,
+        "nomad": 1,
+        "aircraft_hopper": 1,
+        "endurance": 2,
+        "astronaut": 2
+      }
+    },
+    "29951": {
+      "name": "Johannes Widmer",
+      "badges": {
+        "sky_streak": 1,
+        "cockpit_crew": 1,
+        "sprinter": 1,
+        "astronaut": 1,
+        "consistency": 1,
+        "nomad": 1,
+        "tourist": 1
+      }
+    },
+    "3503": {
+      "name": "Yves Bodenmann",
+      "badges": {
+        "astronaut": 2,
+        "nomad": 1,
+        "sprinter": 1
+      }
+    },
+    "24415": {
+      "name": "Michel Bänziger",
+      "badges": {
+        "astronaut": 2,
+        "sprinter": 1,
+        "nomad": 1
+      }
+    },
+    "10830": {
+      "name": "Marcel Spirig",
+      "badges": {
+        "astronaut": 2,
+        "nomad": 1,
+        "aircraft_hopper": 1
+      }
+    },
+    "23621": {
+      "name": "Urs Zeberli",
+      "badges": {
+        "astronaut": 2,
+        "nomad": 1,
+        "tourist": 1,
+        "sprinter": 1,
+        "sky_streak": 1,
+        "cockpit_crew": 1
+      }
+    },
+    "9793": {
+      "name": "Werner Rissi",
+      "badges": {
+        "endurance": 1,
+        "sprinter": 2,
+        "astronaut": 2,
+        "always_by_your_side": 2,
+        "nomad": 1,
+        "cockpit_crew": 2,
+        "consistency": 1
+      }
+    },
+    "26179": {
+      "name": "Stefan Volland",
+      "badges": {
+        "nomad": 1,
+        "tourist": 1,
+        "cockpit_crew": 1,
+        "sky_streak": 1,
+        "astronaut": 2
+      }
+    },
+    "21138": {
+      "name": "Pascal Rotach",
+      "badges": {
+        "astronaut": 1,
+        "aircraft_hopper": 1,
+        "nomad": 1,
+        "tourist": 1,
+        "vintage_viper": 1,
+        "consistency": 1
+      }
+    },
+    "25790": {
+      "name": "Gabor Facsar",
+      "badges": {
+        "sprinter": 1,
+        "astronaut": 2
+      }
+    },
+    "10842": {
+      "name": "Herbert Stoffel",
+      "badges": {
+        "astronaut": 2,
+        "endurance": 1
+      }
+    },
+    "27275": {
+      "name": "Andrin Oppliger",
+      "badges": {
+        "cockpit_crew": 1,
+        "astronaut": 1
+      }
+    },
+    "21532": {
+      "name": "Philipp Lenhard",
+      "badges": {
+        "sprinter": 1,
+        "astronaut": 2,
+        "consistency": 2,
+        "nomad": 1
+      }
+    },
+    "29960": {
+      "name": "Simon Widmer",
+      "badges": {
+        "cockpit_crew": 1,
+        "astronaut": 1
+      }
+    },
+    "26525": {
+      "name": "Kurt Sauter",
+      "badges": {
+        "cockpit_crew": 1,
+        "always_by_your_side": 1
+      }
+    },
+    "30072": {
+      "name": "Joel Morrone",
+      "badges": {
+        "cockpit_crew": 1,
+        "consistency": 1
+      }
+    },
+    "32669": {
+      "name": "Paul Cordes",
+      "badges": {
+        "consistency": 1,
+        "astronaut": 1,
+        "cockpit_crew": 1
+      }
+    },
+    "23604": {
+      "name": "Rafael Lutz",
+      "badges": {
+        "astronaut": 1,
+        "nomad": 1,
+        "tourist": 1,
+        "consistency": 1
+      }
+    },
+    "25240": {
+      "name": "Lukas Thoma",
+      "badges": {
+        "astronaut": 1
+      }
+    }
+  },
+  "badgeDefinitions": {
+    "no_need_to_circle": {
+      "name": "No Need to Circle",
+      "description": {
+        "en": "Fly x km without circling",
+        "de": "Fliege x km ohne zu kreisen"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        100.0,
+        200.0,
+        300.0,
+        500.0,
+        1000.0
+      ],
+      "unit": ""
+    },
+    "explorer": {
+      "name": "Explorer",
+      "description": {
+        "en": "Achieve a declared Out & Return flight of at least x km",
+        "de": "Vollende einen deklarierten Ziel-Rück Flug mit mindestens x km"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        250.0,
+        500.0,
+        750.0,
+        1000.0,
+        1250.0
+      ],
+      "unit": ""
+    },
+    "day_winner": {
+      "name": "Day Winner",
+      "description": {
+        "en": "Win x days on WeGlide",
+        "de": "Gewinne x Tage auf WeGlide"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        1.0,
+        2.0,
+        5.0,
+        20.0,
+        50.0
+      ],
+      "unit": ""
+    },
+    "walk_of_fame": {
+      "name": "Walk of Fame",
+      "description": {
+        "en": "Reach x times more than 1000 points with a single flight",
+        "de": "Erreiche x mal mehr als 1000 Punkte mit einem Flug"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        5.0,
+        10.0,
+        20.0,
+        50.0,
+        100.0
+      ],
+      "unit": ""
+    },
+    "cockpit_crew": {
+      "name": "Cockpit Crew",
+      "description": {
+        "en": "Fly with x different copilots or pilots",
+        "de": "Fliege mit x unterschiedlichen Copilot*innen oder Pilot*innen"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        5.0,
+        10.0,
+        20.0,
+        50.0,
+        100.0
+      ],
+      "unit": ""
+    },
+    "sprinter": {
+      "name": "Sprinter",
+      "description": {
+        "en": "Achieve x speed points on a single flight",
+        "de": "Erreiche x Speed-Punkte mit einem einzigen Flug"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        70.0,
+        90.0,
+        110.0,
+        130.0,
+        150.0
+      ],
+      "unit": ""
+    },
+    "segment_specialist": {
+      "name": "Segment Specialist",
+      "description": {
+        "en": "Fly x different segments",
+        "de": "Fliege x unterschiedliche Segmente"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        1.0,
+        5.0,
+        10.0,
+        15.0,
+        25.0
+      ],
+      "unit": ""
+    },
+    "aeronaut": {
+      "name": "Aeronaut",
+      "description": {
+        "en": "Achieve x hours in total airtime",
+        "de": "Erreiche x Gesamtflugstunden"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        50.0,
+        200.0,
+        500.0,
+        1000.0,
+        3000.0
+      ],
+      "unit": ""
+    },
+    "consistency": {
+      "name": "Consistency",
+      "description": {
+        "en": "Fly x weekends in a row as pilot or copilot",
+        "de": "Fliege an x Wochenenden hintereinander als Pilot*in oder Copilot*in"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        3.0,
+        5.0,
+        10.0,
+        20.0,
+        40.0
+      ],
+      "unit": ""
+    },
+    "globe_trotter": {
+      "name": "Globe Trotter",
+      "description": {
+        "en": "Fly on x different continents",
+        "de": "Fliege auf x unterschiedlichen Kontinenten"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0
+      ],
+      "unit": ""
+    },
+    "sky_streak": {
+      "name": "Sky Streak",
+      "description": {
+        "en": "Fly at least once per month for x months in a row",
+        "de": "Fliege mindestens einmal pro Monat für x Monate in Folge"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        6.0,
+        12.0,
+        18.0,
+        24.0,
+        36.0
+      ],
+      "unit": ""
+    },
+    "flying_in_circles": {
+      "name": "Flying in Circles",
+      "description": {
+        "en": "Circumnavigate the airspace of x different major airports",
+        "de": "Umrunde den Luftraum von x unterschiedlichen Flughäfen"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        15.0
+      ],
+      "unit": ""
+    },
+    "training_lap": {
+      "name": "Training Lap",
+      "description": {
+        "en": "Circumnavigate the airspace of a major airport x times",
+        "de": "Umrunde den Luftraum eines Flughafens x mal"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2.0,
+        5.0,
+        10.0,
+        20.0,
+        50.0
+      ],
+      "unit": ""
+    },
+    "point_hunter": {
+      "name": "Point Hunter",
+      "description": {
+        "en": "Achieve at least x points on a single flight",
+        "de": "Erreiche mindestens x Punkte mit einem einzigen Flug"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        600.0,
+        800.0,
+        1000.0,
+        1200.0,
+        1500.0
+      ],
+      "unit": ""
+    },
+    "tourist": {
+      "name": "Tourist",
+      "description": {
+        "en": "Fly in x different countries",
+        "de": "Fliege in x unterschiedlichen Ländern"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2.0,
+        5.0,
+        10.0,
+        15.0,
+        25.0
+      ],
+      "unit": ""
+    },
+    "always_by_your_side": {
+      "name": "Always by Your Side",
+      "description": {
+        "en": " x flights as copilot with the same pilot",
+        "de": " x Flüge als Copilot*in mit gleichem/gleicher Pilot*in"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        5.0,
+        10.0,
+        25.0,
+        50.0,
+        100.0
+      ],
+      "unit": ""
+    },
+    "euclid": {
+      "name": "Euclid",
+      "description": {
+        "en": "Fly a declared rectangle of at least x km",
+        "de": "Fliege ein deklariertes Viereck mit mindestens x km"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        250.0,
+        500.0,
+        750.0,
+        1000.0,
+        1250.0
+      ],
+      "unit": ""
+    },
+    "nomad": {
+      "name": "Nomad",
+      "description": {
+        "en": "Take off from x different airports",
+        "de": "Starte von x unterschiedlichen Flugplätzen"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2.0,
+        5.0,
+        10.0,
+        25.0,
+        50.0
+      ],
+      "unit": ""
+    },
+    "vintage_viper": {
+      "name": "Vintage Viper",
+      "description": {
+        "en": "Fly with x different aircraft from the vintage category",
+        "de": "Fliege mit x unterschiedlichen Flugzeugen aus der Vintage Kategorie"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "unit": ""
+    },
+    "astronaut": {
+      "name": "Astronaut",
+      "description": {
+        "en": "Reach an altitude of x meter",
+        "de": "Erreiche eine Höhe von x Meter"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2000.0,
+        3000.0,
+        5000.0,
+        7000.0,
+        9000.0
+      ],
+      "unit": ""
+    },
+    "zugvogel": {
+      "name": "Zugvogel",
+      "description": {
+        "en": "Fly x km in total",
+        "de": "Fliege x Gesamtkilometer"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        2000.0,
+        10000.0,
+        50000.0,
+        100000.0,
+        500000.0
+      ],
+      "unit": ""
+    },
+    "endurance": {
+      "name": "Endurance",
+      "description": {
+        "en": "Fly more than x hours on a single flight",
+        "de": "Fliege mehr als x Stunden mit einem Flug"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "values": [
+        5.0,
+        8.0,
+        11.0,
+        14.0
+      ],
+      "unit": ""
+    },
+    "aircraft_hopper": {
+      "name": "Aircraft Hopper",
+      "description": {
+        "en": "Fly with x different aircraft",
+        "de": "Fliege mit x unterschiedlichen Flugzeugen"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        5.0,
+        10.0,
+        20.0,
+        30.0,
+        50.0
+      ],
+      "unit": ""
+    },
+    "pythagoras": {
+      "name": "Pythagoras",
+      "description": {
+        "en": "Fly a declared triangle of at least x km",
+        "de": "Fliege ein deklariertes Dreieck mit mindestens x km"
+      },
+      "points": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "values": [
+        250.0,
+        500.0,
+        750.0,
+        1000.0,
+        1250.0
+      ],
+      "unit": ""
+    }
+  }
+}

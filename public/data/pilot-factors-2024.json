@@ -1,0 +1,129 @@
+{
+    "metadata": {
+        "season": "2024/2025",
+        "generated": "2025-09-30",
+        "description": "Pilotenfaktoren Ende Saison 2024/2025"
+    },
+    "pilots": {
+        "9604": {
+            "name": "Guido Halter",
+            "factor": 1.2,
+            "bestDistance": 815,
+            "lastUpdated": "2025-09-15"
+        },
+        "10518": {
+            "name": "Roman Andreas Buehler",
+            "factor": 1.2,
+            "bestDistance": 820,
+            "lastUpdated": "2025-09-20"
+        },
+        "11234": {
+            "name": "Wolfgang Rapp",
+            "factor": 1.2,
+            "bestDistance": 680,
+            "lastUpdated": "2025-09-10"
+        },
+        "12345": {
+            "name": "Martin Prusak",
+            "factor": 1.4,
+            "bestDistance": 600,
+            "lastUpdated": "2025-09-18"
+        },
+        "13456": {
+            "name": "Rainer Ender",
+            "factor": 1.4,
+            "bestDistance": 720,
+            "lastUpdated": "2025-09-22"
+        },
+        "14567": {
+            "name": "Werner Rissi",
+            "factor": 1.4,
+            "bestDistance": 650,
+            "lastUpdated": "2025-09-12"
+        },
+        "15678": {
+            "name": "Fabian Schäfer",
+            "factor": 1.4,
+            "bestDistance": 700,
+            "lastUpdated": "2025-09-25"
+        },
+        "16789": {
+            "name": "Heinz Bärfuss",
+            "factor": 1.2,
+            "bestDistance": 780,
+            "lastUpdated": "2025-09-14"
+        },
+        "17890": {
+            "name": "Herbert Stoffel",
+            "factor": 2.0,
+            "bestDistance": 500,
+            "lastUpdated": "2025-09-30"
+        },
+        "18175": {
+            "name": "Stefan Gertsch",
+            "factor": 1.6,
+            "bestDistance": 422,
+            "lastUpdated": "2025-09-28"
+        },
+        "17293": {
+            "name": "Andreas Graf",
+            "factor": 2.0,
+            "bestDistance": 403,
+            "lastUpdated": "2025-09-27"
+        },
+        "23559": {
+            "name": "Florian Sutter",
+            "factor": 4.0,
+            "bestDistance": 182,
+            "lastUpdated": "2025-09-26"
+        },
+        "24353": {
+            "name": "Dominic Saladin",
+            "factor": 1.6,
+            "bestDistance": 305,
+            "lastUpdated": "2025-09-29"
+        },
+        "10830": {
+            "name": "Marcel Spirig",
+            "factor": 3.0,
+            "bestDistance": 89,
+            "lastUpdated": "2025-09-30"
+        },
+        "10847": {
+            "name": "Moritz Giger",
+            "factor": 2.0,
+            "bestDistance": 166,
+            "lastUpdated": "2025-09-24"
+        },
+        "21138": {
+            "name": "Pascal Rotach",
+            "factor": 3.0,
+            "bestDistance": 81,
+            "lastUpdated": "2025-09-23"
+        },
+        "3503": {
+            "name": "Yves Bodenmann",
+            "factor": 2.0,
+            "bestDistance": 267,
+            "lastUpdated": "2025-09-21"
+        },
+        "21532": {
+            "name": "Philipp Lenhard",
+            "factor": 1.6,
+            "bestDistance": 198,
+            "lastUpdated": "2025-09-19"
+        },
+        "10842": {
+            "name": "Herbert Stoffel",
+            "factor": 2.0,
+            "bestDistance": 300,
+            "lastUpdated": "2025-09-17"
+        },
+        "26525": {
+            "name": "Kurt Sauter",
+            "factor": 2.0,
+            "bestDistance": 250,
+            "lastUpdated": "2025-09-30"
+        }
+    }
+}

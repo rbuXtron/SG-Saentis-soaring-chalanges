@@ -12,7 +12,8 @@
     <title>SG Säntis Soaring Challenge 2025</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
 
     <!-- Styles -->
     <link rel="stylesheet" href="./styles.css">
@@ -45,7 +46,8 @@
 <body>
     <div class="app-container">
         <header>
-            <h1>SG Säntis Soaring Challenge 2025</h1>
+            <h1 class="header-title" id="main-title">SG Säntis Soaring Challenge</h1>
+            <span class="season-display"></span>
             <div class="subtitle">Streckenflüge & Ranglisten der Segelfluggruppe Säntis</div>
         </header>
 
@@ -54,7 +56,7 @@
             <section class="stats-grid" aria-label="Statistik-Übersicht">
                 <div class="stat-card">
                     <div class="stat-value" id="total-pilots" aria-label="Anzahl Teilnehmer">0</div>
-                    <div class="stat-label">Teilnehmer</div>
+                    <div class="stat-label">aktive Teilnehmer</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="total-flights" aria-label="Gesamtanzahl Flüge">0</div>
@@ -67,14 +69,14 @@
                 <div class="stat-card">
                     <div class="stat-value" id="longest-flight" aria-label="Längster Einzelflug">
                         0 km
-                        <div class="stat-pilot" id="longest-flight-pilot">-</div>
+                        <div class="stat-pilot" id="longest-flight-pilot"></div>
                     </div>
                     <div class="stat-label">Längster Flug</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="max-points" aria-label="Maximale WeGlide Punkte">
                         0
-                        <div class="stat-pilot" id="max-points-pilot">-</div>
+                        <div class="stat-pilot" id="max-points-pilot"></div>
                     </div>
                     <div class="stat-label">Max. WeGlide Punkte</div>
                 </div>
@@ -84,6 +86,24 @@
             <section class="data-source-bar" aria-label="Datenquelle und Aktualisierung">
                 <div class="data-source">
                     <span id="data-source" aria-live="polite">Daten von WeGlide API</span>
+
+                    <!-- Saison-Selector mit korrekten Labels -->
+                    <div class="season-selector">
+                        <label for="season-select" class="season-label">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+                                style="margin-right: 4px;">
+                                <path
+                                    d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z" />
+                            </svg>
+                            Saison:
+                        </label>
+                        <select id="season-select" class="season-dropdown" aria-label="Saison auswählen">
+                            <!-- Optionen werden dynamisch gesetzt -->
+                            <option value="2026">2025/2026</option>
+                            <option value="2025">2024/2025</option>
+                        </select>
+                    </div>
+
                     <div id="loading-message" class="info-message info-loading" style="display: none;" role="status"
                         aria-live="polite">
                         <span class="sr-only">Ladestatus: </span>Daten werden von WeGlide geladen...
@@ -104,31 +124,43 @@
             </section>
 
             <!-- Tab-Navigation -->
-            <nav class="tabs" role="tablist" aria-label="Hauptnavigation">
-                <button class="tab active" data-tab="flightdetails" role="tab" aria-selected="true"
-                    aria-controls="flightdetails" id="tab-flightdetails">
-                    Aktuelle Flüge
+            <div class="tabs">
+                <button class="tab active" data-tab="flightdetails">
+                    <svg class="tab-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                        <path
+                            d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                    </svg>
+                    <span class="tab-text">Aktuelle Flüge</span>
                 </button>
-                <button class="tab" data-tab="rangliste" role="tab" aria-selected="false" aria-controls="rangliste"
-                    id="tab-rangliste">
-                    SG Säntis Cup
+                <button class="tab" data-tab="rangliste">
+                    <svg class="tab-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    <span class="tab-text">SG Säntis Cup</span>
                 </button>
-                <button class="tab" data-tab="badges" role="tab" aria-selected="false" aria-controls="badges"
-                    id="tab-badges">
-                    Badges Awards
+                <button class="tab" data-tab="badges">
+                    <svg class="tab-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    </svg>
+                    <span class="tab-text">Badges Awards</span>
                 </button>
-                <button class="tab" data-tab="statistics" role="tab" aria-selected="false" aria-controls="statistics"
-                    id="tab-statistics">
-                    Statistiken
+                <button class="tab" data-tab="statistics">
+                    <svg class="tab-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                        <path
+                            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                    </svg>
+                    <span class="tab-text">Statistiken</span>
                 </button>
-            </nav>
+            </div>
 
             <!-- Tab-Inhalte -->
             <div class="tab-content active" id="flightdetails" role="tabpanel" aria-labelledby="tab-flightdetails"
                 tabindex="0">
                 <div id="latest-flights-container" class="latest-flights" aria-label="Aktuelle Flüge">
                     <!-- Flug-Daten werden durch JavaScript ersetzt -->
-                    <div class="no-data">Flugdaten werden geladen...</div>
+                    <div class="no-data">Flugdaten erfassen...</div>
                 </div>
             </div>
 
@@ -236,9 +268,24 @@
                     <h2 class="section-title">📊 Detaillierte Statistiken</h2>
 
                     <div class="charts-grid">
+
                         <div class="chart-item-container">
                             <div id="points-chart" class="chart-placeholder" aria-label="Punkteverteilung Chart">
                                 <div class="no-data">Punkte-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <!-- NEU: Gesamt-Kilometer Chart -->
+                        <div class="chart-item-container">
+                            <div id="total-km-chart" class="chart-placeholder" aria-label="Gesamt-Kilometer Chart">
+                                <div class="no-data">Kilometer-Chart wird geladen...</div>
+                            </div>
+                        </div>
+
+                        <!-- NEU: Gesamt-Stunden Chart -->
+                        <div class="chart-item-container">
+                            <div id="total-hours-chart" class="chart-placeholder" aria-label="Gesamt-Flugstunden Chart">
+                                <div class="no-data">Flugstunden-Chart wird geladen...</div>
                             </div>
                         </div>
 

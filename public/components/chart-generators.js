@@ -1,1082 +1,472 @@
-/**
- * SG Säntis Cup - Chart-Generatoren
- * 
- * Diese Datei enthält alle Funktionen zur Erstellung und 
- * Aktualisierung von Charts (Diagrammen) für die Anwendung.
- */
+// chart-generators.js - Bereinigt mit einheitlichem Farbschema
 
 import { formatNumber, formatDateForDisplay } from '../utils/utils.js';
 import { APP_CONFIG } from '../config/constants.js';
 
-/**
- * Rendert einen Chart für die Top-Kilometer
- * @param {Array} pilots - Array mit Pilotendaten
- * @param {string} containerId - ID des Container-Elements
- */
-export function renderTopKmChart(pilots, containerId = 'km-chart') {
-  const chartContainer = document.getElementById(containerId);
-  if (!chartContainer) return;
+// Einheitliches Farbschema für alle Charts
+const CHART_COLORS = {
+  primary: 'rgba(54, 162, 235, 0.7)',      // Blau
+  secondary: 'rgba(255, 99, 132, 0.7)',     // Rot
+  tertiary: 'rgba(75, 192, 192, 0.7)',      // Türkis
+  quaternary: 'rgba(255, 206, 86, 0.7)',    // Gelb
+  quinary: 'rgba(153, 102, 255, 0.7)',      // Violett
+  senary: 'rgba(255, 159, 64, 0.7)',        // Orange
+  septenary: 'rgba(46, 204, 113, 0.7)',     // Grün
+  octonary: 'rgba(231, 76, 60, 0.7)'        // Dunkelrot
+};
 
-  // Container leeren
-  chartContainer.innerHTML = '';
-
-  // Alle Flüge sammeln
-  let allFlights = [];
-  if (Array.isArray(pilots)) {
-    pilots.forEach(pilot => {
-      if (!pilot || !Array.isArray(pilot.flights)) return;
-
-      pilot.flights.forEach(flight => {
-        if (!flight) return;
-
-        allFlights.push({
-          pilotName: pilot.name,
-          ...flight
-        });
-      });
-    });
-  }
-
-  // Gruppiere nach Pilot und nimm nur den besten Flug
-  const bestFlightsByPilot = new Map();
-  
-  allFlights.forEach(flight => {
-    const currentBest = bestFlightsByPilot.get(flight.pilotName);
-    if (!currentBest || flight.km > currentBest.km) {
-      bestFlightsByPilot.set(flight.pilotName, flight);
+// Standard Chart-Optionen
+const DEFAULT_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    title: {
+      display: true,
+      font: { size: 16, weight: 'bold' },
+      padding: 20
     }
-  });
-
-  // Konvertiere Map zu Array und sortiere
-  const topFlights = Array.from(bestFlightsByPilot.values())
-    .sort((a, b) => b.km - a.km)
-    .slice(0, APP_CONFIG.CHART_LIMITS.TOP_KM);
-
-  if (topFlights.length === 0) {
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.textContent = 'Keine KM-Daten verfügbar.';
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
-    return;
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(0, 0, 0, 0.05)' }
+    },
+    x: {
+      grid: { display: false }
+    }
   }
+};
 
-  // Debug: Prüfe die Datenstruktur
-  console.log('Top Flights Data:', topFlights[0]); // Debug-Ausgabe
-
-  // Chart.js verwenden, falls verfügbar
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: topFlights.map(f => f.pilotName),
-        datasets: [{
-          label: 'Beste Distanz (km)',
-          data: topFlights.map(f => f.km), // Stelle sicher, dass hier die km-Werte sind
-          backgroundColor: 'rgba(76, 175, 80, 0.7)',
-          borderColor: 'rgba(76, 175, 80, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Kilometer'
-            }
-          },
-          x: {
-            title: {
-              display: false
-            },
-            ticks: {
-              autoSkip: false,
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Top km Leistungen - Bester Flug pro Pilot',
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const index = context.dataIndex;
-                const flight = topFlights[index];
-                
-                // Mehrere Fallback-Optionen für den km-Wert
-                let kmValue = 0;
-                
-                // Option 1: Von context.parsed.y (Chart.js Wert)
-                if (context.parsed && typeof context.parsed.y === 'number') {
-                  kmValue = context.parsed.y;
-                }
-                // Option 2: Von context.raw (Rohdaten)
-                else if (typeof context.raw === 'number') {
-                  kmValue = context.raw;
-                }
-                // Option 3: Direkt vom flight Objekt
-                else if (flight && typeof flight.km === 'number') {
-                  kmValue = flight.km;
-                }
-                
-                // Debug-Ausgabe
-                console.log('Tooltip Debug:', {
-                  index: index,
-                  parsed: context.parsed,
-                  raw: context.raw,
-                  flight: flight,
-                  kmValue: kmValue
-                });
-                
-                // Tooltip-Array erstellen
-                const tooltipLines = [`${formatNumber(kmValue.toFixed(1))} km`];
-                
-                // Weitere Informationen nur hinzufügen, wenn vorhanden
-                if (flight) {
-                  if (flight.aircraftType) {
-                    tooltipLines.push(`Flugzeug: ${flight.aircraftType}`);
-                  }
-                  if (flight.date) {
-                    tooltipLines.push(`Datum: ${formatDateForDisplay(flight.date)}`);
-                  }
-                  if (flight.speed && flight.speed > 0) {
-                    tooltipLines.push(`Geschwindigkeit: ${flight.speed.toFixed(1)} km/h`);
-                  }
-                  if (flight.points && flight.points > 0) {
-                    tooltipLines.push(`Punkte: ${flight.points.toFixed(2)}`);
-                  }
-                }
-                
-                return tooltipLines;
-              }
-            }
-          }
-        },
-        onClick: function (event, elements) {
-          if (elements.length > 0) {
-            const index = elements[0].index;
-            const flight = topFlights[index];
-            if (flight.rawData && flight.rawData.id) {
-              window.open(`https://www.weglide.org/flight/${flight.rawData.id}`, '_blank');
-            }
-          }
-        }
-      }
-    });
+// Hilfsfunktion: Saison aus Pilotdaten
+function getSeasonFromPilots(pilots) {
+  if (pilots?.length > 0 && pilots[0].season) {
+    return pilots[0].season;
   }
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  return month >= 10 ? year + 1 : year;
 }
 
-export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
-  const chartContainer = document.getElementById(containerId);
-  if (!chartContainer) return;
-
-  // Container leeren
-  chartContainer.innerHTML = '';
-
-  // Prüfe ob Sprint-Daten vorhanden sind
-  const pilotsWithSprints = pilots.filter(p => p.sprintData && p.sprintData.length > 0);
-
-  if (pilotsWithSprints.length === 0) {
-    // Keine Sprint-Daten vorhanden...
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.innerHTML = `
-      <p>Sprint-Daten werden geladen...</p>
-      <p style="font-size: 12px; margin-top: 10px; color: #666;">
-        Falls diese Meldung bestehen bleibt, sind möglicherweise keine Sprint-Daten verfügbar.
-      </p>
-    `;
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
-
-    // Versuche Sprint-Daten automatisch zu laden
-    loadSprintDataAndUpdateChart(pilots, containerId);
-    return;
-  }
-
-  // Alle Sprint-Daten sammeln
-  let allSprintFlights = [];
-
-  pilotsWithSprints.forEach(pilot => {
-    pilot.sprintData.forEach(sprint => {
-      if (!sprint || !sprint.contest) return;
-
-      allSprintFlights.push({
-        pilotName: pilot.name,
-        flightId: sprint.id,
-        points: sprint.contest.points || 0,
-        speed: sprint.contest.speed || 0,
-        distance: sprint.contest.distance || 0,
-        date: sprint.scoring_date || sprint.takeoff_time,
-        aircraftType: sprint.aircraft ? sprint.aircraft.name : 'Unbekannt',
-        takeoffAirport: sprint.takeoff_airport ? sprint.takeoff_airport.name : 'Unbekannt',
-        region: sprint.takeoff_airport && sprint.takeoff_airport.region ? sprint.takeoff_airport.region : ''
-      });
-    });
-  });
-
-  // NEU: Gruppiere nach Pilot und nimm nur den besten Sprint (nach Punkten)
-  const bestSprintsByPilot = new Map();
-
-  allSprintFlights.forEach(sprint => {
-    const currentBest = bestSprintsByPilot.get(sprint.pilotName);
-    if (!currentBest || sprint.points > currentBest.points) {
-      bestSprintsByPilot.set(sprint.pilotName, sprint);
-    }
-  });
-
-  // Konvertiere Map zu Array und sortiere
-  const topFlights = Array.from(bestSprintsByPilot.values())
-    .sort((a, b) => b.points - a.points)
-    .slice(0, APP_CONFIG.CHART_LIMITS.TOP_SPEED || 15);
-
-  if (topFlights.length === 0) {
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.textContent = 'Keine Sprint-Wertungen vorhanden.';
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
-    return;
-  }
-
-  // Chart.js verwenden, falls verfügbar
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: topFlights.map(f => f.pilotName),
-        datasets: [{
-          label: 'Beste Sprint-Punkte',  // Label angepasst
-          data: topFlights.map(f => f.points),
-          backgroundColor: 'rgba(255, 152, 0, 0.7)', // Orange für Sprint-Punkte
-          borderColor: 'rgba(255, 152, 0, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        //indexAxis: 'x', // Horizontale Balken
-        scales: {
-          x: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Sprint-Punkte'
-            }
-          },
-          y: {
-            title: {
-              display: false
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Top Sprint-Wertungen - Bester Sprint pro Pilot (Saison 2025)', // Titel angepasst
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const index = context.dataIndex;
-                const flight = topFlights[index];
-
-                return [
-                  `${flight.points.toFixed(1)} Punkte`,
-                  `Geschwindigkeit: ${flight.speed.toFixed(1)} km/h`,
-                  `Distanz: ${flight.distance.toFixed(1)} km`,
-                  `Flugzeug: ${flight.aircraftType}`,
-                  `Datum: ${formatDateForDisplay(flight.date)}`,
-                  `Startplatz: ${flight.takeoffAirport}`
-                ];
-              }
-            }
-          }
-        },
-        onClick: function (event, elements) {
-          if (elements.length > 0) {
-            const index = elements[0].index;
-            const flight = topFlights[index];
-            if (flight.flightId) {
-              window.open(`https://www.weglide.org/flight/${flight.flightId}`, '_blank');
-            }
-          }
-        }
-      }
-    });
-  } else {
-    // Fallback ohne Chart.js
-    const maxPoints = topFlights[0].points;
-
-    // Titel erstellen
-    const titleElement = document.createElement('h3');
-    titleElement.className = 'chart-title';
-    titleElement.textContent = 'Top Sprint-Wertungen - Bester Sprint pro Pilot (Saison 2025)'; // Titel angepasst
-    titleElement.style.textAlign = 'center';
-    titleElement.style.margin = '10px 0 15px 0';
-    titleElement.style.fontSize = '16px';
-    titleElement.style.fontWeight = 'bold';
-    titleElement.style.color = '#333';
-    chartContainer.appendChild(titleElement);
-
-    // Rest des Fallback-Codes bleibt gleich...
-  }
+function getSeasonString(season) {
+  return season === 2026 ? '2025/2026' : '2024/2025';
 }
 
 /**
- * Hilfsfunktion zum automatischen Laden der Sprint-Daten
- */
-async function loadSprintDataAndUpdateChart(pilots, containerId) {
-  console.log('Versuche Sprint-Daten zu laden...');
-
-  try {
-    // Sprint-Daten für alle Piloten laden
-    const currentYear = new Date().getFullYear();
-    const batchSize = 3;
-    let loadedCount = 0;
-
-    for (let i = 0; i < pilots.length; i += batchSize) {
-      const batch = pilots.slice(i, i + batchSize);
-
-      const batchPromises = batch.map(async (pilot) => {
-        try {
-          const response = await fetch(`/api/proxy?path=sprint&user_id_in=${pilot.userId}&season_in=${currentYear}&limit=100`);
-
-          if (response.ok) {
-            const sprintData = await response.json();
-
-            if (Array.isArray(sprintData)) {
-              pilot.sprintData = sprintData;
-              pilot.sprintStats = calculateSprintStats(sprintData);
-
-              if (sprintData.length > 0) {
-                loadedCount++;
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Fehler beim Laden der Sprint-Daten für ${pilot.name}:`, error);
-        }
-      });
-
-      await Promise.all(batchPromises);
-
-      // Kleine Pause zwischen Batches
-      if (i + batchSize < pilots.length) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-    }
-
-    console.log(`Sprint-Daten für ${loadedCount} Piloten geladen`);
-
-    // Chart neu rendern
-    if (loadedCount > 0) {
-      renderTopSpeedChart(pilots, containerId);
-    }
-
-  } catch (error) {
-    console.error('Fehler beim Laden der Sprint-Daten:', error);
-  }
-}
-
-/**
- * Sprint-Statistiken berechnen
- */
-function calculateSprintStats(sprints) {
-  if (!sprints || sprints.length === 0) {
-    return {
-      totalSprints: 0,
-      totalPoints: 0,
-      maxPoints: 0,
-      avgPoints: 0,
-      maxSpeed: 0,
-      avgSpeed: 0,
-      maxDistance: 0,
-      totalDistance: 0
-    };
-  }
-
-  const points = sprints.map(s => s.contest?.points || 0);
-  const speeds = sprints.map(s => s.contest?.speed || 0).filter(s => s > 0);
-  const distances = sprints.map(s => s.contest?.distance || 0).filter(d => d > 0);
-
-  return {
-    totalSprints: sprints.length,
-    totalPoints: points.reduce((sum, p) => sum + p, 0),
-    maxPoints: Math.max(...points, 0),
-    avgPoints: points.length > 0 ? points.reduce((sum, p) => sum + p, 0) / points.length : 0,
-    maxSpeed: speeds.length > 0 ? Math.max(...speeds) : 0,
-    avgSpeed: speeds.length > 0 ? speeds.reduce((sum, s) => sum + s, 0) / speeds.length : 0,
-    maxDistance: distances.length > 0 ? Math.max(...distances) : 0,
-    totalDistance: distances.reduce((sum, d) => sum + d, 0)
-  };
-}
-
-/**
- * Rendert einen Chart mit den Gesamtpunkten pro Pilot
- * @param {Array} pilots - Array mit Pilotendaten
- * @param {string} containerId - ID des Container-Elements
+ * Rendert Gesamtpunkte Chart
  */
 export function renderPointsChart(pilots, containerId = 'points-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
-  // Container leeren
   chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
 
-  if (!Array.isArray(pilots) || pilots.length === 0) {
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.textContent = 'Keine Punktedaten verfügbar.';
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
+  if (!pilots?.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Daten für Saison ${seasonString}</div>`;
     return;
   }
 
-  // Chart.js verwenden, falls verfügbar
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
+  const sortedPilots = [...pilots].sort((a, b) => b.totalPoints - a.totalPoints);
 
-    const sortedPilots = [...pilots].sort((a, b) => b.totalPoints - a.totalPoints);
-    const labels = sortedPilots.map(pilot => pilot.name);
-    const data = sortedPilots.map(pilot => pilot.totalPoints);
-
-    // Berechne Gesamtkilometer für jeden Piloten (nur beste 3 Flüge)
-    const totalKm = sortedPilots.map(pilot => {
-      return pilot.flights.reduce((sum, flight) => sum + (flight.km || 0), 0);
-    });
-
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Gesamtpunkte SG Säntis Cup',
-          data: data,
-          backgroundColor: 'rgba(52, 152, 219, 0.7)',
-          borderColor: 'rgba(52, 152, 219, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Punkte'
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
-            }
-          },
-          x: {
-            title: {
-              display: false
-            },
-            ticks: {
-              font: {
-                size: 12
-              }
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'SG Säntis Cup - Gesamtpunkte pro Pilot',
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const index = context.dataIndex;
-                const pilot = sortedPilots[index];
-                const km = totalKm[index];
-                return [
-                  `${formatNumber(pilot.totalPoints.toFixed(2))} Punkte`,
-                  `Gesamt-km: ${formatNumber(km.toFixed(1))} km`,
-                  `Pilotenfaktor: ${pilot.pilotFactor}`
-                ];
-              }
-            }
-          }
-        }
-      }
-    });
-  } else {
-    // Fallback auf einfache Tabelle
-    const title = document.createElement('h3');
-    title.textContent = 'SG Säntis Cup - Gesamtpunkte pro Pilot';
-    title.style.textAlign = 'center';
-    title.style.marginBottom = '15px';
-    chartContainer.appendChild(title);
-
-    const table = document.createElement('table');
-    table.className = 'points-table';
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-    table.style.marginTop = '15px';
-
-    // Tabellenkopf
-    let tableHTML = `
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:8px; border-bottom:2px solid #ddd;">Pilot</th>
-          <th style="text-align:right; padding:8px; border-bottom:2px solid #ddd;">Gesamtpunkte</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-    // Tabellendaten
-    const sortedPilots = [...pilots].sort((a, b) => b.totalPoints - a.totalPoints);
-    sortedPilots.forEach(pilot => {
-      tableHTML += `
-        <tr>
-          <td style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">${pilot.name}</td>
-          <td style="text-align:right; padding:8px; border-bottom:1px solid #ddd;">${formatNumber(pilot.totalPoints.toFixed(2))}</td>
-        </tr>
-      `;
-    });
-
-    tableHTML += '</tbody>';
-    table.innerHTML = tableHTML;
-    chartContainer.appendChild(table);
-  }
+  createBarChart(chartContainer, {
+    labels: sortedPilots.map(p => p.name),
+    data: sortedPilots.map(p => p.totalPoints),
+    label: 'Gesamtpunkte',
+    title: `SG Säntis Cup - Gesamtpunkte Saison ${seasonString}`,
+    color: CHART_COLORS.primary,
+    tooltipCallback: (context) => {
+      const pilot = sortedPilots[context.dataIndex];
+      const km = pilot.flights.reduce((sum, f) => sum + (f.km || 0), 0);
+      return [
+        `${formatNumber(pilot.totalPoints.toFixed(2))} Punkte`,
+        `Gesamt-km: ${formatNumber(km.toFixed(1))} km`,
+        `Pilotenfaktor: ${pilot.pilotFactor}`
+      ];
+    }
+  });
 }
 
 /**
- * Rendert einen Chart für die Flüge pro Pilot
- * @param {Array} pilots - Array mit Pilotendaten
- * @param {string} containerId - ID des Container-Elements
+ * Rendert Gesamt-Kilometer Chart
+ */
+export function renderTotalKmChart(pilots, containerId = 'total-km-chart') {
+  const chartContainer = document.getElementById(containerId);
+  if (!chartContainer) return;
+
+  chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
+
+  const pilotKmData = pilots
+    .filter(p => p.allFlights?.length > 0)
+    .map(pilot => ({
+      name: pilot.name,
+      totalKm: pilot.allFlights.reduce((sum, f) => sum + (f.km || 0), 0),
+      flightCount: pilot.allFlights.length
+    }))
+    .filter(p => p.totalKm > 0)
+    .sort((a, b) => b.totalKm - a.totalKm);
+
+  if (!pilotKmData.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Kilometer-Daten für Saison ${seasonString}</div>`;
+    return;
+  }
+
+  createBarChart(chartContainer, {
+    labels: pilotKmData.map(p => p.name),
+    data: pilotKmData.map(p => p.totalKm),
+    label: 'Kilometer',
+    title: `Gesamt-Kilometer - Saison ${seasonString}`,
+    color: CHART_COLORS.tertiary,
+    tooltipCallback: (context) => {
+      const pilot = pilotKmData[context.dataIndex];
+      return [
+        `${formatNumber(pilot.totalKm.toFixed(1))} km`,
+        `${pilot.flightCount} Flüge`,
+        `Ø ${formatNumber((pilot.totalKm / pilot.flightCount).toFixed(1))} km/Flug`
+      ];
+    }
+  });
+}
+
+/**
+ * Rendert Flugstunden Chart
+ */
+export function renderTotalHoursChart(pilots, containerId = 'total-hours-chart') {
+  const chartContainer = document.getElementById(containerId);
+  if (!chartContainer) return;
+
+  chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
+
+  const pilotHoursData = pilots
+    .filter(p => p.allFlights?.length > 0)
+    .map(pilot => {
+      let totalMinutes = 0;
+      pilot.allFlights.forEach(flight => {
+        if (flight.duration) {
+          totalMinutes += (flight.duration / 60);
+        }
+      });
+      return {
+        name: pilot.name,
+        totalHours: totalMinutes / 60,
+        totalMinutes,
+        flightCount: pilot.allFlights.length
+      };
+    })
+    .filter(p => p.totalHours > 0)
+    .sort((a, b) => b.totalHours - a.totalHours);
+
+  if (!pilotHoursData.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Flugstunden-Daten für Saison ${seasonString}</div>`;
+    return;
+  }
+
+  createBarChart(chartContainer, {
+    labels: pilotHoursData.map(p => p.name),
+    data: pilotHoursData.map(p => p.totalHours),
+    label: 'Stunden',
+    title: `Gesamt-Flugstunden - Saison ${seasonString}`,
+    color: CHART_COLORS.quaternary,
+    yAxisTitle: 'Stunden',
+    tooltipCallback: (context) => {
+      const pilot = pilotHoursData[context.dataIndex];
+      const hours = Math.floor(pilot.totalHours);
+      const minutes = Math.round((pilot.totalHours - hours) * 60);
+      return [
+        `${hours}h ${minutes}min`,
+        `${pilot.flightCount} Flüge`,
+        `Ø ${Math.round(pilot.totalMinutes / pilot.flightCount)} min/Flug`
+      ];
+    }
+  });
+}
+
+/**
+ * Rendert Anzahl Flüge Chart
  */
 export function renderFlightsPerPilotChart(pilots, containerId = 'flights-per-pilot-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
-  // Container leeren
   chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
 
-  const currentYear = new Date().getFullYear();
+  const pilotFlightData = pilots
+    .filter(p => p.allFlights?.length > 0)
+    .map(pilot => ({
+      name: pilot.name,
+      flightCount: pilot.allFlights.length,
+      totalKm: pilot.allFlights.reduce((sum, f) => sum + (f.km || 0), 0)
+    }))
+    .sort((a, b) => b.flightCount - a.flightCount);
 
-  // Daten aufbereiten
-  const pilotFlightData = [];
-  if (Array.isArray(pilots)) {
-    pilots.forEach(pilot => {
-      if (!pilot || !Array.isArray(pilot.allFlights)) return;
-
-      const currentYearFlights = pilot.allFlights.filter(flight =>
-        flight && flight.flightYear === currentYear
-      );
-
-      if (currentYearFlights.length > 0) {
-        pilotFlightData.push({
-          name: pilot.name,
-          flightCount: currentYearFlights.length,
-          totalDistance: Math.round(currentYearFlights.reduce((sum, flight) =>
-            sum + (flight.km || 0), 0
-          ))
-        });
-      }
-    });
-  }
-
-  // Nach Fluganzahl sortieren (höchste zuerst)
-  pilotFlightData.sort((a, b) => b.flightCount - a.flightCount);
-
-  if (pilotFlightData.length === 0) {
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.textContent = 'Keine Flugdaten für das aktuelle Jahr verfügbar.';
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
+  if (!pilotFlightData.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Flugdaten für Saison ${seasonString}</div>`;
     return;
   }
 
-  // Chart.js verwenden, falls verfügbar
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    canvas.style.height = '450px';
-    chartContainer.appendChild(canvas);
-
-    const ctx = canvas.getContext('2d');
-
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: pilotFlightData.map(p => p.name),
-        datasets: [{
-          label: 'Anzahl Flüge',
-          data: pilotFlightData.map(p => p.flightCount),
-          backgroundColor: 'rgba(155, 89, 182, 0.7)',
-          borderColor: 'rgba(155, 89, 182, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            },
-            title: {
-              display: true,
-              text: 'Anzahl Flüge'
-            }
-          },
-          x: {
-            title: {
-              display: false
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: `Anzahl Flüge (${currentYear})`,
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const index = context.dataIndex;
-                const pilot = pilotFlightData[index];
-                return [
-                  `${pilot.flightCount} ${pilot.flightCount === 1 ? 'Flug' : 'Flüge'}`,
-                  `Gesamt-km: ${formatNumber(pilot.totalDistance)} km`
-                ];
-              }
-            }
-          }
-        }
-      }
-    });
-  } else {
-    // Fallback-Tabelle wenn Chart.js nicht verfügbar ist
-    const title = document.createElement('h3');
-    title.textContent = `Anzahl Flüge (${currentYear})`;
-    title.style.textAlign = 'center';
-    title.style.marginBottom = '15px';
-    chartContainer.appendChild(title);
-
-    const table = document.createElement('table');
-    table.className = 'flights-table';
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-    table.style.marginTop = '15px';
-
-    let tableHTML = `
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:8px; border-bottom:2px solid #ddd;">Pilot</th>
-          <th style="text-align:right; padding:8px; border-bottom:2px solid #ddd;">Anzahl Flüge</th>
-          <th style="text-align:right; padding:8px; border-bottom:2px solid #ddd;">Gesamt-km</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-    pilotFlightData.forEach(pilot => {
-      tableHTML += `
-        <tr>
-          <td style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">${pilot.name}</td>
-          <td style="text-align:right; padding:8px; border-bottom:1px solid #ddd;">${pilot.flightCount}</td>
-          <td style="text-align:right; padding:8px; border-bottom:1px solid #ddd;">${formatNumber(pilot.totalDistance)} km</td>
-        </tr>
-      `;
-    });
-
-    tableHTML += '</tbody>';
-    table.innerHTML = tableHTML;
-    chartContainer.appendChild(table);
-  }
+  createBarChart(chartContainer, {
+    labels: pilotFlightData.map(p => p.name),
+    data: pilotFlightData.map(p => p.flightCount),
+    label: 'Anzahl Flüge',
+    title: `Anzahl Flüge - Saison ${seasonString}`,
+    color: CHART_COLORS.quinary,
+    tooltipCallback: (context) => {
+      const pilot = pilotFlightData[context.dataIndex];
+      return [
+        `${pilot.flightCount} Flüge`,
+        `Gesamt: ${formatNumber(pilot.totalKm.toFixed(1))} km`
+      ];
+    }
+  });
 }
 
 /**
- * Rendert einen Chart für die WeGlide-Punkte
- * @param {Array} pilots - Array mit Pilotendaten
- * @param {string} containerId - ID des Container-Elements 
+ * Rendert Top Kilometer Chart
+ */
+export function renderTopKmChart(pilots, containerId = 'km-chart') {
+  const chartContainer = document.getElementById(containerId);
+  if (!chartContainer) return;
+
+  chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
+
+  // Sammle beste Flüge pro Pilot
+  const bestFlightsByPilot = new Map();
+  pilots.forEach(pilot => {
+    pilot.flights?.forEach(flight => {
+      const current = bestFlightsByPilot.get(pilot.name);
+      if (!current || flight.km > current.km) {
+        bestFlightsByPilot.set(pilot.name, { ...flight, pilotName: pilot.name });
+      }
+    });
+  });
+
+  // ÄNDERUNG: Zeige ALLE Piloten statt nur Top 15
+  const allBestFlights = Array.from(bestFlightsByPilot.values())
+    .sort((a, b) => b.km - a.km);
+
+  if (!allBestFlights.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Daten für Saison ${seasonString}</div>`;
+    return;
+  }
+
+  createBarChart(chartContainer, {
+    labels: allBestFlights.map(f => f.pilotName),
+    data: allBestFlights.map(f => f.km),
+    label: 'Beste Distanz (km)',
+    title: `Beste Kilometer aller Piloten - Saison ${seasonString}`,
+    color: CHART_COLORS.septenary,
+    tooltipCallback: (context) => {
+      const flight = allBestFlights[context.dataIndex];
+      return [
+        `${formatNumber(flight.km.toFixed(1))} km`,
+        flight.aircraftType ? `Flugzeug: ${flight.aircraftType}` : '',
+        flight.date ? `Datum: ${formatDateForDisplay(flight.date)}` : ''
+      ].filter(Boolean);
+    }
+  });
+}
+
+/**
+ * Rendert WeGlide Punkte Chart
  */
 export function renderWeGlidePointsChart(pilots, containerId = 'weglide-points-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
-  // Container leeren
   chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
 
-  // Für jeden Piloten die WeGlide-Punkte der besten 6 Flüge berechnen
-  const pilotPointsData = [];
-  if (Array.isArray(pilots)) {
-    pilots.forEach(pilot => {
-      if (!pilot || !Array.isArray(pilot.allFlights)) return;
-
-      // Alle Flüge nach originalPoints sortieren (höchste zuerst)
-      const sortedFlights = [...pilot.allFlights].sort((a, b) => {
-        const pointsA = a.originalPoints || 0;
-        const pointsB = b.originalPoints || 0;
-        return pointsB - pointsA;
-      });
-
-      // Die besten 6 Flüge nehmen (oder alle, wenn weniger als 6)
+  const pilotPointsData = pilots
+    .map(pilot => {
+      const sortedFlights = [...(pilot.allFlights || [])]
+        .sort((a, b) => (b.originalPoints || 0) - (a.originalPoints || 0));
       const bestFlights = sortedFlights.slice(0, 6);
+      const totalPoints = bestFlights.reduce((sum, f) => sum + (f.originalPoints || 0), 0);
+      const totalKm = bestFlights.reduce((sum, f) => sum + (f.km || 0), 0);
 
-      // Summe der WeGlide-Punkte und Kilometer berechnen
-      const totalWeGlidePoints = bestFlights.reduce((sum, flight) => {
-        return sum + (flight.originalPoints || 0);
-      }, 0);
+      return totalPoints > 0 ? {
+        name: pilot.name,
+        totalWeGlidePoints: Math.round(totalPoints),
+        flightCount: bestFlights.length,
+        totalKm
+      } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.totalWeGlidePoints - a.totalWeGlidePoints);
 
-      const totalKm = bestFlights.reduce((sum, flight) => sum + (flight.km || 0), 0);
-
-      if (totalWeGlidePoints > 0) {
-        pilotPointsData.push({
-          name: pilot.name,
-          totalWeGlidePoints: Math.round(totalWeGlidePoints),
-          flightCount: bestFlights.length,
-          totalKm: totalKm
-        });
-      }
-    });
-  }
-
-  // Nach WeGlide-Punkten sortieren (höchste zuerst)
-  pilotPointsData.sort((a, b) => b.totalWeGlidePoints - a.totalWeGlidePoints);
-
-  if (pilotPointsData.length === 0) {
-    const noData = document.createElement('div');
-    noData.className = 'no-data';
-    noData.textContent = 'Keine WeGlide-Punkte verfügbar.';
-    noData.style.textAlign = 'center';
-    noData.style.padding = '20px';
-    chartContainer.appendChild(noData);
+  if (!pilotPointsData.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine WeGlide-Punkte für Saison ${seasonString}</div>`;
     return;
   }
 
-  // Chart.js verwenden, falls verfügbar
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: pilotPointsData.map(p => p.name),
-        datasets: [{
-          label: 'WeGlide Punkte (beste 6 Flüge)',
-          data: pilotPointsData.map(p => p.totalWeGlidePoints),
-          backgroundColor: 'rgba(46, 204, 167, 0.7)',
-          borderColor: 'rgba(46, 204, 167, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        //indexAxis: 'x', // Horizontale Balken
-        scales: {
-          x: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'WeGlide Punkte (Summe)'
-            }
-          },
-          y: {
-            title: {
-              display: false
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'WeGlide Punkte - Beste 6 Flüge pro Pilot',
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const index = context.dataIndex;
-                const pilot = pilotPointsData[index];
-                return [
-                  `${formatNumber(context.parsed.y)} Punkte`,
-                  `Gesamt-km: ${formatNumber(pilot.totalKm.toFixed(1))} km`,
-                  `${pilot.flightCount} ${pilot.flightCount === 1 ? 'Flug' : 'Flüge'} gewertet`
-                ];
-              }
-            }
-          }
-        }
-      }
-    });
-  } else {
-    // Fallback-Tabelle wenn Chart.js nicht verfügbar ist
-    const title = document.createElement('h3');
-    title.textContent = 'WeGlide Punkte - Beste 6 Flüge pro Pilot';
-    title.style.textAlign = 'center';
-    title.style.marginBottom = '15px';
-    chartContainer.appendChild(title);
-
-    const table = document.createElement('table');
-    table.className = 'weglide-points-table';
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-    table.style.marginTop = '15px';
-
-    let tableHTML = `
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:8px; border-bottom:2px solid #ddd;">Pilot</th>
-          <th style="text-align:right; padding:8px; border-bottom:2px solid #ddd;">WeGlide Punkte</th>
-          <th style="text-align:right; padding:8px; border-bottom:2px solid #ddd;">Anzahl Flüge</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-    pilotPointsData.forEach(pilot => {
-      tableHTML += `
-        <tr>
-          <td style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">${pilot.name}</td>
-          <td style="text-align:right; padding:8px; border-bottom:1px solid #ddd;">${formatNumber(pilot.totalWeGlidePoints)}</td>
-          <td style="text-align:right; padding:8px; border-bottom:1px solid #ddd;">${pilot.flightCount}</td>
-        </tr>
-      `;
-    });
-
-    tableHTML += '</tbody>';
-    table.innerHTML = tableHTML;
-    chartContainer.appendChild(table);
-  }
+  createBarChart(chartContainer, {
+    labels: pilotPointsData.map(p => p.name),
+    data: pilotPointsData.map(p => p.totalWeGlidePoints),
+    label: 'WeGlide Punkte',
+    title: `WeGlide Punkte - Beste 6 Flüge Saison ${seasonString}`,
+    color: CHART_COLORS.secondary,
+    tooltipCallback: (context) => {
+      const pilot = pilotPointsData[context.dataIndex];
+      return [
+        `${formatNumber(pilot.totalWeGlidePoints)} Punkte`,
+        `Gesamt-km: ${formatNumber(pilot.totalKm.toFixed(1))} km`,
+        `${pilot.flightCount} Flüge gewertet`
+      ];
+    }
+  });
 }
 
+/**
+ * Hilfsfunktion: Erstellt einheitliche Bar Charts
+ */
+function createBarChart(container, config) {
+  if (!window.Chart) return;
 
+  const canvas = document.createElement('canvas');
+  container.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
 
-/* export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: config.labels,
+      datasets: [{
+        label: config.label,
+        data: config.data,
+        backgroundColor: config.color,
+        borderColor: config.color.replace('0.7', '1'),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...DEFAULT_OPTIONS,
+      plugins: {
+        ...DEFAULT_OPTIONS.plugins,
+        title: {
+          ...DEFAULT_OPTIONS.plugins.title,
+          text: config.title
+        },
+        tooltip: config.tooltipCallback ? {
+          callbacks: {
+            label: config.tooltipCallback
+          }
+        } : undefined
+      },
+      scales: {
+        ...DEFAULT_OPTIONS.scales,
+        y: {
+          ...DEFAULT_OPTIONS.scales.y,
+          title: config.yAxisTitle ? {
+            display: true,
+            text: config.yAxisTitle
+          } : undefined
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Rendert Sprint/Geschwindigkeits-Chart
+ */
+export function renderTopSpeedChart(pilots, containerId = 'top-speed-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
+  console.log('📊 Rendere Top Speed Chart...');
+  console.log(`👨‍✈️ Anzahl Piloten: ${pilots.length}`);
+
   chartContainer.innerHTML = '';
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
 
-  // Sammle Monatsdaten
-  const monthlyData = {};
+  const pilotsWithSprints = pilots.filter(p => p.sprintData?.length > 0);
 
-  pilots.forEach(pilot => {
-    if (!pilot.allFlights) return;
+  if (!pilotsWithSprints.length) {
+    chartContainer.innerHTML = `
+            <div class="no-data">
+                <p>Keine Sprint-Daten für Saison ${seasonString} vorhanden</p>
+                <p style="font-size: 12px; color: #999;">Sprint-Wertungen werden für Flüge über 100km vergeben</p>
+            </div>`;
+    return;
+  }
 
-    pilot.allFlights.forEach(flight => {
-      const date = new Date(flight.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  // Sammle beste Sprints pro Pilot
+  const bestSprintsByPilot = new Map();
+  pilotsWithSprints.forEach(pilot => {
+    pilot.sprintData.forEach(sprint => {
+      if (!sprint?.contest) return;
 
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          flights: 0,
-          totalKm: 0,
-          maxKm: 0,
-          pilots: new Set()
-        };
+      const sprintData = {
+        pilotName: pilot.name,
+        points: sprint.contest.points || 0,
+        speed: sprint.contest.speed || 0,
+        distance: sprint.contest.distance || 0,
+        date: sprint.scoring_date || sprint.takeoff_time
+      };
+
+      const current = bestSprintsByPilot.get(pilot.name);
+      if (!current || sprintData.points > current.points) {
+        bestSprintsByPilot.set(pilot.name, sprintData);
       }
-
-      monthlyData[monthKey].flights++;
-      monthlyData[monthKey].totalKm += flight.km || 0;
-      monthlyData[monthKey].maxKm = Math.max(monthlyData[monthKey].maxKm, flight.km || 0);
-      monthlyData[monthKey].pilots.add(pilot.name);
     });
   });
 
-  // Sortiere Monate
-  const sortedMonths = Object.keys(monthlyData).sort();
+  const topSprints = Array.from(bestSprintsByPilot.values())
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 15);
 
-  if (sortedMonths.length === 0) {
-    chartContainer.innerHTML = '<div class="no-data">Keine Monatsdaten verfügbar</div>';
-    return;
-  }
+  if (!topSprints.length) return;
 
-  // Chart.js
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
+  createBarChart(chartContainer, {
+    labels: topSprints.map(s => s.pilotName),
+    data: topSprints.map(s => s.points),
+    label: 'Sprint-Punkte',
+    title: `Top Sprint-Wertungen - Saison ${seasonString}`,
+    color: CHART_COLORS.senary,
+    tooltipCallback: (context) => {
+      const sprint = topSprints[context.dataIndex];
+      return [
+        `${sprint.points.toFixed(1)} Punkte`,
+        `Geschwindigkeit: ${sprint.speed.toFixed(1)} km/h`,
+        `Distanz: ${sprint.distance.toFixed(1)} km`,
+        `Datum: ${formatDateForDisplay(sprint.date)}`
+      ];
+    }
+  });
+}
 
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: sortedMonths.map(month => {
-          const [year, m] = month.split('-');
-          return new Date(year, m - 1).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
-        }),
-        datasets: [
-          {
-            label: 'Anzahl Flüge',
-            data: sortedMonths.map(m => monthlyData[m].flights),
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            yAxisID: 'y',
-            tension: 0.1
-          },
-          {
-            label: 'Durchschnitt km',
-            data: sortedMonths.map(m => monthlyData[m].totalKm / monthlyData[m].flights),
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            yAxisID: 'y1',
-            tension: 0.1
-          },
-          {
-            label: 'Längster Flug',
-            data: sortedMonths.map(m => monthlyData[m].maxKm),
-            borderColor: 'rgb(255, 205, 86)',
-            backgroundColor: 'rgba(255, 205, 86, 0.2)',
-            yAxisID: 'y1',
-            tension: 0.1
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Saisonverlauf - Monatliche Entwicklung',
-            font: { size: 16 }
-          },
-          tooltip: {
-            callbacks: {
-              afterLabel: function (context) {
-                const month = sortedMonths[context.dataIndex];
-                const data = monthlyData[month];
-                return `Aktive Piloten: ${data.pilots.size}`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            title: {
-              display: true,
-              text: 'Anzahl Flüge'
-            }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            title: {
-              display: true,
-              text: 'Kilometer'
-            },
-            grid: {
-              drawOnChartArea: false,
-            }
-          }
-        }
-      }
-    });
-  }
-} */
-
-  export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
+/**
+ * Rendert Saisonverlauf (wöchentlich)
+ */
+export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
   const chartContainer = document.getElementById(containerId);
   if (!chartContainer) return;
 
   chartContainer.innerHTML = '';
-
-  // Hilfsfunktion um Kalenderwoche zu berechnen
-  function getWeekNumber(date) {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-    const yearStart = new Date(d.getFullYear(), 0, 1);
-    const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-    return weekNo;
-  }
+  const seasonString = getSeasonString(getSeasonFromPilots(pilots));
 
   // Sammle Wochendaten
   const weeklyData = {};
 
   pilots.forEach(pilot => {
-    if (!pilot.allFlights) return;
-
-    pilot.allFlights.forEach(flight => {
+    pilot.allFlights?.forEach(flight => {
       const date = new Date(flight.date);
-      const year = date.getFullYear();
-      const week = getWeekNumber(date);
-      const weekKey = `${year}-W${String(week).padStart(2, '0')}`;
+      const weekKey = getWeekKey(date);
 
       if (!weeklyData[weekKey]) {
         weeklyData[weekKey] = {
-          year: year,
-          week: week,
+          week: getWeekNumber(date),
+          year: date.getFullYear(),
           flights: 0,
           totalKm: 0,
           maxKm: 0,
-          pilots: new Set(),
-          firstDate: date
+          pilots: new Set()
         };
       }
 
@@ -1087,159 +477,145 @@ export function renderWeGlidePointsChart(pilots, containerId = 'weglide-points-c
     });
   });
 
-  // Sortiere Wochen
   const sortedWeeks = Object.keys(weeklyData).sort();
 
-  if (sortedWeeks.length === 0) {
-    chartContainer.innerHTML = '<div class="no-data">Keine Wochendaten verfügbar</div>';
+  if (!sortedWeeks.length) {
+    chartContainer.innerHTML = `<div class="no-data">Keine Daten für Saisonverlauf ${seasonString}</div>`;
     return;
   }
 
-  // Chart.js
-  if (window.Chart && typeof Chart !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    chartContainer.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
+  if (!window.Chart) return;
 
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: sortedWeeks.map(week => {
-          const data = weeklyData[week];
-          // Zeige KW und Jahr für bessere Lesbarkeit
-          return `KW ${data.week}/${String(data.year).slice(-2)}`;
-        }),
-        datasets: [
-          {
-            label: 'Anzahl Flüge',
-            data: sortedWeeks.map(w => weeklyData[w].flights),
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            yAxisID: 'y',
-            tension: 0.1,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          },
-          {
-            label: 'Durchschnitt km',
-            data: sortedWeeks.map(w => {
-              const data = weeklyData[w];
-              return data.flights > 0 ? (data.totalKm / data.flights) : 0;
-            }),
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            yAxisID: 'y1',
-            tension: 0.1,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          },
-          {
-            label: 'Längster Flug',
-            data: sortedWeeks.map(w => weeklyData[w].maxKm),
-            borderColor: 'rgb(255, 205, 86)',
-            backgroundColor: 'rgba(255, 205, 86, 0.2)',
-            yAxisID: 'y1',
-            tension: 0.1,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          }
-        ]
+  const canvas = document.createElement('canvas');
+  chartContainer.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sortedWeeks.map(week => {
+        const data = weeklyData[week];
+        return `KW ${data.week}/${String(data.year).slice(-2)}`;
+      }),
+      datasets: [
+        {
+          label: 'Anzahl Flüge',
+          data: sortedWeeks.map(w => weeklyData[w].flights),
+          borderColor: CHART_COLORS.tertiary.replace('0.7', '1'),
+          backgroundColor: CHART_COLORS.tertiary,
+          yAxisID: 'y',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Durchschnitt km',
+          data: sortedWeeks.map(w => {
+            const data = weeklyData[w];
+            return data.flights > 0 ? (data.totalKm / data.flights) : 0;
+          }),
+          borderColor: CHART_COLORS.secondary.replace('0.7', '1'),
+          backgroundColor: CHART_COLORS.secondary,
+          yAxisID: 'y1',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Längster Flug km',
+          data: sortedWeeks.map(w => weeklyData[w].maxKm),
+          borderColor: CHART_COLORS.quaternary.replace('0.7', '1'),
+          backgroundColor: CHART_COLORS.quaternary,
+          yAxisID: 'y1',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `Saisonverlauf ${seasonString} - Wöchentliche Entwicklung`,
+          font: { size: 16, weight: 'bold' },
+          padding: 20
         },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Saisonverlauf - Wöchentliche Entwicklung',
-            font: { size: 16 }
-          },
-          tooltip: {
-            callbacks: {
-              title: function(context) {
-                const week = sortedWeeks[context[0].dataIndex];
-                const data = weeklyData[week];
-                // Berechne Start- und Enddatum der Woche
-                const weekStart = new Date(data.year, 0, 1 + (data.week - 1) * 7);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
-                
-                return [
-                  `Kalenderwoche ${data.week}/${data.year}`,
-                  `(${weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} - ${weekEnd.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })})`
-                ];
-              },
-              afterLabel: function (context) {
-                const week = sortedWeeks[context.dataIndex];
-                const data = weeklyData[week];
-                return [
-                  `Aktive Piloten: ${data.pilots.size}`,
-                  `Gesamt km: ${formatNumber(data.totalKm.toFixed(1))} km`
-                ];
-              }
-            }
-          },
-          legend: {
-            display: true,
-            position: 'top'
-          }
+        legend: {
+          display: true,
+          position: 'top'
         },
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Kalenderwoche'
-            },
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45,
-              autoSkip: true,
-              maxTicksLimit: 20 // Zeige max. 20 Labels für bessere Lesbarkeit
+        tooltip: {
+          callbacks: {
+            afterLabel: function (context) {
+              const week = sortedWeeks[context.dataIndex];
+              const data = weeklyData[week];
+              return `Aktive Piloten: ${data.pilots.size}`;
             }
-          },
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            title: {
-              display: true,
-              text: 'Anzahl Flüge'
-            },
-            beginAtZero: true
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            title: {
-              display: true,
-              text: 'Kilometer'
-            },
-            grid: {
-              drawOnChartArea: false,
-            },
-            beginAtZero: true
           }
         }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Kalenderwoche' },
+          grid: { display: false }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: { display: true, text: 'Anzahl Flüge' },
+          beginAtZero: true,
+          grid: { color: 'rgba(0, 0, 0, 0.05)' }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: { display: true, text: 'Kilometer' },
+          beginAtZero: true,
+          grid: { drawOnChartArea: false }
+        }
       }
-    });
-  }
+    }
+  });
 }
 
+// Hilfsfunktionen für Wochennummer-Berechnung
+function getWeekNumber(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+}
+
+function getWeekKey(date) {
+  const year = date.getFullYear();
+  const week = getWeekNumber(date);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
 
 /**
  * Rendert alle Charts
- * @param {Array} pilots - Array mit Pilotendaten
  */
 export function renderAllCharts(pilots) {
   renderPointsChart(pilots);
+  renderTotalKmChart(pilots);
+  renderTotalHoursChart(pilots);
   renderFlightsPerPilotChart(pilots);
   renderTopKmChart(pilots);
-  renderTopSpeedChart(pilots);
   renderWeGlidePointsChart(pilots);
-  renderMonthlyProgressChart(pilots); // NEU!
+  renderTopSpeedChart(pilots);
+  renderMonthlyProgressChart(pilots);
 }
+

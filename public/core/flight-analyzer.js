@@ -57,22 +57,29 @@ export function getCoPilotName(flight) {
  * @returns {boolean} - True wenn User Co-Pilot ist
  */
 export function checkIfPilotIsCoPilot(flight, userId) {
-  if (!flight) return false;
+  if (!flight || !userId) return false;
 
+  // Normalisiere userId zu Number für konsistenten Vergleich
+  const targetUserId = parseInt(userId);
+  if (isNaN(targetUserId)) return false;
+
+  // Prüfe verschiedene Co-Pilot Felder
   const coPilotData = flight.co_user || flight.co_pilot || flight.copilot;
-  if (!coPilotData) return false;
 
-  if (typeof coPilotData === 'object') {
-    if (coPilotData.id && coPilotData.id === userId) {
+  if (coPilotData) {
+    // Object mit id property
+    if (coPilotData.id && parseInt(coPilotData.id) === targetUserId) {
       return true;
     }
-  } else if (typeof coPilotData === 'number' || typeof coPilotData === 'string') {
-    if (parseInt(coPilotData) === parseInt(userId)) {
+    // Direkte ID als Number oder String
+    if ((typeof coPilotData === 'number' || typeof coPilotData === 'string') &&
+      parseInt(coPilotData) === targetUserId) {
       return true;
     }
   }
 
-  if (flight.co_user_id && parseInt(flight.co_user_id) === parseInt(userId)) {
+  // Separates co_user_id Feld
+  if (flight.co_user_id && parseInt(flight.co_user_id) === targetUserId) {
     return true;
   }
 

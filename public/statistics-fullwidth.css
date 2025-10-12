@@ -171,14 +171,7 @@
   animation-delay: 0.6s;
 }
 
-/* Verbesserte No-Data Anzeige */
-#statistics .no-data {
-  text-align: center;
-  padding: var(--spacing-xxxl);
-  color: var(--text-secondary);
-  font-style: italic;
-  font-size: 16px;
-}
+
 
 /* Chart Container Border-Highlight für verschiedene Chart-Typen */
 #statistics #points-chart {
@@ -194,13 +187,31 @@
 }
 
 #statistics #top-speed-chart {
-  border-left: 4px solid #039be5;
+  border-left: 4px solid #ff9f40;
 }
 
 #statistics #weglide-points-chart {
-  border-left: 4px solid #2ecca7;
+  border-left: 4px solid #fb8ea7;
 }
 
 #statistics #monthly-progress-chart {
-  border-left: 4px solid #ff9800;
+  border-left: 4px solid #128ebf;
+}
+
+/* NEU: Fehlende Charts hinzufügen */
+#statistics #total-km-chart {
+  border-left: 4px solid #4bcbcb;
+}
+
+#statistics #total-hours-chart {
+  border-left: 4px solid #ffce56;
+}
+
+/* Verbesserte No-Data Anzeige */
+#statistics .no-data {
+  text-align: center;
+  padding: var(--spacing-xxxl);
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 16px;
 }

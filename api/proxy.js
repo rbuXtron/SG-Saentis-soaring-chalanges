@@ -17,6 +17,9 @@ export default async function handler(req, res) {
 
         // Hole den path Parameter
         const { path, endpoint, ...otherParams } = req.query;
+        console.log('Path:', path);
+        console.log('Endpoint:', endpoint);
+        console.log('Other Params:', otherParams);
 
         // Basis-URL für WeGlide
         const baseUrl = 'https://api.weglide.org/v1';
@@ -42,6 +45,9 @@ export default async function handler(req, res) {
             if (otherParams.limit) {
                 queryParams.limit = otherParams.limit;
             }
+            if (otherParams.season) {
+                queryParams.season_in = otherParams.season;
+            }
         }
 
 
@@ -60,7 +66,7 @@ export default async function handler(req, res) {
             queryParams.include_story = 'true';
             queryParams.include_stats = 'false';
             queryParams.format = 'json';
-            
+
             // Parameter-Konvertierung
             if (otherParams.user_id) {
                 queryParams.user_id_in = otherParams.user_id;

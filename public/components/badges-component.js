@@ -1,89 +1,112 @@
 /**
  * SG Säntis Cup - WeGlide Badges Komponente
- * 
- * Version 3.3 - Mit kompakter Multi-Level Badge Card Darstellung
+ * Version 4.0 - Bereinigt mit dynamischer Saison
  */
 
 import { formatDateForDisplay } from '../utils/utils.js';
 
+// Hilfsfunktion für Saison-Information
+function getSeasonInfo(pilots) {
+    const season = pilots[0]?.season || getCurrentSeasonYear();
+    const seasonYear = typeof season === 'string' ? parseInt(season) : season;
+
+    return {
+        year: seasonYear,
+        string: seasonYear === 2026 ? '2025/2026' : '2024/2025',
+        start: seasonYear === 2026 ? 'Oktober 2025' : 'Oktober 2024',
+        shortString: seasonYear === 2026 ? '25/26' : '24/25'
+    };
+}
+
+function getCurrentSeasonYear() {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    return month >= 10 ? year + 1 : year;
+}
+
 /**
- * Rendert die Badge-Rangliste aus bereits geladenen Daten
+ * Rendert die Badge-Rangliste
  */
 export function renderBadgeRanking(pilots, containerId = 'badge-ranking-container') {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     container.innerHTML = '';
+    const seasonInfo = getSeasonInfo(pilots);
 
     if (!Array.isArray(pilots) || pilots.length === 0) {
         container.innerHTML = '<div class="no-data">Keine Badge-Daten verfügbar</div>';
         return;
     }
 
-    // Debug: Prüfe Datenstruktur
-    console.log('🔍 Badge-Daten Debug:');
-    pilots.slice(0, 3).forEach(pilot => {
-        console.log(`${pilot.name}:`, {
-            badges: Array.isArray(pilot.badges) ? 'Array' : typeof pilot.badges,
-            badgeCount: pilot.badgeCount,
-            seasonBadges: Array.isArray(pilot.seasonBadges) ? 'Array' : typeof pilot.seasonBadges
-        });
-    });
-
-    // Nur Piloten mit Badges in dieser Saison
     const pilotsWithBadges = pilots
         .filter(pilot => pilot.badgeCount > 0)
         .sort((a, b) => b.badgeCount - a.badgeCount);
 
     if (pilotsWithBadges.length === 0) {
-        // Sammle Statistiken
-        const totalPilots = pilots.length;
-        const pilotsWithPreviousBadges = pilots.filter(p =>
-            p.allTimeBadgeCount > 0 && p.badgeCount === 0
-        ).length;
-
-        container.innerHTML = `
-            <div class="ranking-header">
-                <h2 class="section-title">🏅 WeGlide Badges Saison 2024/2025</h2>
-                <div class="ranking-subtitle">
-                    Gesammelte Abzeichen seit Oktober 2024
-                </div>
-            </div>
-            <div class="no-data">
-                <p>Noch keine neuen Badges in der Saison 2024/2025 erreicht!</p>
-                <p style="font-size: 14px; color: #666; margin-top: 10px;">
-                    ${pilotsWithPreviousBadges} Piloten haben Badges aus vorherigen Saisons
-                </p>
-                <p style="font-size: 12px; color: #888; margin-top: 10px;">
-                    Die Saison hat gerade begonnen - die ersten Badges werden sicher bald erreicht! 🚀
-                </p>
-            </div>
-        `;
+        renderNoBadgesMessage(container, pilots, seasonInfo);
         return;
     }
 
-    // Überschrift
+    // Header
     const header = document.createElement('div');
     header.className = 'ranking-header';
     header.innerHTML = `
-        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award" class="section-logo" style="width: 52px; height: 57px; margin-bottom: var(--spacing-md); 
-            display: block; margin-left: auto; margin-right: auto;">
-        <h2 class="section-title"> WeGlide Badge Award Saison 2024/2025</h2>
-        <div class="ranking-subtitle">
-            Gesammelte Abzeichen seit Oktober 2024
-        </div>
+        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award" 
+             class="section-logo" style="width: 82px; height: 87px; margin-bottom: var(--spacing-md); 
+             display: block; margin-left: auto; margin-right: auto;">
+        <h2 class="section-title">WeGlide Badge Award Saison ${seasonInfo.string}</h2>
+        <div class="ranking-subtitle">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
     `;
     container.appendChild(header);
 
-    // Ranglisten-Tabelle Container
+    // Tabelle
+    const table = createBadgeTable(pilotsWithBadges, seasonInfo);
+    container.appendChild(table);
+
+    // Statistiken
+    const statsBox = createBadgeStatsBox(pilots, seasonInfo);
+    container.appendChild(statsBox);
+
+    // Info
+    const infoBox = document.createElement('div');
+    infoBox.className = 'badge-stats-info';
+    infoBox.innerHTML = `
+        <p class="info-text">* Es werden nur neue Badge-Level ab ${seasonInfo.start} (Saison ${seasonInfo.string}) gezählt</p>
+    `;
+    container.appendChild(infoBox);
+
+    // Event Listener
+    setTimeout(() => addBadgeDetailsEventListeners(), 100);
+}
+
+function renderNoBadgesMessage(container, pilots, seasonInfo) {
+    const pilotsWithPreviousBadges = pilots.filter(p =>
+        p.allTimeBadgeCount > 0 && p.badgeCount === 0
+    ).length;
+
+    container.innerHTML = `
+        <div class="ranking-header">
+            <h2 class="section-title">🏅 WeGlide Badges Saison ${seasonInfo.string}</h2>
+            <div class="ranking-subtitle">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
+        </div>
+        <div class="no-data">
+            <p>Noch keine neuen Badges in der Saison ${seasonInfo.string} erreicht!</p>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                ${pilotsWithPreviousBadges} Piloten haben Badges aus vorherigen Saisons
+            </p>
+        </div>
+    `;
+}
+
+function createBadgeTable(pilotsWithBadges, seasonInfo) {
     const tableContainer = document.createElement('div');
     tableContainer.className = 'badge-ranking-table-container';
 
-    // Tabelle erstellen
     const table = document.createElement('table');
     table.className = 'badge-ranking-table';
 
-    // Tabellen-Header
     table.innerHTML = `
     <thead>
         <tr>
@@ -128,7 +151,7 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
                 </span>
                 Badges Gesamt
             </th>
-            <th class="badges-details-col">
+            <th class="details-col">
                 <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                         <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
@@ -138,188 +161,76 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
             </th>
         </tr>
     </thead>
-    <tbody id="badge-ranking-body"></tbody>
+    <tbody></tbody>
 `;
-
-    tableContainer.appendChild(table);
-    container.appendChild(tableContainer);
 
     const tbody = table.querySelector('tbody');
 
-    // Zeilen erstellen
     pilotsWithBadges.forEach((pilot, index) => {
-        const rank = index + 1;
-        const row = document.createElement('tr');
-
-        // Spezielle Klassen für Top 3
-        if (rank === 1) row.classList.add('first-place');
-        else if (rank === 2) row.classList.add('second-place');
-        else if (rank === 3) row.classList.add('third-place');
-
-        const safeId = pilot.name
-            .replace(/[^a-zA-Z0-9]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-            .toLowerCase();
-
-        row.innerHTML = `
-    <td class="rank-col">
-        <div class="rank-container">
-            <span class="rank rank-${rank}">${rank}</span>
-        </div>
-    </td>
-    <td class="pilot-col">
-        <div class="pilot-info">
-            <span class="pilot-name">${pilot.name}</span>
-            ${rank <= 3 ? '<span class="badge-champion"></span>' : ''}
-        </div>
-    </td>
-    <td class="badges-count-col">
-        <div class="badges-display">
-            <span class="badges-value">${pilot.badgeCount}</span>
-        </div>
-    </td>
-    <td class="badges-categories-col">
-        <div class="badges-categories-display">
-            <span class="badges-categories-value">${pilot.badgeCategoryCount || 0}</span>
-        </div>
-    </td>
-    <td class="badges-total-col">
-        <div class="badges-total-display">
-            <span class="badges-total-value">${pilot.allTimeBadgePoints || 0}</span>
-        </div>
-    </td>
-    <td class="badges-details-col">
-        <button class="toggle-badge-details modern-button" 
-                data-pilot="${pilot.name}" 
-                data-safe-id="${safeId}"
-                aria-expanded="false">
-            <svg class="details-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-            <span class="button-text">Details</span>
-        </button>
-    </td>
-`;
+        const row = createBadgeTableRow(pilot, index + 1, seasonInfo);
         tbody.appendChild(row);
 
-        // Details-Zeile für Badges
-        const detailsRow = document.createElement('tr');
-        detailsRow.classList.add('badge-details-row');
-        detailsRow.style.display = 'none';
-        detailsRow.setAttribute('data-badge-details-for', safeId);
-
-        const detailsCell = document.createElement('td');
-        detailsCell.colSpan = 7; // Eine Spalte mehr wegen Kategorien
-        detailsCell.style.padding = '0';
-
-        const detailsContainer = document.createElement('div');
-        detailsContainer.classList.add('badge-details');
-        detailsContainer.setAttribute('id', `badge-details-${safeId}`);
-
-        // Badge-Galerie erstellen
-        detailsContainer.innerHTML = createBadgeGalleryHTML(pilot);
-
-        detailsCell.appendChild(detailsContainer);
-        detailsRow.appendChild(detailsCell);
+        const detailsRow = createBadgeDetailsRow(pilot, seasonInfo);
         tbody.appendChild(detailsRow);
     });
 
-    // Wenn nur wenige Piloten Badges haben, zeige eine Ermutigung
-    if (pilotsWithBadges.length < 5) {
-        const encouragement = document.createElement('div');
-        encouragement.className = 'badge-encouragement';
-        encouragement.innerHTML = `
-            <p style="text-align: center; color: #666; margin: 20px 0; font-style: italic;">
-                🎯 Erst ${pilotsWithBadges.length} Piloten haben neue Badges in der Saison 2024/2025 erreicht. 
-                Die Saison läuft seit Oktober 2024!
-            </p>
-        `;
-        container.appendChild(encouragement);
-    }
-
-    // Statistik-Box am Ende
-    const statsBox = createBadgeStatsBox(pilots);
-    container.appendChild(statsBox);
-
-    // Info-Text
-    const infoBox = document.createElement('div');
-    infoBox.className = 'badge-stats-info';
-    infoBox.innerHTML = `
-        <p class="info-text">* Es werden nur neue Badge-Level ab Oktober 2024 (Saison 2024/2025) gezählt</p>
-    `;
-    container.appendChild(infoBox);
-
-    // Event Listener hinzufügen
-    setTimeout(() => {
-        addBadgeDetailsEventListeners();
-    }, 100);
+    tableContainer.appendChild(table);
+    return tableContainer;
 }
 
-/**
- * Erstellt eine Statistik-Box für Badge-Übersicht
- */
-function createBadgeStatsBox(pilots) {
-    const statsContainer = document.createElement('div');
-    statsContainer.className = 'badge-stats-container';
+function createBadgeTableRow(pilot, rank, seasonInfo) {
+    const row = document.createElement('tr');
+    if (rank === 1) row.classList.add('first-place');
+    else if (rank === 2) row.classList.add('second-place');
+    else if (rank === 3) row.classList.add('third-place');
 
-    // Berechne Statistiken
-    const totalBadgesThisYear = pilots.reduce((sum, pilot) => sum + (pilot.badgeCount || 0), 0);
-    
-    // KORREKTUR: Zähle verifizierte Badges basierend auf den tatsächlichen Badge-Daten
-    let totalVerifiedBadges = 0;
-    pilots.forEach(pilot => {
-        if (pilot.badges && Array.isArray(pilot.badges)) {
-            pilot.badges.forEach(badge => {
-                // Ein Badge gilt als verifiziert wenn es eine flight_id hat
-                if (badge.flight_id) {
-                    totalVerifiedBadges++;
-                }
-            });
-        }
-    });
-    
-    const totalBadgesAllTime = pilots.reduce((sum, pilot) => sum + (pilot.allTimeBadgeCount || 0), 0);
-    const pilotsWithBadges = pilots.filter(pilot => pilot.badgeCount > 0).length;
+    const safeId = pilot.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 
-    // Berechne Gesamt-Kategorien
-    const allCategories = new Set();
-    pilots.forEach(pilot => {
-        if (pilot.badges && Array.isArray(pilot.badges)) {
-            pilot.badges.forEach(badge => {
-                if (badge.badge_id) allCategories.add(badge.badge_id);
-            });
-        }
-    });
-
-    statsContainer.innerHTML = `
-        <div class="badge-stats-grid">
-            <div class="badge-stat-card">
-                <div class="stat-value">${totalBadgesThisYear}</div>
-                <div class="stat-label">Badges Saison 24/25</div>
-            </div>
-            <div class="badge-stat-card">
-                <div class="stat-value">${allCategories.size}</div>
-                <div class="stat-label">Verschiedene Kategorien</div>
-            </div>
-            <div class="badge-stat-card">
-                <div class="stat-value">${totalVerifiedBadges}</div>
-                <div class="stat-label">Verifizierte Badges</div>
-            </div>
-            <div class="badge-stat-card">
-                <div class="stat-value">${pilotsWithBadges}</div>
-                <div class="stat-label">Piloten mit Badges</div>
-            </div>
-        </div>
+    row.innerHTML = `
+        <td class="rank-col">
+            <span class="rank rank-${rank}">${rank}</span>
+        </td>
+        <td class="pilot-col">
+            <span class="pilot-name">${pilot.name}</span>
+        </td>
+        <td class="badges-count-col">
+            <span class="badges-value">${pilot.badgeCount || 0}</span>
+        </td>
+        <td class="badges-categories-col">
+            <span class="badges-categories-value">${pilot.badgeCategoryCount || 0}</span>
+        </td>
+        <td class="badges-total-col">
+            <span class="badges-total-value">${pilot.allTimeBadgeCount || 0}</span>
+        </td>
+        <td class="details-col">
+            <button class="toggle-badge-details" 
+                    data-pilot="${pilot.name}" 
+                    data-safe-id="${safeId}"
+                    aria-expanded="false">
+                Details
+            </button>
+        </td>
     `;
 
-    return statsContainer;
+    return row;
 }
 
-/**
- * Erstellt HTML für die Badge-Galerie mit vereinfachter Sortierung
- * ANGEPASST: Gruppiert Multi-Level Badges zusammen
- */
+function createBadgeDetailsRow(pilot, seasonInfo) {
+    const safeId = pilot.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+
+    const detailsRow = document.createElement('tr');
+    detailsRow.className = 'badge-details-row';
+    detailsRow.style.display = 'none';
+    detailsRow.setAttribute('data-badge-details-for', safeId);
+
+    const detailsCell = document.createElement('td');
+    detailsCell.colSpan = 6;
+    detailsCell.innerHTML = createBadgeGalleryHTML(pilot, seasonInfo);
+
+    detailsRow.appendChild(detailsCell);
+    return detailsRow;
+}
+
 /**
  * Erstellt HTML für die Badge-Galerie mit vereinfachter Sortierung
  * ANGEPASST: Gruppiert Multi-Level Badges zusammen
@@ -483,9 +394,36 @@ function createBadgeGalleryHTML(pilot) {
 }
 
 /**
- * Hilfsfunktion: Erstellt HTML für ein einzelnes Badge-Item
- * ERWEITERT: Mit kompakter Multi-Level Darstellung
+ * Hilfsfunktion: Erstellt HTML für die Badge-Zusammenfassung
  */
+function createBadgeSummaryHTML(pilot) {
+    return `
+        <div class="badge-summary">
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Gesamt Badges:</span>
+                    <span class="summary-value">${pilot.badgeCount || 0}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Kategorien:</span>
+                    <span class="summary-value">${pilot.badgeCategoryCount || 0}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Flüge mit Badges:</span>
+                    <span class="summary-value">${pilot.flightsWithBadges || 0}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Analysierte Flüge:</span>
+                    <span class="summary-value">${pilot.flightsAnalyzed || 0}</span>
+                </div>
+            </div>
+            <p class="summary-note">
+                Alle Badges wurden direkt aus den Flugdaten seit dem 1. Oktober 2024 extrahiert.
+            </p>
+        </div>
+    `;
+}
+
 /**
  * Hilfsfunktion: Erstellt HTML für ein einzelnes Badge-Item
  * KORRIGIERT: Multi-Level Badges bleiben Multi-Level, auch wenn nur Level 1 erreicht
@@ -565,8 +503,122 @@ function createBadgeItemHTML(badge, allBadgesOfSameType = []) {
     `;
 }
 
+function createBadgeGalleryHTML_old(pilot, seasonInfo) {
+    let html = `
+        <div class="badge-gallery-header">
+            <h4>Badges Saison ${seasonInfo.string} - ${pilot.name}</h4>
+            <p class="badge-count-info">
+                <strong>${pilot.badgeCount || 0}</strong> Badges aus 
+                <strong>${pilot.flightsWithBadges || 0}</strong> Flügen
+            </p>
+        </div>
+    `;
 
+    const badges = Array.isArray(pilot.badges) ? pilot.badges : [];
 
+    if (badges.length === 0) {
+        html += `<div class="no-badges">Keine Badges in der Saison ${seasonInfo.string}</div>`;
+        return html;
+    }
+
+    html += '<div class="badge-gallery">';
+
+    // Gruppiere und zeige Badges
+    const badgeGroups = groupBadgesByType(badges);
+
+    // Multi-Level Badges
+    if (badgeGroups.multiLevel.length > 0) {
+        html += renderBadgeGroup('Multi-Level Badges', badgeGroups.multiLevel);
+    }
+
+    // Single-Level Badges  
+    if (badgeGroups.singleLevel.length > 0) {
+        html += renderBadgeGroup('Single-Level Badges', badgeGroups.singleLevel);
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function groupBadgesByType(badges) {
+    const groups = {
+        multiLevel: [],
+        singleLevel: []
+    };
+
+    const badgeMap = new Map();
+
+    badges.forEach(badge => {
+        if (!badge.badge_id) return;
+
+        if (!badgeMap.has(badge.badge_id)) {
+            badgeMap.set(badge.badge_id, []);
+        }
+        badgeMap.get(badge.badge_id).push(badge);
+    });
+
+    badgeMap.forEach((badgeList, badgeId) => {
+        const firstBadge = badgeList[0];
+        const isMultiLevel = checkIfMultiLevel(firstBadge);
+
+        if (isMultiLevel) {
+            groups.multiLevel.push({
+                badgeId,
+                badges: badgeList.sort((a, b) => (a.level || 0) - (b.level || 0))
+            });
+        } else {
+            groups.singleLevel.push(...badgeList);
+        }
+    });
+
+    return groups;
+}
+
+function checkIfMultiLevel(badge) {
+    return badge.type === 'multi-level' ||
+        badge.is_multi_level ||
+        (badge.badge?.values?.length > 1) ||
+        (badge.badge?.points?.length > 1);
+}
+
+function renderBadgeGroup(title, badges) {
+    let html = `
+        <div class="badge-group">
+            <h5 class="badge-group-title">${title}</h5>
+            <div class="badge-grid">
+    `;
+
+    if (Array.isArray(badges[0]?.badges)) {
+        // Multi-level badges
+        badges.forEach(group => {
+            html += createMultiLevelBadgeCard(group.badges[0], group.badges);
+        });
+    } else {
+        // Single-level badges
+        badges.forEach(badge => {
+            html += createSingleBadgeCard(badge);
+        });
+    }
+
+    html += '</div></div>';
+    return html;
+}
+
+function createSingleBadgeCard(badge) {
+    const title = badge.name || badge.badge_id || 'Badge';
+    const date = formatDateForDisplay(badge.achieved_at || badge.created);
+    const value = badge.value ? `${badge.value} ${getUnitForBadgeType(badge.badge_id)}` : '';
+
+    return `
+        <div class="badge-item badge-single-level" 
+             data-flight-id="${badge.flight_id || ''}"
+             title="${title}">
+            <div class="badge-name">${title}</div>
+            ${value ? `<div class="badge-value">${value}</div>` : ''}
+            <div class="badge-date">${date}</div>
+        </div>
+    `;
+}
 
 function createMultiLevelBadgeCard(baseBadge, allLevels) {
     // Sortiere Level
@@ -657,112 +709,143 @@ function createMultiLevelBadgeCard(baseBadge, allLevels) {
   `;
 }
 
+function createBadgeStatsBox(pilots, seasonInfo) {
+    const statsContainer = document.createElement('div');
+    statsContainer.className = 'badge-stats-container';
 
-/**
- * Hilfsfunktion: Erstellt HTML für die Badge-Statistiken
- */
-function createBadgeStatisticsHTML(pilot) {
-    let html = `
-        <div class="badge-statistics">
-            <h5 class="stats-title">📊 Badge-Statistiken</h5>
-    `;
+    const totalBadges = pilots.reduce((sum, p) => sum + (p.badgeCount || 0), 0);
+    const pilotsWithBadges = pilots.filter(p => p.badgeCount > 0).length;
 
-    // Prüfe ob badgeStats existiert
-    const stats = pilot.badgeStats || pilot.stats || {};
-
-    // Zeitliche Verteilung
-    if (stats.badgesByMonth && Object.keys(stats.badgesByMonth).length > 0) {
-        html += `
-            <div class="stats-section">
-                <h6>Zeitliche Verteilung</h6>
-                <div class="month-distribution">
-                    ${Object.entries(stats.badgesByMonth || {})
-                .sort(([a], [b]) => {
-                    const dateA = new Date(a + ' 1');
-                    const dateB = new Date(b + ' 1');
-                    return dateA - dateB;
-                })
-                .map(([month, count]) => `
-                            <div class="month-bar">
-                                <span class="month-label">${month}</span>
-                                <span class="month-count">${count} ${count === 1 ? 'Badge' : 'Badges'}</span>
-                            </div>
-                        `).join('')}
-                </div>
+    statsContainer.innerHTML = `
+        <div class="badge-stats-grid">
+            <div class="badge-stat-card">
+                <div class="stat-value">${totalBadges}</div>
+                <div class="stat-label">Badges Saison ${seasonInfo.shortString}</div>
             </div>
-        `;
-    }
-
-    // Top Badges
-    if (stats.topBadges && stats.topBadges.length > 0) {
-        html += `
-            <div class="stats-section">
-                <h6>Häufigste Badges</h6>
-                <div class="top-badges-list">
-                    ${stats.topBadges.map((badge, index) => `
-                        <div class="top-badge-item">
-                            <span class="badge-rank">${index + 1}.</span>
-                            <span class="badge-name">${badge.name}</span>
-                            <span class="badge-frequency">${badge.count}x</span>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="badge-stat-card">
+                <div class="stat-value">${pilotsWithBadges}</div>
+                <div class="stat-label">Piloten mit Badges</div>
             </div>
-        `;
-    }
-
-    html += `</div>`;
-    return html;
-}
-
-/**
- * Hilfsfunktion: Erstellt HTML für die Badge-Zusammenfassung
- */
-function createBadgeSummaryHTML(pilot) {
-    return `
-        <div class="badge-summary">
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <span class="summary-label">Gesamt Badges:</span>
-                    <span class="summary-value">${pilot.badgeCount || 0}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Kategorien:</span>
-                    <span class="summary-value">${pilot.badgeCategoryCount || 0}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Flüge mit Badges:</span>
-                    <span class="summary-value">${pilot.flightsWithBadges || 0}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Analysierte Flüge:</span>
-                    <span class="summary-value">${pilot.flightsAnalyzed || 0}</span>
-                </div>
-            </div>
-            <p class="summary-note">
-                Alle Badges wurden direkt aus den Flugdaten seit dem 1. Oktober 2024 extrahiert.
-            </p>
         </div>
     `;
+
+    return statsContainer;
+}
+
+function getUnitForBadgeType(badgeId) {
+    if (!badgeId) return '';
+    const id = badgeId.toLowerCase();
+
+    if (id.includes('astronaut') || id.includes('altitude') || id.includes('height')) return 'm';
+    if (id.includes('distance') || id.includes('triangle') || id.includes('km') || id.includes('no_need_to_circle') || id.includes('explorer')) return 'km';
+    if (id.includes('duration') || id.includes('hour') || id.includes('endurance') || id.includes('aeronaut')) return 'h';
+    if (id.includes('speed')) return 'km/h';
+    if (id.includes('points') || id.includes('score')) return 'pt';
+
+    return '';
+}
+
+function addBadgeDetailsEventListeners_old() {
+    // Warte kurz, damit DOM fertig ist
+    setTimeout(() => {
+        const buttons = document.querySelectorAll('.toggle-badge-details');
+
+        buttons.forEach(button => {
+            // Entferne alte Listener
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+
+            // Füge neuen Listener hinzu
+            newButton.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const safeId = this.getAttribute('data-safe-id');
+                const detailsRow = document.querySelector(`[data-badge-details-for="${safeId}"]`);
+
+                if (!detailsRow) {
+                    console.error('Details-Zeile nicht gefunden für:', safeId);
+                    return;
+                }
+
+                const isVisible = detailsRow.style.display === 'table-row';
+
+                // Alle anderen schließen
+                document.querySelectorAll('.badge-details-row').forEach(row => {
+                    row.style.display = 'none';
+                });
+
+                // Toggle diese Zeile
+                if (!isVisible) {
+                    detailsRow.style.display = 'table-row';
+                    this.setAttribute('aria-expanded', 'true');
+                } else {
+                    detailsRow.style.display = 'none';
+                    this.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+    }, 100);
 }
 
 /**
- * Prüft ob ein Badge ein Multi-Level Badge ist
+ * Event Listener für Badge-Details
  */
-function isMultiLevelBadge(badge) {
-    // Prüfe zuerst das is_multi_level Flag
-    if (badge.is_multi_level !== undefined) {
-        return badge.is_multi_level;
-    }
+function addBadgeDetailsEventListeners() {
+    const buttons = document.querySelectorAll('.toggle-badge-details');
+    console.log(`Füge Event Listener zu ${buttons.length} Badge-Buttons hinzu`);
 
-    // Fallback: Prüfe ob Badge mehrere Level/Values hat
-    if (badge.badge && badge.badge.values && Array.isArray(badge.badge.values)) {
-        return badge.badge.values.length > 1;
-    }
+    buttons.forEach(button => {
+        if (button.hasAttribute('data-badge-listener-added')) return;
+        button.setAttribute('data-badge-listener-added', 'true');
 
-    // Prüfe ob Level vorhanden ist
-    return badge.level && badge.level > 0;
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const safeId = this.getAttribute('data-safe-id');
+            const pilotName = this.getAttribute('data-pilot');
+            const currentRow = this.closest('tr');
+            const detailsRow = currentRow.nextElementSibling;
+
+            console.log(`Badge-Details geklickt für: ${pilotName}`);
+
+            if (detailsRow && detailsRow.classList.contains('badge-details-row')) {
+                const isVisible = detailsRow.style.display !== 'none';
+
+                // Alle anderen schließen
+                document.querySelectorAll('.badge-details-row').forEach(row => {
+                    row.style.display = 'none';
+                });
+                document.querySelectorAll('.toggle-badge-details').forEach(btn => {
+                    btn.setAttribute('aria-expanded', 'false');
+                    const svg = btn.querySelector('svg');
+                    if (svg) svg.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                });
+
+                if (!isVisible) {
+                    // Diese öffnen
+                    detailsRow.style.display = 'table-row';
+                    detailsRow.style.visibility = 'visible';
+                    this.setAttribute('aria-expanded', 'true');
+                    const svg = this.querySelector('svg');
+                    if (svg) svg.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+
+                    // Scroll to view
+                    setTimeout(() => {
+                        detailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+
+                    // Badge-Items klickbar machen
+                    setTimeout(() => {
+                        makeBadgeItemsClickable(detailsRow);
+                    }, 200);
+                }
+            }
+        });
+    });
 }
+
 
 /**
  * Generiert ein Badge-Icon basierend auf dem Badge-Typ
@@ -882,181 +965,13 @@ function getBadgeTypeFromId(badgeId) {
     return 'other';
 }
 
-/**
- * Formatiert den Badge-Wert je nach Typ
- */
-function formatBadgeValue(badge) {
-    // Verwende level_value wenn vorhanden (Multi-Level Badge)
-    const value = badge.level_value || badge.value;
-    if (!value) return '';
-
-    const type = getBadgeTypeFromId(badge.badge_id || badge.id);
-    const numValue = parseFloat(value);
-
-    switch (type) {
-        case 'altitude':
-            return `${numValue.toFixed(0)} m`;
-        case 'distance':
-            return `${numValue.toFixed(0)} km`;
-        case 'duration':
-            // Duration ist bereits in Stunden
-            const hours = Math.floor(numValue);
-            const minutes = Math.round((numValue - hours) * 60);
-            if (hours > 0 && minutes > 0) {
-                return `${hours}h ${minutes}min`;
-            } else if (hours > 0) {
-                return `${hours}h`;
-            } else {
-                return `${minutes}min`;
-            }
-        case 'speed':
-            return `${numValue.toFixed(1)} km/h`;
-        default:
-            return value.toString();
-    }
-}
-
-/**
- * Event Listener für Badge-Details
- */
-function addBadgeDetailsEventListeners() {
-    const buttons = document.querySelectorAll('.toggle-badge-details');
-    console.log(`Füge Event Listener zu ${buttons.length} Badge-Buttons hinzu`);
-
-    buttons.forEach(button => {
-        if (button.hasAttribute('data-badge-listener-added')) return;
-        button.setAttribute('data-badge-listener-added', 'true');
-
-        button.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const safeId = this.getAttribute('data-safe-id');
-            const pilotName = this.getAttribute('data-pilot');
-            const currentRow = this.closest('tr');
-            const detailsRow = currentRow.nextElementSibling;
-
-            console.log(`Badge-Details geklickt für: ${pilotName}`);
-
-            if (detailsRow && detailsRow.classList.contains('badge-details-row')) {
-                const isVisible = detailsRow.style.display !== 'none';
-
-                // Alle anderen schließen
-                document.querySelectorAll('.badge-details-row').forEach(row => {
-                    row.style.display = 'none';
-                });
-                document.querySelectorAll('.toggle-badge-details').forEach(btn => {
-                    btn.setAttribute('aria-expanded', 'false');
-                    const svg = btn.querySelector('svg');
-                    if (svg) svg.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-                });
-
-                if (!isVisible) {
-                    // Diese öffnen
-                    detailsRow.style.display = 'table-row';
-                    detailsRow.style.visibility = 'visible';
-                    this.setAttribute('aria-expanded', 'true');
-                    const svg = this.querySelector('svg');
-                    if (svg) svg.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
-
-                    // Scroll to view
-                    setTimeout(() => {
-                        detailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
-
-                    // Badge-Items klickbar machen
-                    setTimeout(() => {
-                        makeBadgeItemsClickable(detailsRow);
-                    }, 200);
-                }
-            }
-        });
-    });
-}
-
-/**
- * Macht Badge-Items klickbar für mehr Details
- */
 function makeBadgeItemsClickable(detailsRow) {
-    const badgeItems = detailsRow.querySelectorAll('.badge-item, .level-hexagon');
-
-    badgeItems.forEach(item => {
-        if (item.hasAttribute('data-clickable')) return;
-        item.setAttribute('data-clickable', 'true');
-
+    detailsRow.querySelectorAll('.badge-item').forEach(item => {
         item.addEventListener('click', function () {
             const flightId = this.getAttribute('data-flight-id');
-
-            // Visual Feedback
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 200);
-
-            // Wenn Flug-ID vorhanden, Link zu WeGlide öffnen
-            if (flightId && flightId !== '') {
+            if (flightId) {
                 window.open(`https://www.weglide.org/flight/${flightId}`, '_blank');
             }
         });
     });
-}
-
-/**
- * Debug-Funktion für Badge-Status
- */
-export function debugBadgeStatus(pilots) {
-    console.log('🔍 DEBUG: Badge-Status aller Piloten');
-    console.log('=====================================');
-
-    const sortedPilots = [...pilots].sort((a, b) =>
-        (b.allTimeBadgeCount || 0) - (a.allTimeBadgeCount || 0)
-    );
-
-    sortedPilots.forEach(pilot => {
-        const badges2025 = pilot.badgeCount || 0;
-        const badgesTotal = pilot.allTimeBadgeCount || 0;
-        const categories = pilot.badgeCategoryCount || 0;
-
-        if (badgesTotal > 0 || badges2025 > 0) {
-            console.log(`${pilot.name}:`);
-            console.log(`  Saison 24/25: ${badges2025} Badges`);
-            console.log(`  Gesamt: ${badgesTotal} Badges`);
-            console.log(`  Kategorien: ${categories}`);
-            console.log(`  Saisons: ${pilot.seasonsCovered?.join(', ') || 'N/A'}`);
-            console.log('---');
-        }
-    });
-
-    // Zusammenfassung
-    const with2425 = pilots.filter(p => p.badgeCount > 0).length;
-    const withAny = pilots.filter(p => p.allTimeBadgeCount > 0).length;
-    console.log(`\nZusammenfassung:`);
-    console.log(`${with2425} von ${pilots.length} Piloten haben Badges in Saison 2024/2025`);
-    console.log(`${withAny} von ${pilots.length} Piloten haben jemals Badges erreicht`);
-}
-
-/**
- * Gibt die Einheit für einen Badge-Typ zurück
- */
-function getUnitForBadgeType(badgeId) {
-    if (!badgeId) return '';
-
-    const id = badgeId.toLowerCase();
-
-    if (id.includes('astronaut') || id.includes('altitude') || id.includes('height') ) return 'm';
-    if (id.includes('distance') || id.includes('triangle') || id.includes('km') || id.includes('no_need_to_circle') || id.includes('explorer')) return 'km';
-    if (id.includes('duration') || id.includes('hour') || id.includes('endurance')|| id.includes('aeronaut')) return 'h';
-    if (id.includes('speed')) return 'km/h';
-    if (id.includes('points') || id.includes('score')) return 'pt';
-
-    return '';
-}
-
-/**
- * Dummy-Funktion für loadAllPilotBadges (für Kompatibilität)
- * Die Badge-Daten werden bereits in data-processor.js geladen
- */
-export function loadAllPilotBadges(pilots) {
-    console.log('loadAllPilotBadges aufgerufen - Badges sind bereits geladen');
-    return pilots;
 }
