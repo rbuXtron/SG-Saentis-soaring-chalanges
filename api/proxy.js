@@ -1,72 +1,38 @@
-// /api/proxy.js
 export default async function handler(req, res) {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     try {
-        // Debug logging
-        console.log('Proxy request:', req.url);
-        console.log('Query params:', req.query);
-
-        // Hole den path Parameter
         const { path, endpoint, ...otherParams } = req.query;
-        console.log('Path:', path);
-        console.log('Endpoint:', endpoint);
-        console.log('Other Params:', otherParams);
+        
+        console.log('[Proxy] Request:', { path, endpoint, otherParams });
 
-        // Basis-URL für WeGlide
         const baseUrl = 'https://api.weglide.org/v1';
         let finalPath = '';
         let queryParams = { ...otherParams };
 
-        // NEU: Spezialbehandlung für flight Endpunkt (SINGULAR)
+        // ==================== PATH ROUTING ====================
+        
+        // Flight Endpunkt (singular!)
         if (path === 'flight' || endpoint === 'flight') {
-            finalPath = 'flight';  // SINGULAR!
-            // Stelle sicher, dass alle Parameter korrekt sind
-            if (otherParams.user_id_in) {
-                queryParams.user_id_in = otherParams.user_id_in;
-            }
-            if (otherParams.season_in) {
-                queryParams.season_in = otherParams.season_in;
-            }
-            if (otherParams.date_from) {
-                queryParams.date_from = otherParams.date_from;
-            }
-            if (otherParams.date_to) {
-                queryParams.date_to = otherParams.date_to;
-            }
-            if (otherParams.limit) {
-                queryParams.limit = otherParams.limit;
-            }
-            if (otherParams.season) {
-                queryParams.season_in = otherParams.season;
-            }
+            finalPath = 'flight';
         }
-
-
-        // NEU: Sprint Endpunkt
+        
+        // Sprint Endpunkt
         else if (path === 'sprint' || endpoint === 'sprint') {
             finalPath = 'flight';
-            // Sprint-spezifische Parameter setzen
             queryParams.contest = 'sprint';
-            queryParams.club_id_in = '1281'; // SG Säntis Club ID
+            queryParams.club_id_in = '1281';
             queryParams.order_by = '-scoring_date';
             queryParams.not_scored = 'false';
-            queryParams.story = 'false';
-            queryParams.valid = 'false';
-            queryParams.skip = queryParams.skip || '0';
             queryParams.limit = queryParams.limit || '100';
-            queryParams.include_story = 'true';
-            queryParams.include_stats = 'false';
-            queryParams.format = 'json';
-
+            
             // Parameter-Konvertierung
             if (otherParams.user_id) {
                 queryParams.user_id_in = otherParams.user_id;
@@ -77,117 +43,96 @@ export default async function handler(req, res) {
                 delete queryParams.season;
             }
         }
-        // NEU: User Endpunkt
-        else if (path && path.startsWith('user/')) {
+        
+        // Direct path endpoints (user/, flightdetail/, etc.)
+        else if (path && (
+            path.startsWith('user/') || 
+            path.startsWith('flightdetail/') || 
+            path.startsWith('achievement/') || 
+            path.startsWith('club/')
+        )) {
             finalPath = path;
         }
-        // Standard path handling
+        
+        // Legacy endpoint support
+        else if (endpoint === 'weglide') {
+            finalPath = 'club/1281';
+        }
+        else if (endpoint === 'achievements' && otherParams.userId) {
+            finalPath = `achievement/user/${otherParams.userId}`;
+            delete queryParams.userId;
+        }
+        else if ((endpoint === 'flightdetail' || endpoint === 'flight') && otherParams.flightId) {
+            finalPath = `flightdetail/${otherParams.flightId}`;
+            delete queryParams.flightId;
+        }
+        
+        // Fallback: use path as-is
         else if (path) {
-            // Korrigiere automatisch flight/ zu flightdetail/
-            if (path.startsWith('flight/') && !path.includes('?')) {
-                const flightId = path.replace('flight/', '');
-                finalPath = `flightdetail/${flightId}`;
-            } else if (path.startsWith('flightdetail/')) {
-                finalPath = path;
-            } else if (path.startsWith('achievement/user/')) {
-                finalPath = path;
-            } else if (path.startsWith('club/')) {
-                finalPath = path;
-            } else {
-                finalPath = path;
-            }
-        } else if (endpoint) {
-            // Legacy Support für endpoint Parameter
-            switch (endpoint) {
-                case 'weglide':
-                    finalPath = 'club/1281';
-                    queryParams.contest = queryParams.contest || 'free';
-                    break;
-
-                case 'achievements':
-                    if (otherParams.userId) {
-                        finalPath = `achievement/user/${otherParams.userId}`;
-                        delete queryParams.userId;
-                    } else {
-                        res.status(400).json({ error: 'userId required for achievements' });
-                        return;
-                    }
-                    break;
-
-                case 'flightdetail':
-                case 'flight':
-                    if (otherParams.flightId) {
-                        finalPath = `flightdetail/${otherParams.flightId}`;
-                        delete queryParams.flightId;
-                    } else {
-                        res.status(400).json({ error: 'flightId required for flight details' });
-                        return;
-                    }
-                    break;
-
-                default:
-                    res.status(404).json({ error: `Unknown endpoint: ${endpoint}` });
-                    return;
-            }
-        } else {
-            res.status(400).json({ error: 'Either path or endpoint parameter is required' });
-            return;
+            finalPath = path;
+        }
+        
+        // Error: no path specified
+        else {
+            return res.status(400).json({ 
+                error: 'path or endpoint parameter required' 
+            });
         }
 
-        // Baue die finale URL
+        // ==================== BUILD URL ====================
+        
         const queryString = new URLSearchParams(queryParams).toString();
         const url = `${baseUrl}/${finalPath}${queryString ? '?' + queryString : ''}`;
+        
+        console.log('[Proxy] Fetching:', url);
 
-        console.log('Proxying to:', url);
-
-        // Mache den Request
+        // ==================== FETCH WITH BROWSER HEADERS ====================
+        
         const response = await fetch(url, {
-            method: req.method,
+            method: 'GET',
             headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'SG-Saentis-Soaring/1.0'
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': 'https://weglide.org/',
+                'Origin': 'https://weglide.org',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-site',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
         });
 
-        // Log response status
-        console.log('WeGlide response status:', response.status);
+        console.log('[Proxy] Response status:', response.status);
 
-        // Hole die Daten
-        let data;
-        const contentType = response.headers.get('content-type');
-
-        if (contentType && contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            // Falls keine JSON-Antwort, gib den Text zurück
-            data = await response.text();
-            console.log('Non-JSON response:', data);
-        }
-
-        // Prüfe ob Response OK ist
+        // ==================== ERROR HANDLING ====================
+        
         if (!response.ok) {
-            console.error(`WeGlide API error: ${response.status} ${response.statusText}`);
-
-            // Bei 404 könnte es sein, dass der Endpunkt nicht existiert
-            if (response.status === 404) {
-                console.error(`Endpunkt existiert nicht: ${url}`);
-            }
-
-            res.status(response.status).json({
+            const errorText = await response.text();
+            console.error('[Proxy] Error response:', errorText);
+            
+            return res.status(response.status).json({
                 error: `WeGlide API error: ${response.status}`,
-                details: data,
+                statusText: response.statusText,
                 url: url,
-                statusText: response.statusText
+                details: errorText
             });
-            return;
         }
 
-        // Erfolgreiche Antwort
-        res.status(200).json(data);
+        // ==================== SUCCESS RESPONSE ====================
+        
+        const data = await response.json();
+        
+        // Cache für Performance (30 Sekunden)
+        res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+        
+        return res.status(200).json(data);
 
     } catch (error) {
-        console.error('Proxy error:', error);
-        res.status(500).json({
+        console.error('[Proxy] Exception:', error);
+        return res.status(500).json({
             error: 'Proxy server error',
             message: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
