@@ -58,7 +58,9 @@ export const AIRCRAFT_DMST_INDEX = {
   "JS1C TJ 21m": 126,
   "Nimbus 2c": 114,
   "JS2 21m": 126,
-  "MDM-1 Fox": 72
+  "MDM-1 Fox": 72,
+  "Discus 2b": 108,
+  "K 8": 76
 };
 
 /**
