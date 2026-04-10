@@ -124,6 +124,12 @@
             "factor": 2.0,
             "bestDistance": 250,
             "lastUpdated": "2025-09-30"
-        }
+        },
+        "10687":{
+            "name": "Pius Stolz",
+            "factor": 1.6,
+            "bestDistance": 350,
+            "lastUpdated": "2025-09-30"
+        },
     }
 }
