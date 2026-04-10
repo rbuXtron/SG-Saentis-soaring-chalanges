@@ -219,6 +219,7 @@ export const HISTORICAL_PILOT_FACTORS = {
   "Heinz Bärfuss": 1.2,
   "Herbert Stoffel": 2.0,
   "Kurt Sauter": 2.0,
+  "Pius Stolz": 1.6,
   "DEFAULT": 4.0
 };
 
