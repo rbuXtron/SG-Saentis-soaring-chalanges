@@ -36,7 +36,7 @@ export const CLUB = {
  */
 export const AIRCRAFT_DMST_INDEX = {
   "JS1-21": 126,
-  "JS1C 21m": 126
+  "JS1C 21m": 126,
   "ASH 25E": 122,
   "HpH 304 MS Shark": 119,
   "LS 9": 117,
