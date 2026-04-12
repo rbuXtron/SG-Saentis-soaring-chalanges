@@ -202,8 +202,8 @@ export const FLIGHT_INSTRUCTORS = {
   "Roman Bühler": 1.2,
   "Roman Andreas Buehler": 1.2,
   "Roger Larpin": 2,
-  "Sg Saentis": 1.4,
-  "Sg Santis": 1.4,
+  "Sg Saentis": 1.0,
+  "Sg Santis": 1.0,
   "Roman Bühler": 1.2,
   "Juerg Weiss": 2,
   "Heinz Brem": 2
