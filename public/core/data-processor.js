@@ -356,7 +356,7 @@ function processMemberData(member, flights, sprints, badgeAnalysis, startingFact
         console.log(`${member.name}: Faktor bleibt ${currentFactor} (Vorsaison-Bonus behalten)`);
       }
     
-    }
+
 
     return flightWithFactor;
   });
