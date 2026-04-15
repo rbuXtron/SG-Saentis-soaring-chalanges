@@ -306,27 +306,56 @@ function processMemberData(member, flights, sprints, badgeAnalysis, startingFact
     };
 
     // NUR wenn KEIN Fluglehrer: Prüfe ob sich der normale Faktor verbessert
-    if (instructorFactor === null && flight.km > currentBestDistance) {
-      currentBestDistance = flight.km;
+    //if (instructorFactor === null && flight.km > currentBestDistance) {
+    //  currentBestDistance = flight.km;
 
       // Berechne neuen Faktor für NÄCHSTEN normalen Flug
+      //if (currentBestDistance <= 50) {
+      //  currentFactor = 4.0;
+      //} else if (currentBestDistance <= 100) {
+      //  currentFactor = 3.0;
+      //} else if (currentBestDistance <= 300) {
+      //  currentFactor = 2.0;
+      //} else if (currentBestDistance <= 500) {
+      //  currentFactor = 1.6;
+      //} else if (currentBestDistance <= 700) {
+      //  currentFactor = 1.4;
+      //} else if (currentBestDistance <= 1000) {
+      //  currentFactor = 1.2;
+      //} else {
+      //  currentFactor = 1.0;
+      //}
+
+      //console.log(`${member.name}: Neuer Standard-Faktor ${currentFactor} ab nächstem Solo-Flug`);
+
+    
+
+      // Berechne neuen Faktor für NÄCHSTEN normalen Flug
+      let newFactor;
       if (currentBestDistance <= 50) {
-        currentFactor = 4.0;
+        newFactor = 4.0;
       } else if (currentBestDistance <= 100) {
-        currentFactor = 3.0;
+        newFactor = 3.0;
       } else if (currentBestDistance <= 300) {
-        currentFactor = 2.0;
+        newFactor = 2.0;
       } else if (currentBestDistance <= 500) {
-        currentFactor = 1.6;
+        newFactor = 1.6;
       } else if (currentBestDistance <= 700) {
-        currentFactor = 1.4;
+        newFactor = 1.4;
       } else if (currentBestDistance <= 1000) {
-        currentFactor = 1.2;
+        newFactor = 1.2;
       } else {
-        currentFactor = 1.0;
+        newFactor = 1.0;
       }
 
-      console.log(`${member.name}: Neuer Standard-Faktor ${currentFactor} ab nächstem Solo-Flug`);
+      // Nur verbessern (senken), nie verschlechtern!
+      if (newFactor < currentFactor) {
+        currentFactor = newFactor;
+        console.log(`${member.name}: Neuer Standard-Faktor ${currentFactor} ab nächstem Solo-Flug`);
+      } else {
+        console.log(`${member.name}: Faktor bleibt ${currentFactor} (Vorsaison-Bonus behalten)`);
+      }
+    
     }
 
     return flightWithFactor;
