@@ -330,19 +330,23 @@ function processMemberData(member, flights, sprints, badgeAnalysis, startingFact
 
     
 
+      // NUR wenn KEIN Fluglehrer: Prüfe ob sich der normale Faktor verbessert
+    if (instructorFactor === null && flight.km > currentBestDistance) {
+      currentBestDistance = flight.km;
+
       // Berechne neuen Faktor für NÄCHSTEN normalen Flug
       let newFactor;
-      if (currentBestDistance <= 50) {
+      if (flight.km <= 50) {
         newFactor = 4.0;
-      } else if (currentBestDistance <= 100) {
+      } else if (flight.km <= 100) {
         newFactor = 3.0;
-      } else if (currentBestDistance <= 300) {
+      } else if (flight.km <= 300) {
         newFactor = 2.0;
-      } else if (currentBestDistance <= 500) {
+      } else if (flight.km <= 500) {
         newFactor = 1.6;
-      } else if (currentBestDistance <= 700) {
+      } else if (flight.km <= 700) {
         newFactor = 1.4;
-      } else if (currentBestDistance <= 1000) {
+      } else if (flight.km <= 1000) {
         newFactor = 1.2;
       } else {
         newFactor = 1.0;
@@ -355,6 +359,7 @@ function processMemberData(member, flights, sprints, badgeAnalysis, startingFact
       } else {
         console.log(`${member.name}: Faktor bleibt ${currentFactor} (Vorsaison-Bonus behalten)`);
       }
+    }
     
 
 
