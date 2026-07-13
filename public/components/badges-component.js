@@ -247,7 +247,7 @@ function createBadgeGalleryHTML(pilot) {
 
     let html = `
         <div class="badge-gallery-header">
-            <h4>Badges Saison ${seasonInfo.string} - ${pilot.name}</h4>
+            <h4>Saison Badges für: ${pilot.name}</h4>
             <div class="badge-summary-info">
                 <p class="badge-count-info">
                     <strong>${pilot.badgeCount || 0}</strong> Badges aus 
