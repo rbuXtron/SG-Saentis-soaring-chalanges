@@ -469,7 +469,9 @@
         "tourist": 1,
         "astronaut": 2,
         "sprinter": 3,
-        "cockpit_crew": 2
+        "cockpit_crew": 2,
+        "no_need_to_circle": 1,
+        "explorer": 1
       }
     },
     "10518": {
