@@ -100,7 +100,7 @@
         "aeronaut": 1,
         "consistency": 1,
         "endurance": 1,
-        "nomad": 1,
+        "nomad": 0,
         "explorer": 1
       }
     },
