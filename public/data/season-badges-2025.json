@@ -1,0 +1,2337 @@
+{
+  "season": 2025,
+  "season_label": "2024/2025",
+  "generated": "2026-09-28 15:47",
+  "pilots": {
+    "9604": {
+      "userId": 9604,
+      "userName": "Guido Halter",
+      "badges": [
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 3,
+          "type": "multi-level",
+          "detail": "Level 0→3"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 3,
+          "type": "multi-level",
+          "detail": "Level 1→4"
+        },
+        {
+          "badge_id": "explorer",
+          "name": "Explorer",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 1→3"
+        },
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 2→3"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-14"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "diamond",
+          "name": "Diamond",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-03-31"
+        },
+        {
+          "badge_id": "tourist",
+          "name": "Tourist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "yogi",
+          "name": "Yogi",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-03"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 3,
+          "type": "multi-level",
+          "detail": "Level 0→3"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 3,
+          "type": "multi-level",
+          "detail": "Level 1→4"
+        },
+        {
+          "badge_id": "explorer",
+          "name": "Explorer",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 1→3"
+        },
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 2→3"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-14"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "diamond",
+          "name": "Diamond",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-03-31"
+        },
+        {
+          "badge_id": "tourist",
+          "name": "Tourist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "yogi",
+          "name": "Yogi",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-03"
+        }
+      ],
+      "seasonBadgeCount": 17,
+      "badgeCount": 17,
+      "allTimeBadgeCount": 85,
+      "badgeCategoryCount": 11,
+      "multiLevelCount": 8,
+      "singleLevelCount": 3,
+      "flightsWithBadges": 11,
+      "flightsAnalyzed": 0
+    },
+    "29951": {
+      "userId": 29951,
+      "userName": "Johannes Widmer",
+      "badges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-28"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-04"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-15 (flug-los)"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-19"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "storyteller",
+          "name": "Storyteller",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-09"
+        },
+        {
+          "badge_id": "tourist",
+          "name": "Tourist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-28"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-04"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-15 (flug-los)"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-19"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "storyteller",
+          "name": "Storyteller",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-09"
+        },
+        {
+          "badge_id": "tourist",
+          "name": "Tourist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 12,
+      "badgeCount": 12,
+      "allTimeBadgeCount": 29,
+      "badgeCategoryCount": 11,
+      "multiLevelCount": 6,
+      "singleLevelCount": 5,
+      "flightsWithBadges": 11,
+      "flightsAnalyzed": 0
+    },
+    "18175": {
+      "userId": 18175,
+      "userName": "Stefan Gertsch",
+      "badges": [
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 1→3"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-10"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "meet_the_cows",
+          "name": "Meet the Cows",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-08-24"
+        },
+        {
+          "badge_id": "mission_completed",
+          "name": "Mission Completed",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "pythagoras",
+          "name": "Pythagoras",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "yin_yang",
+          "name": "Yin-Yang",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-09"
+        },
+        {
+          "badge_id": "yogi",
+          "name": "Yogi",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 1→3"
+        },
+        {
+          "badge_id": "border_crosser",
+          "name": "Border Crosser",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-10"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "meet_the_cows",
+          "name": "Meet the Cows",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-08-24"
+        },
+        {
+          "badge_id": "mission_completed",
+          "name": "Mission Completed",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "pythagoras",
+          "name": "Pythagoras",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "yin_yang",
+          "name": "Yin-Yang",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-09"
+        },
+        {
+          "badge_id": "yogi",
+          "name": "Yogi",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        }
+      ],
+      "seasonBadgeCount": 12,
+      "badgeCount": 12,
+      "allTimeBadgeCount": 45,
+      "badgeCategoryCount": 11,
+      "multiLevelCount": 5,
+      "singleLevelCount": 6,
+      "flightsWithBadges": 11,
+      "flightsAnalyzed": 0
+    },
+    "10518": {
+      "userId": 10518,
+      "userName": "Roman Andreas Buehler",
+      "badges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "explorer",
+          "name": "Explorer",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "explorer",
+          "name": "Explorer",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        }
+      ],
+      "seasonBadgeCount": 9,
+      "badgeCount": 9,
+      "allTimeBadgeCount": 41,
+      "badgeCategoryCount": 8,
+      "multiLevelCount": 8,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 8,
+      "flightsAnalyzed": 0
+    },
+    "23559": {
+      "userId": 23559,
+      "userName": "Florian Sutter",
+      "badges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-08 (flug-los)"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-22"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-08 (flug-los)"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-22"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-18"
+        }
+      ],
+      "seasonBadgeCount": 9,
+      "badgeCount": 9,
+      "allTimeBadgeCount": 13,
+      "badgeCategoryCount": 7,
+      "multiLevelCount": 4,
+      "singleLevelCount": 3,
+      "flightsWithBadges": 7,
+      "flightsAnalyzed": 0
+    },
+    "10758": {
+      "userId": 10758,
+      "userName": "Rainer Ender",
+      "badges": [
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-30"
+        },
+        {
+          "badge_id": "clean_sheet",
+          "name": "Clean Sheet",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-30"
+        },
+        {
+          "badge_id": "clean_sheet",
+          "name": "Clean Sheet",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "no_need_to_circle",
+          "name": "No Need to Circle",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-01"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 8,
+      "badgeCount": 8,
+      "allTimeBadgeCount": 13,
+      "badgeCategoryCount": 7,
+      "multiLevelCount": 4,
+      "singleLevelCount": 3,
+      "flightsWithBadges": 7,
+      "flightsAnalyzed": 0
+    },
+    "10847": {
+      "userId": 10847,
+      "userName": "Moritz Giger",
+      "badges": [
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "aircraft_hopper",
+          "name": "Aircraft Hopper",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-09"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "aircraft_hopper",
+          "name": "Aircraft Hopper",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-09"
+        },
+        {
+          "badge_id": "zugvogel",
+          "name": "Zugvogel",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 7,
+      "badgeCount": 7,
+      "allTimeBadgeCount": 15,
+      "badgeCategoryCount": 6,
+      "multiLevelCount": 5,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 6,
+      "flightsAnalyzed": 0
+    },
+    "24415": {
+      "userId": 24415,
+      "userName": "Michel Bänziger",
+      "badges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-31"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-04"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-02-22 (flug-los)"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-31"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-04"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-02-22 (flug-los)"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 7,
+      "badgeCount": 7,
+      "allTimeBadgeCount": 7,
+      "badgeCategoryCount": 6,
+      "multiLevelCount": 3,
+      "singleLevelCount": 3,
+      "flightsWithBadges": 6,
+      "flightsAnalyzed": 0
+    },
+    "26179": {
+      "userId": 26179,
+      "userName": "Stefan Volland",
+      "badges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-15 (flug-los)"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-15 (flug-los)"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 6,
+      "badgeCount": 6,
+      "allTimeBadgeCount": 17,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 3,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "11468": {
+      "userId": 11468,
+      "userName": "Heinz Bärfuss",
+      "badges": [
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "point_hunter",
+          "name": "Point Hunter",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "aeronaut",
+          "name": "Aeronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "endurance",
+          "name": "Endurance",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        }
+      ],
+      "seasonBadgeCount": 6,
+      "badgeCount": 6,
+      "allTimeBadgeCount": 33,
+      "badgeCategoryCount": 5,
+      "multiLevelCount": 5,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 5,
+      "flightsAnalyzed": 0
+    },
+    "30072": {
+      "userId": 30072,
+      "userName": "Joel Morrone",
+      "badges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-20 (flug-los)"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-20 (flug-los)"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 5,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 3,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "17293": {
+      "userId": 17293,
+      "userName": "Andreas Graf",
+      "badges": [
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "segment_specialist",
+          "name": "Segment Specialist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "segment_specialist",
+          "name": "Segment Specialist",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 17,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 4,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "9793": {
+      "userId": 9793,
+      "userName": "Werner Rissi",
+      "badges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "always_by_your_side",
+          "name": "Always by Your Side",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 1→2"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 18,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 4,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "25790": {
+      "userId": 25790,
+      "userName": "Gabor Facsar",
+      "badges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-31"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "bring_it_home",
+          "name": "Bring It Home",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-05-31"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 5,
+      "badgeCategoryCount": 3,
+      "multiLevelCount": 2,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 3,
+      "flightsAnalyzed": 0
+    },
+    "32669": {
+      "userId": 32669,
+      "userName": "Paul Cordes",
+      "badges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-21 (flug-los)"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-21 (flug-los)"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 5,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 3,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "3503": {
+      "userId": 3503,
+      "userName": "Yves Bodenmann",
+      "badges": [
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-22"
+        },
+        {
+          "badge_id": "launch_specialist",
+          "name": "Launch Specialist",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-16"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-22"
+        },
+        {
+          "badge_id": "launch_specialist",
+          "name": "Launch Specialist",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-16"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 4,
+      "badgeCount": 4,
+      "allTimeBadgeCount": 6,
+      "badgeCategoryCount": 4,
+      "multiLevelCount": 2,
+      "singleLevelCount": 2,
+      "flightsWithBadges": 4,
+      "flightsAnalyzed": 0
+    },
+    "10830": {
+      "userId": 10830,
+      "userName": "Marcel Spirig",
+      "badges": [
+        {
+          "badge_id": "aircraft_hopper",
+          "name": "Aircraft Hopper",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-24 (flug-los)"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "aircraft_hopper",
+          "name": "Aircraft Hopper",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-06-24 (flug-los)"
+        },
+        {
+          "badge_id": "nomad",
+          "name": "Nomad",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 3,
+      "badgeCount": 3,
+      "allTimeBadgeCount": 13,
+      "badgeCategoryCount": 3,
+      "multiLevelCount": 2,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 3,
+      "flightsAnalyzed": 0
+    },
+    "33260": {
+      "userId": 33260,
+      "userName": "Evalena Widmer",
+      "badges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-10 (flug-los)"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 2,
+          "type": "multi-level",
+          "detail": "Level 0→2"
+        },
+        {
+          "badge_id": "first_step",
+          "name": "First Step",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-07-10 (flug-los)"
+        }
+      ],
+      "seasonBadgeCount": 3,
+      "badgeCount": 3,
+      "allTimeBadgeCount": 9,
+      "badgeCategoryCount": 2,
+      "multiLevelCount": 1,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 2,
+      "flightsAnalyzed": 0
+    },
+    "29960": {
+      "userId": 29960,
+      "userName": "Simon Widmer",
+      "badges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-07"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-20"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "early_bird",
+          "name": "Early Bird",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-09-07"
+        },
+        {
+          "badge_id": "flying_spree",
+          "name": "Flying Spree",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-20"
+        }
+      ],
+      "seasonBadgeCount": 3,
+      "badgeCount": 3,
+      "allTimeBadgeCount": 9,
+      "badgeCategoryCount": 3,
+      "multiLevelCount": 1,
+      "singleLevelCount": 2,
+      "flightsWithBadges": 3,
+      "flightsAnalyzed": 0
+    },
+    "23621": {
+      "userId": 23621,
+      "userName": "Urs Zeberli",
+      "badges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sprinter",
+          "name": "Sprinter",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 3,
+      "badgeCount": 3,
+      "allTimeBadgeCount": 12,
+      "badgeCategoryCount": 3,
+      "multiLevelCount": 3,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 3,
+      "flightsAnalyzed": 0
+    },
+    "24353": {
+      "userId": 24353,
+      "userName": "Dominic Saladin",
+      "badges": [
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "sky_streak",
+          "name": "Sky Streak",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 2,
+      "badgeCount": 2,
+      "allTimeBadgeCount": 9,
+      "badgeCategoryCount": 2,
+      "multiLevelCount": 2,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 2,
+      "flightsAnalyzed": 0
+    },
+    "27275": {
+      "userId": 27275,
+      "userName": "Andrin Oppliger",
+      "badges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "astronaut",
+          "name": "Astronaut",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        },
+        {
+          "badge_id": "cockpit_crew",
+          "name": "Cockpit Crew",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 2,
+      "badgeCount": 2,
+      "allTimeBadgeCount": 3,
+      "badgeCategoryCount": 2,
+      "multiLevelCount": 2,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 2,
+      "flightsAnalyzed": 0
+    },
+    "9979": {
+      "userId": 9979,
+      "userName": "Wolfgang Rapp",
+      "badges": [
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-10"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "silver",
+          "name": "Silver",
+          "points": 1,
+          "type": "single-level",
+          "detail": "created 2025-04-10"
+        }
+      ],
+      "seasonBadgeCount": 1,
+      "badgeCount": 1,
+      "allTimeBadgeCount": 18,
+      "badgeCategoryCount": 1,
+      "multiLevelCount": 0,
+      "singleLevelCount": 1,
+      "flightsWithBadges": 1,
+      "flightsAnalyzed": 0
+    },
+    "21138": {
+      "userId": 21138,
+      "userName": "Pascal Rotach",
+      "badges": [
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadges": [
+        {
+          "badge_id": "consistency",
+          "name": "Consistency",
+          "points": 1,
+          "type": "multi-level",
+          "detail": "Level 0→1"
+        }
+      ],
+      "seasonBadgeCount": 1,
+      "badgeCount": 1,
+      "allTimeBadgeCount": 11,
+      "badgeCategoryCount": 1,
+      "multiLevelCount": 1,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 1,
+      "flightsAnalyzed": 0
+    },
+    "37273": {
+      "userId": 37273,
+      "userName": "Stefanie  Hautle",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 2,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "42698": {
+      "userId": 42698,
+      "userName": "Nio Struhs",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "10842": {
+      "userId": 10842,
+      "userName": "Herbert Stoffel",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 11,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "40366": {
+      "userId": 40366,
+      "userName": "Milos Savanovic",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 6,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "43076": {
+      "userId": 43076,
+      "userName": "Urs Steiner",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "42582": {
+      "userId": 42582,
+      "userName": "Patrick ONeill",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "21532": {
+      "userId": 21532,
+      "userName": "Philipp Lenhard",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 12,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "42586": {
+      "userId": 42586,
+      "userName": "Jeremias Bachmann",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "10687": {
+      "userId": 10687,
+      "userName": "Pius Stolz",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 9,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "40718": {
+      "userId": 40718,
+      "userName": "David Corrêa",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 1,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "35021": {
+      "userId": 35021,
+      "userName": "Levi Osmani",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 3,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "25240": {
+      "userId": 25240,
+      "userName": "Lukas Thoma",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 3,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "35840": {
+      "userId": 35840,
+      "userName": "Angelo Milo",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 4,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "23681": {
+      "userId": 23681,
+      "userName": "Rahela Kissling",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 2,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "38317": {
+      "userId": 38317,
+      "userName": "Brian Polugic",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 1,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "35020": {
+      "userId": 35020,
+      "userName": "Jann Baumgartner",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 2,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "35019": {
+      "userId": 35019,
+      "userName": "Kilian Kobler",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 1,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "32914": {
+      "userId": 32914,
+      "userName": "Samuel Fischer",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "23604": {
+      "userId": 23604,
+      "userName": "Rafael Lutz",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 6,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "32926": {
+      "userId": 32926,
+      "userName": "Simon Stieger",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "824": {
+      "userId": 824,
+      "userName": "Martin Prusak",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "29953": {
+      "userId": 29953,
+      "userName": "Alexis Ghiatras",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 0,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    },
+    "1713": {
+      "userId": 1713,
+      "userName": "Rolf König",
+      "badges": [],
+      "seasonBadges": [],
+      "seasonBadgeCount": 0,
+      "badgeCount": 0,
+      "allTimeBadgeCount": 37,
+      "badgeCategoryCount": 0,
+      "multiLevelCount": 0,
+      "singleLevelCount": 0,
+      "flightsWithBadges": 0,
+      "flightsAnalyzed": 0
+    }
+  }
+}

@@ -1,0 +1,70 @@
+# .github/workflows/hourly-season-badges.yml
+# ------------------------------------------------------------------
+# Erzeugt stündlich season-badges-<aktuelle-saison>.json (laufende Saison)
+# aus den WeGlide-Flügen und committet es nach public/data/.
+# Der .weglide_cache/ wird über den GitHub-Actions-Cache erhalten, damit
+# pro Lauf nur NEUE Flüge geladen werden (sonst zu viel Last).
+#
+# Einmalige Einrichtung im Repo:
+#   Settings -> Secrets and variables -> Actions -> Variables ->
+#   PROXY_URL = https://sgsaentiscup.vercel.app/api/proxy
+#   SEASON    = 2026        (aktuelle Saison; zum Saisonwechsel anpassen)
+# ------------------------------------------------------------------
+name: Hourly season badges
+
+on:
+  schedule:
+    - cron: '0 * * * *'      # jede volle Stunde (UTC)
+  workflow_dispatch:          # zusätzlich manuell auslösbar
+
+permissions:
+  contents: write
+
+concurrency:
+  group: season-badges
+  cancel-in-progress: false   # laufenden Lauf nicht abbrechen
+
+jobs:
+  badges:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # WeGlide-Cache über Läufe hinweg erhalten -> nur neue Flüge werden geladen
+      - name: Restore WeGlide cache
+        uses: actions/cache@v4
+        with:
+          path: .weglide_cache
+          key: weglide-cache-${{ vars.SEASON }}-${{ github.run_id }}
+          restore-keys: |
+            weglide-cache-${{ vars.SEASON }}-
+
+      - name: Build season-badges JSON
+        env:
+          PROXY: ${{ vars.PROXY_URL }}
+          SEASON: ${{ vars.SEASON }}
+        run: |
+          python weglide_season_badges_club.py \
+            --club 1281 \
+            --season "$SEASON" \
+            --hist-dir public/data \
+            --proxy "$PROXY" \
+            --tool-json "public/data/season-badges-${SEASON}.json"
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "sg-cup-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/data/season-badges-*.json
+          if git diff --cached --quiet; then
+            echo "Keine Änderung an den Saison-Badges."
+          else
+            git commit -m "chore: Saison-Badges aktualisiert $(date -u +'%F %H:%M') UTC"
+            git push
+          fi

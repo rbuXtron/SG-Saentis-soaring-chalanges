@@ -1,9 +1,10 @@
 /**
  * SG Säntis Cup - WeGlide Badges Komponente
- * Version 4.0 - Bereinigt mit dynamischer Saison
+ * Version 4.1 - mit Ranking-Deltas (Pfeile) im Badge-Award
  */
 
 import { formatDateForDisplay } from '../utils/utils.js';
+import * as RankingDeltas from './ranking-deltas.js';
 
 // Hilfsfunktion für Saison-Information
 function getSeasonInfo(pilots) {
@@ -42,7 +43,19 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
 
     const pilotsWithBadges = pilots
         .filter(pilot => pilot.badgeCount > 0)
-        .sort((a, b) => b.badgeCount - a.badgeCount);
+        .sort((a, b) =>
+            (b.badgeCount - a.badgeCount) ||
+            ((a.userId || 0) - (b.userId || 0))   // stabile Reihenfolge bei Gleichstand
+        );
+
+    // Ranking-Deltas für das Badge-Ranking (eigener Namespace 'badges').
+    // Nur für die aktuelle Saison — für alte Saisons gibt es keine Snapshots.
+    const isCurrentSeason = seasonInfo.year === getCurrentSeasonYear();
+    const deltaMap = isCurrentSeason ? RankingDeltas.prepare(pilotsWithBadges, 'badges') : new Map();
+    const climber = isCurrentSeason ? RankingDeltas.climberOfWeek('badges') : null;
+    const climberHTML = climber
+        ? `<div class="climber-of-week">🚀 Grösster Sprung: <strong>${climber.name}</strong> (+${climber.delta} Plätze)</div>`
+        : '';
 
     if (pilotsWithBadges.length === 0) {
         renderNoBadgesMessage(container, pilots, seasonInfo);
@@ -58,11 +71,12 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
              display: block; margin-left: auto; margin-right: auto;">
         <h2 class="section-title">WeGlide Badge Award Saison ${seasonInfo.string}</h2>
         <div class="ranking-subtitle">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
+        ${climberHTML}
     `;
     container.appendChild(header);
 
     // Tabelle
-    const table = createBadgeTable(pilotsWithBadges, seasonInfo);
+    const table = createBadgeTable(pilotsWithBadges, seasonInfo, deltaMap);
     container.appendChild(table);
 
     // Statistiken
@@ -100,7 +114,7 @@ function renderNoBadgesMessage(container, pilots, seasonInfo) {
     `;
 }
 
-function createBadgeTable(pilotsWithBadges, seasonInfo) {
+function createBadgeTable(pilotsWithBadges, seasonInfo, deltaMap = new Map()) {
     const tableContainer = document.createElement('div');
     tableContainer.className = 'badge-ranking-table-container';
 
@@ -132,7 +146,7 @@ function createBadgeTable(pilotsWithBadges, seasonInfo) {
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
                 </span>
-                Badges 24/25
+                Badges Saison
             </th>
             <th class="badges-categories-col">
                 <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
@@ -167,7 +181,7 @@ function createBadgeTable(pilotsWithBadges, seasonInfo) {
     const tbody = table.querySelector('tbody');
 
     pilotsWithBadges.forEach((pilot, index) => {
-        const row = createBadgeTableRow(pilot, index + 1, seasonInfo);
+        const row = createBadgeTableRow(pilot, index + 1, seasonInfo, deltaMap);
         tbody.appendChild(row);
 
         const detailsRow = createBadgeDetailsRow(pilot, seasonInfo);
@@ -178,17 +192,19 @@ function createBadgeTable(pilotsWithBadges, seasonInfo) {
     return tableContainer;
 }
 
-function createBadgeTableRow(pilot, rank, seasonInfo) {
+function createBadgeTableRow(pilot, rank, seasonInfo, deltaMap = new Map()) {
     const row = document.createElement('tr');
     if (rank === 1) row.classList.add('first-place');
     else if (rank === 2) row.classList.add('second-place');
     else if (rank === 3) row.classList.add('third-place');
 
     const safeId = pilot.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+    const deltaBadge = RankingDeltas.badgeHTML(deltaMap.get(pilot.name));
 
     row.innerHTML = `
         <td class="rank-col">
             <span class="rank rank-${rank}">${rank}</span>
+            ${deltaBadge}
         </td>
         <td class="pilot-col">
             <span class="pilot-name">${pilot.name}</span>
@@ -268,7 +284,7 @@ function createBadgeGalleryHTML(pilot) {
 
     // Sicherstellen, dass wir ein Array haben
     let badges = [];
-    
+
     // Verschiedene Möglichkeiten prüfen
     if (Array.isArray(pilot.badges)) {
         badges = pilot.badges;
@@ -304,7 +320,7 @@ function createBadgeGalleryHTML(pilot) {
 
     // Gruppiere Badges nach badge_id für Multi-Level Zusammenfassung
     const badgeGroups = new Map();
-    
+
     // Sicherstellen, dass forEach funktioniert
     if (typeof badges.forEach === 'function') {
         badges.forEach(badge => {

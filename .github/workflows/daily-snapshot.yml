@@ -1,0 +1,60 @@
+# .github/workflows/daily-snapshot.yml
+# ------------------------------------------------------------------
+# Erstellt jeden Morgen einen Ranglisten-Snapshot von der deployten
+# Seite und committet ihn nach snapshots/<saison>.json.
+#
+# Einmalige Einrichtung im Repo:
+#   Settings -> Secrets and variables -> Actions -> Variables ->
+#   New repository variable:  Name = SITE_URL
+#                             Value = https://dein-projekt.vercel.app
+# ------------------------------------------------------------------
+name: Daily ranking snapshot
+
+on:
+  schedule:
+    - cron: '0 5 * * *'      # täglich 05:00 UTC (= 06:00/07:00 CH)
+  workflow_dispatch:          # zusätzlich manuell auslösbar
+
+permissions:
+  contents: write             # nötig, um den Snapshot zu committen
+
+concurrency:
+  group: snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright (Chromium)
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm install playwright@latest
+          npx playwright install --with-deps chromium
+
+      - name: Build snapshot
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          SNAPSHOT_DIR: public/snapshots
+          WAIT_MS: "180000"
+        run: node scripts/snapshot.mjs
+
+      - name: Commit snapshot if changed
+        run: |
+          git config user.name  "sg-cup-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add snapshots/
+          if git diff --cached --quiet; then
+            echo "Keine Änderung am Snapshot."
+          else
+            git commit -m "chore: Ranglisten-Snapshot $(date -u +%F)"
+            git push
+          fi

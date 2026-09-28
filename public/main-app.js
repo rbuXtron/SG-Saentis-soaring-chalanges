@@ -12,6 +12,9 @@ import { renderBadgeRanking } from '../components/badges-component.js';
 import { dataLoadingManager } from '../services/data-loading-manager.js';
 import { SVG_ICONS } from './utils/svg-icons.js';
 import { getLoadingManager } from './utils/loading-manager.js';
+import * as RankingDeltas from '../components/ranking-deltas.js';
+
+
 
 /**
  * Hauptklasse für die SG Säntis Cup Anwendung
@@ -29,10 +32,10 @@ class SGSaentisCupApp {
     this.activeTab = 'flightdetails';
     this.dataSource = 'WeGlide API';
     this.searchTerm = '';
-    
+
     // Loading Manager
     this.loadingManager = getLoadingManager();
-    
+
     // Tooltip State
     this.tooltipInitialized = false;
     this.currentTooltip = null;
@@ -62,6 +65,9 @@ class SGSaentisCupApp {
     this.setupSeasonSelector();
     this.updatePageTitle(this.currentSeason);
 
+    await RankingDeltas.loadSharedSnapshots();                     // Cup, Standard 7 Tage
+    await RankingDeltas.loadSharedSnapshots(undefined, 'badges');  // Badges
+
     // Initial Load mit Loading Manager
     await this.initialLoad();
   }
@@ -71,13 +77,13 @@ class SGSaentisCupApp {
    */
   async initialLoad() {
     console.log('📦 Starte initialen Daten-Load...');
-    
+
     this.loadingManager.start(this.currentSeason);
 
     try {
       // Lade Daten
       const result = await fetchAllWeGlideDataForSeason(this.currentSeason);
-      
+
       this.pilotData = result.pilots || [];
       this.stats = result.stats || {};
       this.sprintStats = result.sprintStats || {};
@@ -91,7 +97,7 @@ class SGSaentisCupApp {
 
       // UI aktualisieren
       this.updateUI();
-      
+
       console.log('✅ Initiales Laden abgeschlossen');
 
     } catch (error) {
@@ -132,7 +138,7 @@ class SGSaentisCupApp {
 
         // Daten laden
         const result = await fetchAllWeGlideDataForSeason(newSeason);
-        
+
         this.pilotData = result.pilots || [];
         this.stats = result.stats || {};
         this.sprintStats = result.sprintStats || {};
@@ -265,7 +271,7 @@ class SGSaentisCupApp {
 
       // Daten neu laden
       const result = await fetchAllWeGlideDataForSeason(this.currentSeason);
-      
+
       this.pilotData = result.pilots || [];
       this.stats = result.stats || {};
       this.sprintStats = result.sprintStats || {};
@@ -454,9 +460,9 @@ class SGSaentisCupApp {
     const dataSource = document.getElementById('data-source');
     if (dataSource) {
       const now = new Date();
-      const timeString = now.toLocaleTimeString('de-DE', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const timeString = now.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit'
       });
       dataSource.innerHTML = `
         ✓ Daten von WeGlide API 
@@ -681,7 +687,7 @@ class SGSaentisCupApp {
     if (this.tooltipInitialized) return;
 
     const infoIcons = document.querySelectorAll('.info-icon, .info-icon-svg');
-    
+
     if (infoIcons.length === 0) {
       setTimeout(() => this.initializeTooltips(), 500);
       return;

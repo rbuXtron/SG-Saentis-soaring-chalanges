@@ -37,25 +37,14 @@
     "9604": {
       "name": "Guido Halter",
       "badges": {
-        "sprinter": 6,
-        "endurance": 3,
-        "nomad": 6,
-        "flying_in_circles": 3,
-        "training_lap": 1,
-        "tourist": 1,
-        "aeronaut": 2,
-        "aircraft_hopper": 3,
-        "always_by_your_side": 3,
-        "consistency": 10,
-        "pythagoras": 1,
-        "zugvogel": 3,
         "sky_streak": 1,
-        "segment_specialist": 1,
-        "point_hunter": 1,
-        "astronaut":2,
-        "no_need_to_circle": 2,
+        "nomad": 3,
+        "tourist": 1,
+        "astronaut": 2,
+        "sprinter": 3,
         "cockpit_crew": 2,
-        "explorer": 1       
+        "no_need_to_circle": 1,
+        "explorer": 1
       }
     },
     "11468": {

@@ -6,6 +6,35 @@
 
 import { apiClient } from '../services/weglide-api-service.js';
 import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-badge-evaluator.js';
+
+// ------------------------------------------------------------------
+// Vorberechnete Saison-Badges (season-badges-<jahr>.json)
+// Ersetzt den Live-Aufruf des multi-level-badge-evaluator: die korrekten
+// Saison-Punkte werden extern (Python-Skript) berechnet und hier gelesen.
+// Format pro userId = badgeAnalysis-kompatibel (badges[], seasonBadgeCount, ...).
+// ------------------------------------------------------------------
+let _seasonBadgeCache = null;
+let _seasonBadgeYear = null;
+
+async function loadPrecomputedBadges(userId, seasonYear) {
+  if (_seasonBadgeCache === null || _seasonBadgeYear !== seasonYear) {
+    _seasonBadgeYear = seasonYear;
+    try {
+      const res = await fetch(`./data/season-badges-${seasonYear}.json`, { cache: 'no-store' });
+      _seasonBadgeCache = res.ok ? ((await res.json()).pilots || {}) : {};
+      console.log(`✅ Vorberechnete Badges geladen: ${Object.keys(_seasonBadgeCache).length} Piloten (Saison ${seasonYear})`);
+    } catch (e) {
+      console.warn('⚠️ season-badges-Datei nicht ladbar:', e);
+      _seasonBadgeCache = {};
+    }
+  }
+  return _seasonBadgeCache[String(userId)] || {
+    badges: [], seasonBadges: [], seasonBadgeCount: 0, badgeCount: 0,
+    allTimeBadgeCount: 0, badgeCategoryCount: 0,
+    multiLevelCount: 0, singleLevelCount: 0,
+    flightsWithBadges: 0, flightsAnalyzed: 0
+  };
+}
 import { sprintDataService } from '../services/sprint-data-service.js';
 import {
   APP_CONFIG,
@@ -242,13 +271,9 @@ async function processMembers(members, seasonFlights, sprintData, historicalFact
         debug(`  ${member.name}: ${ownFlights.length} Flüge, Start-Faktor: ${startingFactor}`);
 
         // Badge-Berechnung mit multi-level-badge-evaluator
-        const badgeAnalysis = await calculateUserSeasonBadgesWithConfig(
-          userId,
-          member.name,
-          ownFlights,  // historische Flüge
-          ownFlights,  // Season-Flüge (gleiche in diesem Fall)
-          seasonYear
-        );
+        // Badge-Berechnung: vorberechnetes Ergebnis aus season-badges-<N>.json
+        // (korrekte Saison-Punkte, extern berechnet - kein created-Filter mehr)
+        const badgeAnalysis = await loadPrecomputedBadges(userId, seasonYear);
 
         return processMemberData(
           member,

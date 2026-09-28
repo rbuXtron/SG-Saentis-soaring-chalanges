@@ -1,9 +1,10 @@
 /**
  * SG Säntis Cup - Ranglisten-Komponente
- * Version 3.0 - Bereinigt mit dynamischer Saison
+ * Version 3.1 - mit Ranking-Deltas (Pfeile) + Aufsteiger der Woche
  */
 
 import { formatNumber, formatDateForDisplay } from '../utils/utils.js';
+import * as RankingDeltas from './ranking-deltas.js';
 
 // Hilfsfunktion für Saison-Information
 function getSeasonInfo(pilots) {
@@ -39,8 +40,18 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
   }
 
   const sortedPilots = [...pilots].sort((a, b) =>
-    (b.totalPoints || 0) - (a.totalPoints || 0)
-  );
+    ((b.totalPoints || 0) - (a.totalPoints || 0)) ||
+    ((a.userId || 0) - (b.userId || 0))
+);
+
+  // Ranking-Deltas nur für die aktuelle Saison berechnen
+  // (für alte Saisons gibt es keine passenden Snapshots)
+  const isCurrentSeason = seasonInfo.year === getCurrentSeasonYear();
+  const deltaMap = isCurrentSeason ? RankingDeltas.prepare(sortedPilots) : new Map();
+  const climber = isCurrentSeason ? RankingDeltas.climberOfWeek() : null;
+  const climberHTML = climber
+    ? `<div class="climber-of-week">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (+${climber.delta} Plätze)</div>`
+    : '';
 
   // Header
   const header = document.createElement('div');
@@ -50,11 +61,12 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
         <div class="ranking-subtitle">
             Basierend auf den drei besten Flügen jedes Piloten
         </div>
+        ${climberHTML}
     `;
   container.appendChild(header);
 
   // Tabelle
-  const table = createRankingTable(sortedPilots);
+  const table = createRankingTable(sortedPilots, deltaMap);
   container.appendChild(table);
 
   // Footer
@@ -76,7 +88,7 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
   setTimeout(() => addDetailsEventListeners(), 100);
 }
 
-function createRankingTable(pilots) {
+function createRankingTable(pilots, deltaMap = new Map()) {
   const tableContainer = document.createElement('div');
   tableContainer.className = 'badge-ranking-table-container';
 
@@ -146,7 +158,7 @@ function createRankingTable(pilots) {
     if (!pilot?.name) return;
 
     const rank = index + 1;
-    const row = createRankingRow(pilot, rank);
+    const row = createRankingRow(pilot, rank, deltaMap);
     tbody.appendChild(row);
 
     const detailsRow = createDetailsRow(pilot);
@@ -157,7 +169,7 @@ function createRankingTable(pilots) {
   return tableContainer;
 }
 
-function createRankingRow(pilot, rank) {
+function createRankingRow(pilot, rank, deltaMap = new Map()) {
   const row = document.createElement('tr');
 
   if (rank === 1) row.classList.add('first-place');
@@ -166,10 +178,12 @@ function createRankingRow(pilot, rank) {
 
   const safeId = pilot.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
   const totalKm = (pilot.flights || []).reduce((sum, f) => sum + (f.km || 0), 0);
+  const deltaBadge = RankingDeltas.badgeHTML(deltaMap.get(pilot.name));
 
   row.innerHTML = `
         <td class="rank-col">
             <span class="rank rank-${rank}">${rank}</span>
+            ${deltaBadge}
         </td>
         <td class="pilot-col">
             <span class="pilot-name">${pilot.name}</span>
@@ -304,9 +318,6 @@ function addDetailsEventListeners() {
   });
 }
 
-/**
- * Rendert die neuesten Club-Flüge (vereinfacht)
- */
 /**
  * Rendert die neuesten Club-Flüge (Vollständige Version mit Bildergalerie)
  */
