@@ -477,8 +477,15 @@
     "10518": {
       "name": "Roman Andreas Buehler",
       "badges": {
+        "astronaut": 3,
+        "aeronaut": 1,
+        "endurance": 1,
+        "segment_specialist": 1,
+        "consistency": 1,
+        "zugvogel": 1,
         "tourist": 1,
-        "astronaut": 2
+        "sprinter": 1,
+        "nomad":1
       }
     },
     "11468": {
