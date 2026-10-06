@@ -361,100 +361,47 @@ class WeGlideApiClient {
     }
   }
 
+// ------------------------------------------------------------------
+  // ERSETZT die alte fetchUserFlights (Zeilen ~364–459).
+  // Saubere skip-Pagination, durchgehend mit season_in — kein Datums-
+  // fenster-Trick mehr (der konnte Flüge am Grenztag verlieren) und
+  // keine 300-Flüge-Grenze.
+  // ------------------------------------------------------------------
   async fetchUserFlights(userId, year) {
     console.log(`[API] Lade Flüge für User ${userId}, Saison ${year - 1}/${year}`);
 
+    const PAGE = 100;
+    const MAX_PAGES = 20;          // Sicherheitslimit = 2000 Flüge/Saison
+    const byId = new Map();        // dedupliziert über flight.id
+
     try {
-      // Erste Abfrage
-      let allFlights = [];
-      const firstBatch = await this.fetchData('/api/proxy', {
-        path: 'flight',
-        user_id_in: userId,
-        season_in: year,
-        limit: 100
-      });
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const batch = await this.fetchData('/api/proxy', {
+          path: 'flight',
+          user_id_in: userId,
+          season_in: year,
+          order_by: '-scoring_date',
+          limit: PAGE,
+          skip: page * PAGE
+        });
 
-      if (!Array.isArray(firstBatch)) {
-        return [];
-      }
+        if (!Array.isArray(batch) || batch.length === 0) break;
 
-      allFlights = [...firstBatch];
-      console.log(`[API] Erste Abfrage: ${firstBatch.length} Flüge`);
-
-      // Wenn genau 100 Flüge, könnte es mehr geben
-      if (firstBatch.length === 100) {
-        console.log(`[API] Möglicherweise mehr als 100 Flüge, starte Pagination...`);
-
-        // Hole das älteste Datum aus der ersten Batch
-        const lastFlight = firstBatch[firstBatch.length - 1];
-        const lastDate = lastFlight.scoring_date || lastFlight.takeoff_time;
-
-        if (lastDate) {
-          // Konvertiere zu Datum und ziehe einen Tag ab (um Überlappungen zu vermeiden)
-          const endDate = new Date(lastDate);
-          endDate.setDate(endDate.getDate() - 1);
-
-          // Saisonstart bestimmen (1. Oktober des Vorjahres)
-          const seasonStart = `${year - 1}-10-01`;
-          const seasonEnd = endDate.toISOString().split('T')[0];
-
-          console.log(`[API] Pagination: Lade Flüge von ${seasonStart} bis ${seasonEnd}`);
-
-          // Zweite Abfrage für ältere Flüge
-          const secondBatch = await this.fetchData('/api/proxy', {
-            path: 'flight',
-            user_id_in: userId,
-            scoring_date_start: seasonStart,
-            scoring_date_end: seasonEnd,
-            limit: 100
-          });
-
-          if (Array.isArray(secondBatch)) {
-            console.log(`[API] Zweite Abfrage: ${secondBatch.length} weitere Flüge`);
-            allFlights.push(...secondBatch);
-
-            // Falls wieder 100, könnte es noch mehr geben
-            if (secondBatch.length === 100) {
-              console.log(`[API] ⚠️ User hat mehr als 200 Flüge! Weitere Pagination nötig.`);
-
-              // Dritte Abfrage (falls nötig)
-              const lastFlight2 = secondBatch[secondBatch.length - 1];
-              const lastDate2 = lastFlight2.scoring_date || lastFlight2.takeoff_time;
-
-              if (lastDate2) {
-                const endDate2 = new Date(lastDate2);
-                endDate2.setDate(endDate2.getDate() - 1);
-                const seasonEnd2 = endDate2.toISOString().split('T')[0];
-
-                const thirdBatch = await this.fetchData('/api/proxy', {
-                  path: 'flight',
-                  user_id_in: userId,
-                  scoring_date_start: seasonStart,
-                  scoring_date_end: seasonEnd2,
-                  limit: 100
-                });
-
-                if (Array.isArray(thirdBatch)) {
-                  console.log(`[API] Dritte Abfrage: ${thirdBatch.length} weitere Flüge`);
-                  allFlights.push(...thirdBatch);
-                }
-              }
-            }
-          }
+        for (const f of batch) {
+          if (f && f.id != null) byId.set(f.id, f);
         }
+        console.log(`[API]   Seite ${page + 1}: ${batch.length} Flüge (gesamt ${byId.size})`);
+
+        if (batch.length < PAGE) break;   // letzte Seite erreicht
       }
 
-      // Duplikate entfernen (falls es Überlappungen gibt)
-      const uniqueFlights = Array.from(new Map(
-        allFlights.map(flight => [flight.id, flight])
-      ).values());
-
-      console.log(`[API] ✅ Gesamt: ${uniqueFlights.length} Flüge für User ${userId}`);
-      return uniqueFlights;
+      const flights = Array.from(byId.values());
+      console.log(`[API] ✅ Gesamt: ${flights.length} Flüge für User ${userId}`);
+      return flights;
 
     } catch (error) {
       console.error(`[API] Fehler beim Laden der User-Flüge:`, error);
-      return [];
+      return Array.from(byId.values());   // liefert, was bis zum Fehler geladen wurde
     }
   }
 
