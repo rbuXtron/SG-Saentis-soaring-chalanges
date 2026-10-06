@@ -57,7 +57,10 @@ FLIGHT_PAGE = 100
 
 # Copilot-Badges: zählen für BEIDE Insassen eines Doppelsitzers,
 # unabhängig von der user_id im Badge-Eintrag.
+# Multi-Level-Badges, die fuer BEIDE Doppelsitzer-Insassen zaehlen:
 COPILOT_BADGES = {"cockpit_crew", "always_by_your_side", "consistency"}
+# Single-Level-Badges, die fuer BEIDE zaehlen (Pilot oder Copilot):
+COPILOT_SINGLE_BADGES = {"flying_spree"}
 
 # Nur Badges aus Flügen dieses Clubs zählen (SG Säntis).
 SG_CLUB_ID = 1281
@@ -143,15 +146,26 @@ class WeGlideClient:
 # ---- Multi-Level-Definitionen -------------------------------------
 def load_multilevel_ids(client):
     badges = client.get("badge")
-    multi, names = set(), {}
+    multi, names, defs = set(), {}, {}
     if isinstance(badges, list):
         for b in badges:
             bid = b.get("id", "")
             names[bid] = b.get("name", bid)
+            desc = b.get("description")
+            if isinstance(desc, dict):
+                desc = desc.get("de") or desc.get("en") or ""
+            defs[bid] = {
+                "id": bid,
+                "name": b.get("name", bid),
+                "logo": b.get("logo", ""),
+                "description": desc or "",
+                "values": b.get("values", []),
+                "points": b.get("points", []),
+            }
             pts = b.get("points", [])
             if isinstance(pts, list) and len(pts) > 1:
                 multi.add(bid)
-    return multi, names
+    return multi, names, defs
 
 
 # ---- Vorsaison-File lesen -----------------------------------------
@@ -234,11 +248,11 @@ def enumerate_club_pilots(client, club_id):
 
 
 # ---- Saison-Flüge (nur diese Saison) -------------------------------
-def season_flights(client, uid, season):
-    flights, skip = [], 0
+def _season_flights_by(client, param, uid, season):
+    ids, skip = [], 0
     for _ in range(40):
         params = urllib.parse.urlencode({
-            "user_id_in": uid, "season_in": season, "order_by": "-scoring_date",
+            param: uid, "season_in": season, "order_by": "-scoring_date",
             "not_scored": "false", "limit": FLIGHT_PAGE, "skip": skip})
         data = client.get(f"flight?{params}")
         batch = data if isinstance(data, list) else (data or {}).get("results") if isinstance(data, dict) else None
@@ -246,11 +260,21 @@ def season_flights(client, uid, season):
             break
         for f in batch:
             if isinstance(f, dict) and f.get("id"):
-                flights.append(f["id"])
+                ids.append(f["id"])
         if len(batch) < FLIGHT_PAGE:
             break
         skip += FLIGHT_PAGE
-    return flights
+    return ids
+
+def season_flights(client, uid, season):
+    """Saison-Flüge des Piloten als PIC UND als Copilot, dedupliziert."""
+    seen = []
+    known = set()
+    for fid in (_season_flights_by(client, "user_id_in", uid, season)
+                + _season_flights_by(client, "co_user_id_in", uid, season)):
+        if fid not in known:
+            known.add(fid); seen.append(fid)
+    return seen
 
 
 def flight_detail(client, fid):
@@ -277,63 +301,80 @@ def load_achievements(client, uid):
 
 
 # ---- Kernberechnung pro Pilot --------------------------------------
-def compute_pilot(client, uid, season, multi, badge_names, prev_levels):
+def compute_pilot(client, uid, season, multi, badge_names, prev_levels, cur_levels):
     prev = prev_levels.get(str(uid), {})
+    cur = cur_levels.get(str(uid), {})
 
     # 1) Multi-Level: höchstes Level je Badge aus den SAISON-Flügen
     #    user_id-Filter: ein Badge zählt nur für den ausgewerteten Piloten;
-    #    Ausnahme Copilot-Badges (cockpit_crew, always_by_your_side) -> für beide.
-    fl_max = {}
+    #    Ausnahme Copilot-Badges (always_by_your_side, consistency) -> für beide.
+    # Copilot-Single-Badges (flying_spree) aus den Saison-Flügen einsammeln
+    # (zählen für beide Insassen; club SG genügt, kein user_id-Filter).
+    copilot_single_found = set()
     for fid in season_flights(client, uid, season):
         d = flight_detail(client, fid)
         if not d:
             continue
         if (d.get("club") or {}).get("id") != SG_CLUB_ID:
-            continue  # Flug bei einem anderen Club -> nicht werten
+            continue
         for a in (d.get("achievement") or []):
-            bid = a.get("badge_id")
-            if not bid or bid not in multi:
-                continue
-            a_uid = a.get("user_id")
-            if bid not in COPILOT_BADGES and a_uid is not None and int(a_uid) != int(uid):
-                continue  # gehört einem anderen Piloten
-            try:
-                lvl = int(a.get("points") or 0)
-            except (TypeError, ValueError):
-                lvl = 0
-            if lvl > fl_max.get(bid, 0):
-                fl_max[bid] = lvl
+            if a.get("badge_id") in COPILOT_SINGLE_BADGES:
+                copilot_single_found.add(a.get("badge_id"))
 
+    # 1) Multi-Level: 1 PUNKT pro Badge, dessen Level in der Saison gestiegen ist
+    #    (Ende-Saison-Level > Vorsaison-Level) — egal um wie viele Stufen.
     rows = []
-    for bid, season_lvl in fl_max.items():
+    for bid in sorted(set(cur) | set(prev)):
+        if bid not in multi:
+            continue
+        cur_lvl = int(cur.get(bid, 0) or 0)
         prev_lvl = int(prev.get(bid, 0) or 0)
-        gained = max(0, season_lvl - prev_lvl)
-        if gained > 0:
+        if cur_lvl > prev_lvl:
             rows.append({"badge_id": bid, "name": badge_names.get(bid, bid),
-                         "kind": "multi", "season_points": gained,
-                         "detail": f"Level {prev_lvl}→{season_lvl}"})
+                         "kind": "multi", "season_points": 1,
+                         "detail": f"Level {prev_lvl}→{cur_lvl} (+1)"})
 
-    # 2) Single-Level: created in Saison. Flug-gebundene nur wenn Flug-club=SG;
-    #    flug-lose (flight_id None, z. B. first_step) zählen trotzdem.
+    # 2) Single-Level: Saison-Zuordnung über das FLUGDATUM (scoring_date), NICHT
+    #    über 'created' (das ist die letzte Änderung und kann in der falschen
+    #    Saison liegen). Flug-gebundene nur wenn Flug-club = SG.
+    #    Flug-lose (flight_id None, z. B. first_step) fallen über 'created' zurück.
     for a in load_achievements(client, uid):
         bid = a.get("badge_id")
         if not bid or bid in multi:
             continue
-        if season_of(a.get("created")) != season:
-            continue
         fid = a.get("flight_id")
         flless = fid is None
-        if not flless:
-            if flight_club_id(client, fid) != SG_CLUB_ID:
-                continue  # Single-Level bei anderem Club -> nicht werten
+        if flless:
+            # kein Flug -> nur created als Saison-Anhalt
+            if season_of(a.get("created")) != season:
+                continue
+            detail = "created " + str(a.get("created"))[:10] + " (flug-los)"
+        else:
+            d = flight_detail(client, fid)
+            if not d:
+                continue
+            if (d.get("club") or {}).get("id") != SG_CLUB_ID:
+                continue  # Flug bei anderem Club -> nicht werten
+            fdate = str(d.get("scoring_date") or d.get("takeoff_time") or "")[:10]
+            if season_of(fdate) != season:
+                continue  # Flug liegt in einer anderen Saison
+            detail = "Flug " + fdate
         try:
             pts = int(a.get("points") or 1)
         except (TypeError, ValueError):
             pts = 1
         bd = a.get("badge") if isinstance(a.get("badge"), dict) else {}
         rows.append({"badge_id": bid, "name": bd.get("name") or badge_names.get(bid, bid),
-                     "kind": "single", "season_points": pts,
-                     "detail": ("created " + str(a.get("created"))[:10]) + (" (flug-los)" if flless else "")})
+                     "kind": "single", "season_points": pts, "detail": detail})
+
+    # 3) Copilot-Single-Badges (flying_spree) aus Flügen: für beide Insassen.
+    #    Nur ergänzen, wenn nicht schon über die eigene Achievement-Liste erfasst.
+    have = {r["badge_id"] for r in rows}
+    for bid in copilot_single_found:
+        if bid not in have:
+            rows.append({"badge_id": bid, "name": badge_names.get(bid, bid),
+                         "kind": "single", "season_points": 1,
+                         "detail": "Copilot-Flug (SG)"})
 
     total = sum(r["season_points"] for r in rows)
     rows.sort(key=lambda r: (-r["season_points"], r["name"].lower()))
@@ -346,10 +387,17 @@ def compute_pilot(client, uid, season, multi, badge_names, prev_levels):
             all_time_points += int(a.get("points") or 1)
         except (TypeError, ValueError):
             all_time_points += 1
+    # IST-Stand am Saisonende je Multi-Level-Badge = max(Vorjahr, in Saison erflogen).
+    # Das ist die Basis-Historie für die Folgesaison (vollständig, mit 0).
+    end_state = {}
+    for bid in multi:
+        end_state[bid] = max(int(prev.get(bid, 0) or 0), int(cur.get(bid, 0) or 0))
+
     extra = {
         "allTimeBadgeCount": all_time_points,
         "badgeCategoryCount": len({r["badge_id"] for r in rows}),
         "multiLevelCount": len([r for r in rows if r["kind"] == "multi"]),
+        "end_state": end_state,
     }
     return rows, total, extra
 
@@ -370,6 +418,8 @@ def main():
     p.add_argument("--json", metavar="DATEI")
     p.add_argument("--tool-json", metavar="DATEI",
                    help="Ergebnis im Tool-Format (badgeAnalysis pro userId) — z. B. season-badges-2025.json")
+    p.add_argument("--emit-history", metavar="DATEI",
+                   help="IST-Stand Ende Saison als historical-badges-<N>.json schreiben (Basis fuer Folgesaison)")
     p.add_argument("--detail", action="store_true")
     p.add_argument("--no-cache", action="store_true")
     args = p.parse_args()
@@ -379,9 +429,10 @@ def main():
                            use_cache=not args.no_cache)
 
     print(f"\n📋 Saison {season_label(args.season)}  ·  Abzug aus File {args.season-1}")
-    multi, badge_names = load_multilevel_ids(client)
+    multi, badge_names, badge_defs = load_multilevel_ids(client)
     print(f"   {len(multi)} Multi-Level-Badges bekannt")
     prev_levels, _ = load_prev_levels(args.season - 1, args.hist_dir)
+    cur_levels, _  = load_prev_levels(args.season, args.hist_dir)  # Stand Ende dieser Saison
 
     # Pilotenmenge
     names = {}
@@ -404,7 +455,7 @@ def main():
     for i, uid in enumerate(user_ids, 1):
         u = client.get(f"user/{uid}") or {}
         name = names.get(uid) or u.get("name") or f"User {uid}"
-        rows, total, extra = compute_pilot(client, uid, args.season, multi, badge_names, prev_levels)
+        rows, total, extra = compute_pilot(client, uid, args.season, multi, badge_names, prev_levels, cur_levels)
         results.append((name, uid, total, rows, extra))
         for r in rows:
             all_rows.append({"user_id": uid, "pilot": name, **r})
@@ -436,13 +487,29 @@ def main():
     if args.tool_json:
         tool = {}
         for (name, uid, total, rows, extra) in results:
-            badges_out = [{
-                "badge_id": r["badge_id"],
-                "name": r["name"],
-                "points": r["season_points"],
-                "type": "multi-level" if r["kind"] == "multi" else "single-level",
-                "detail": r["detail"],
-            } for r in rows]
+            def _enrich(r):
+                bd = badge_defs.get(r["badge_id"], {})
+                # End-Level dieser Saison aus detail "Level X→Y" (Y); single = 1
+                end_level = 1
+                d = r.get("detail", "")
+                if "→" in d:
+                    try:
+                        end_level = int(d.split("→")[1].split()[0])
+                    except (ValueError, IndexError):
+                        end_level = r["season_points"]
+                return {
+                    "badge_id": r["badge_id"],
+                    "name": r["name"],
+                    "points": r["season_points"],        # Saison-Punkte
+                    "seasonPoints": r["season_points"],
+                    "level": end_level,                  # erreichtes End-Level der Saison
+                    "type": "multi-level" if r["kind"] == "multi" else "single-level",
+                    "detail": r["detail"],
+                    "logo": bd.get("logo", ""),
+                    "description": bd.get("description", ""),
+                    "badge": bd,                         # voller Katalog-Eintrag (name, logo, description, values, points)
+                }
+            badges_out = [_enrich(r) for r in rows]
             tool[str(uid)] = {
                 "userId": uid,
                 "userName": name,
@@ -465,6 +532,21 @@ def main():
         }
         Path(args.tool_json).write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"💾 Tool-JSON: {args.tool_json}  ({len(tool)} Piloten)")
+
+    if args.emit_history:
+        hist = {}
+        for (name, uid, total, rows, extra) in results:
+            badges = {b: lvl for b, lvl in (extra.get("end_state") or {}).items()}
+            hist[str(uid)] = {"name": name, "badges": badges}
+        out = {
+            "season": args.season,
+            "season_label": season_label(args.season),
+            "description": f"IST-Stand aller Multi-Level-Badges Ende Saison {season_label(args.season)} (Basis fuer Folgesaison)",
+            "generated": __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "pilots": hist,
+        }
+        Path(args.emit_history).write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"💾 History-JSON: {args.emit_history}  ({len(hist)} Piloten)")
 
     print(f"\n📊 Requests gesamt: {client.request_count}")
     return 0

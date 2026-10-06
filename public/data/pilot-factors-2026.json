@@ -1,0 +1,291 @@
+{
+    "metadata": {
+        "season": "2025/2026",
+        "generated": "2026-10-05",
+        "description": "Pilotenfaktoren Ende Saison 2025/2026"
+    },
+    "pilots": {
+        "9793": {
+            "name": "Werner Rissi",
+            "factor": 1.4,
+            "bestDistance": 427,
+            "lastUpdated": "2026-08-15"
+        },
+        "10830": {
+            "name": "Marcel Spirig",
+            "factor": 2.0,
+            "bestDistance": 252,
+            "lastUpdated": "2026-06-21"
+        },
+        "29951": {
+            "name": "Johannes Widmer",
+            "factor": 1.6,
+            "bestDistance": 357,
+            "lastUpdated": "2026-07-11"
+        },
+        "9604": {
+            "name": "Guido Halter",
+            "factor": 1.2,
+            "bestDistance": 850,
+            "lastUpdated": "2026-05-29"
+        },
+        "26179": {
+            "name": "Stefan Volland",
+            "factor": 2.0,
+            "bestDistance": 236,
+            "lastUpdated": "2026-06-14"
+        },
+        "10842": {
+            "name": "Herbert Stoffel",
+            "factor": 2.0,
+            "bestDistance": 210,
+            "lastUpdated": "2026-07-06"
+        },
+        "17293": {
+            "name": "Andreas Graf",
+            "factor": 1.6,
+            "bestDistance": 461,
+            "lastUpdated": "2026-06-21"
+        },
+        "37273": {
+            "name": "Stefanie  Hautle",
+            "factor": 3.0,
+            "bestDistance": 59,
+            "lastUpdated": "2026-07-16"
+        },
+        "10518": {
+            "name": "Roman Andreas Buehler",
+            "factor": 1.2,
+            "bestDistance": 834,
+            "lastUpdated": "2026-07-11"
+        },
+        "42698": {
+            "name": "Nio Struhs",
+            "factor": 3.0,
+            "bestDistance": 62,
+            "lastUpdated": "2026-08-23"
+        },
+        "10758": {
+            "name": "Rainer Ender",
+            "factor": 1.6,
+            "bestDistance": 442,
+            "lastUpdated": "2026-06-18"
+        },
+        "40366": {
+            "name": "Milos Savanovic",
+            "factor": 2.0,
+            "bestDistance": 184,
+            "lastUpdated": "2026-07-11"
+        },
+        "30072": {
+            "name": "Joel Morrone",
+            "factor": 3.0,
+            "bestDistance": 86,
+            "lastUpdated": "2026-07-09"
+        },
+        "43076": {
+            "name": "Urs Steiner",
+            "factor": 2.0,
+            "bestDistance": 107,
+            "lastUpdated": "2026-09-11"
+        },
+        "42582": {
+            "name": "Patrick ONeill",
+            "factor": 4.0,
+            "bestDistance": 33,
+            "lastUpdated": "2026-08-19"
+        },
+        "11468": {
+            "name": "Heinz Bärfuss",
+            "factor": 1.2,
+            "bestDistance": 610,
+            "lastUpdated": "2026-07-30"
+        },
+        "9979": {
+            "name": "Wolfgang Rapp",
+            "factor": 1.4,
+            "bestDistance": 632,
+            "lastUpdated": "2026-07-30"
+        },
+        "21532": {
+            "name": "Philipp Lenhard",
+            "factor": 1.6,
+            "bestDistance": 290,
+            "lastUpdated": "2026-07-11"
+        },
+        "25790": {
+            "name": "Gabor Facsar",
+            "factor": 2.0,
+            "bestDistance": 119,
+            "lastUpdated": "2026-04-26"
+        },
+        "23559": {
+            "name": "Florian Sutter",
+            "factor": 1.6,
+            "bestDistance": 354,
+            "lastUpdated": "2026-07-22"
+        },
+        "42586": {
+            "name": "Jeremias Bachmann",
+            "factor": 4.0,
+            "bestDistance": 8,
+            "lastUpdated": "2026-08-19"
+        },
+        "18175": {
+            "name": "Stefan Gertsch",
+            "factor": 1.2,
+            "bestDistance": 813,
+            "lastUpdated": "2026-05-25"
+        },
+        "10687": {
+            "name": "Pius Stolz",
+            "factor": 1.6,
+            "bestDistance": 355,
+            "lastUpdated": "2026-07-22"
+        },
+        "33260": {
+            "name": "Evalena Widmer",
+            "factor": 2.0,
+            "bestDistance": 272,
+            "lastUpdated": "2026-07-11"
+        },
+        "29960": {
+            "name": "Simon Widmer",
+            "factor": 2.0,
+            "bestDistance": 146,
+            "lastUpdated": "2026-07-07"
+        },
+        "23621": {
+            "name": "Urs Zeberli",
+            "factor": 3.0,
+            "bestDistance": 74,
+            "lastUpdated": "2026-07-07"
+        },
+        "40718": {
+            "name": "David Corrêa",
+            "factor": 4.0,
+            "bestDistance": 13,
+            "lastUpdated": "2026-07-08"
+        },
+        "35021": {
+            "name": "Levi Osmani",
+            "factor": 3.0,
+            "bestDistance": 66,
+            "lastUpdated": "2026-04-16"
+        },
+        "25240": {
+            "name": "Lukas Thoma",
+            "factor": 2.0,
+            "bestDistance": 129,
+            "lastUpdated": "2026-06-08"
+        },
+        "35840": {
+            "name": "Angelo Milo",
+            "factor": 3.0,
+            "bestDistance": 73,
+            "lastUpdated": "2026-04-25"
+        },
+        "10847": {
+            "name": "Moritz Giger",
+            "factor": 2.0,
+            "bestDistance": 69,
+            "lastUpdated": "2026-05-03"
+        },
+        "23681": {
+            "name": "Rahela Kissling",
+            "factor": 2.0,
+            "bestDistance": 126,
+            "lastUpdated": "2026-04-18"
+        },
+        "38317": {
+            "name": "Brian Polugic",
+            "factor": 4.0,
+            "bestDistance": 32,
+            "lastUpdated": "2026-04-26"
+        },
+        "32669": {
+            "name": "Paul Cordes",
+            "factor": 1.4,
+            "bestDistance": 657,
+            "lastUpdated": "2026-05-23"
+        },
+        "21138": {
+            "name": "Pascal Rotach",
+            "factor": 2.0,
+            "bestDistance": 160,
+            "lastUpdated": "2026-04-03"
+        },
+        "35020": {
+            "name": "Jann Baumgartner",
+            "factor": 4.0,
+            "bestDistance": 11,
+            "lastUpdated": "2026-03-05"
+        },
+        "35019": {
+            "name": "Kilian Kobler",
+            "factor": 4.0,
+            "bestDistance": 10,
+            "lastUpdated": "2025-11-23"
+        },
+        "24415": {
+            "name": "Michel Bänziger",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "24353": {
+            "name": "Dominic Saladin",
+            "factor": 1.6,
+            "bestDistance": 214,
+            "lastUpdated": "2026-04-17"
+        },
+        "32914": {
+            "name": "Samuel Fischer",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "23604": {
+            "name": "Rafael Lutz",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "32926": {
+            "name": "Simon Stieger",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "3503": {
+            "name": "Yves Bodenmann",
+            "factor": 2.0,
+            "bestDistance": 267,
+            "lastUpdated": "2025-09-21"
+        },
+        "27275": {
+            "name": "Andrin Oppliger",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "824": {
+            "name": "Martin Prusak",
+            "factor": 4.0,
+            "bestDistance": 5,
+            "lastUpdated": "2026-09-06"
+        },
+        "29953": {
+            "name": "Alexis Ghiatras",
+            "factor": 4.0,
+            "bestDistance": 0,
+            "lastUpdated": "2026-10-05"
+        },
+        "1713": {
+            "name": "Rolf König",
+            "factor": 1.4,
+            "bestDistance": 598,
+            "lastUpdated": "2026-07-30"
+        }
+    }
+}

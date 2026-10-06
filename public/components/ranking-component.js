@@ -1,5 +1,11 @@
 /**
  * SG Säntis Cup - Ranglisten-Komponente
+ * Version 4.0 - Cup als Podium + Karten-Liste (Layout aus dem Prototyp),
+ *   aufklappbare Flugdetails; themefähig über CSS-Tokens (Gold/Türkis).
+ *   Benötigt cup-layout.css.
+ * Version 3.2 - Flugzeugfaktor (F-Faktor) aus der Detail-Anzeige entfernt
+ *   (Berechnung unveraendert: km x P-Faktor x Flugzeugfaktor x Platzfaktor)
+ *   Detailspalten: Datum | Flugzeug | km | P-Faktor | Startplatz (Platzfaktor) | Punkte
  * Version 3.1 - mit Ranking-Deltas (Pfeile) + Aufsteiger der Woche
  */
 
@@ -13,7 +19,7 @@ function getSeasonInfo(pilots) {
 
   return {
     year: seasonYear,
-    string: seasonYear === 2026 ? '2025/2026' : '2024/2025'
+    string: `${seasonYear - 1}/${seasonYear}`
   };
 }
 
@@ -42,50 +48,201 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
   const sortedPilots = [...pilots].sort((a, b) =>
     ((b.totalPoints || 0) - (a.totalPoints || 0)) ||
     ((a.userId || 0) - (b.userId || 0))
-);
+  );
 
-  // Ranking-Deltas nur für die aktuelle Saison berechnen
-  // (für alte Saisons gibt es keine passenden Snapshots)
+  // Ranking-Deltas nur für die aktuelle Saison (sonst keine passenden Snapshots)
   const isCurrentSeason = seasonInfo.year === getCurrentSeasonYear();
   const deltaMap = isCurrentSeason ? RankingDeltas.prepare(sortedPilots) : new Map();
   const climber = isCurrentSeason ? RankingDeltas.climberOfWeek() : null;
+  const climberChange = climber
+    ? (climber.isNew
+        ? (climber.currentRank === 1 ? 'neu an der Spitze' : `neu auf Platz ${climber.currentRank}`)
+        : `+${climber.delta} Plätze`)
+    : '';
   const climberHTML = climber
-    ? `<div class="climber-of-week">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (+${climber.delta} Plätze)</div>`
+    ? `<div class="cup-climber">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (${climberChange})</div>`
     : '';
 
-  // Header
-  const header = document.createElement('div');
-  header.className = 'ranking-header';
-  header.innerHTML = `
-        <h2 class="section-title">🏆 SG Säntis Cup Rangliste ${seasonInfo.string}</h2>
-        <div class="ranking-subtitle">
-            Basierend auf den drei besten Flügen jedes Piloten
-        </div>
+  const ranked = sortedPilots.filter(p => (p.totalPoints || 0) > 0);
+  const top3 = ranked.slice(0, 3);
+
+  const podiumHTML = top3.length
+    ? `<div class="cup-sectlabel">Podium</div>
+       <div class="cup-podium">
+         ${top3[1] ? podCard(top3[1], 'two', '2.') : '<div class="pod placeholder"></div>'}
+         ${podCard(top3[0], 'one', '1.')}
+         ${top3[2] ? podCard(top3[2], 'three', '3.') : '<div class="pod placeholder"></div>'}
+       </div>`
+    : '';
+
+  const listHTML = ranked.map((p, i) => cupRowHTML(p, i + 1, deltaMap.get(p.name))).join('');
+
+  container.innerHTML = `
+    <div class="cup-wrap">
+      <div class="cup-head">
+        <h2 class="cup-title">Säntis Cup</h2>
+        <div class="cup-sub">Saison ${seasonInfo.string} <span class="dot"></span> 3 beste Flüge × Faktoren</div>
         ${climberHTML}
-    `;
-  container.appendChild(header);
+      </div>
+      ${podiumHTML}
+      <div class="cup-sectlabel">Wertung · ${ranked.length} Piloten</div>
+      <div class="cup-list">${listHTML || '<div class="no-data">Noch keine gewerteten Flüge in dieser Saison</div>'}</div>
+    </div>
+  `;
 
-  // Tabelle
-  const table = createRankingTable(sortedPilots, deltaMap);
-  container.appendChild(table);
+  setTimeout(() => setupCupToggles(container), 50);
+  // Podium-Fotos nachladen (die Club-Liste liefert kein image -> user/<id> via Proxy)
+  enrichPodiumAvatars(container, top3);
+}
 
-  // Footer
-  const footer = document.createElement('div');
-  footer.className = 'ranking-footer';
-  footer.innerHTML = `
-        <div class="ranking-info">
-            <div class="ranking-status">
-                <strong>Stand:</strong> ${formatDateForDisplay(new Date())}
-            </div>
-            <div class="ranking-description">
-                Die Rangliste wird basierend auf den drei besten Flügen berechnet.
-            </div>
-        </div>
-    `;
-  container.appendChild(footer);
+// Holt die WeGlide-Fotos der 3 Podiumsplätze nach (nur falls noch keins vorhanden).
+// Nutzt denselben Proxy wie die App; Ergebnis wird am Piloten-Objekt gecacht.
+async function enrichPodiumAvatars(container, top) {
+  for (const p of (top || [])) {
+    if (!p) continue;
+    const uid = p.userId || p.user_id || p.id;
+    if (!uid) continue;
+    if (!(p.avatar || p.image)) {
+      try {
+        const res = await fetch(`/api/proxy?path=user/${uid}`, { cache: 'force-cache' });
+        if (!res.ok) continue;
+        const u = await res.json();
+        if (u && u.image) p.avatar = u.image;   // am Objekt cachen
+      } catch (_) { continue; }
+    }
+    const url = avatarUrl(p);
+    if (!url) continue;
+    const wrap = container.querySelector(`.cup-podium .pod[data-uid="${uid}"] .ava-wrap`);
+    if (!wrap || wrap.querySelector('.ava-img')) continue;
+    const img = document.createElement('img');
+    img.className = 'ava-img';
+    img.loading = 'lazy';
+    img.alt = '';
+    img.onerror = () => img.remove();
+    img.src = url;
+    wrap.appendChild(img);
+  }
+}
 
-  // Event Listener
-  setTimeout(() => addDetailsEventListeners(), 100);
+// ---- Podium / Karten-Liste (Layout aus dem Prototyp, themefähig über Tokens) ----
+function initialsOf(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = parts[0][0] || '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
+// WeGlide-Pilotenfoto (gleiches CDN wie Badges/Flugbilder). Fällt per onerror
+// auf die Initialen zurück, wenn kein Bild existiert.
+function avatarUrl(p) {
+  // WeGlide liefert image als relativen Pfad, z.B. "10518/profile/<hash>.jpg".
+  // Voll-URL = CDN-Basis + Pfad. Ohne image -> null (dann Initialen-Fallback).
+  const a = p.avatar || p.image;
+  if (!a) return null;
+  if (/^https?:\/\//.test(a)) return a;
+  return 'https://weglidefiles.b-cdn.net/' + String(a).replace(/^\/+/, '');
+}
+
+function podCard(p, cls, medal) {
+  // Farbe pro Platz kommt aus dem CSS (.pod.one/.two/.three -> --pc), currentColor erbt sie.
+  const nameBreak = (p.name || '').replace(/ (?=[^ ]+$)/, '<br>');
+  const pts = formatNumber(Math.round(p.totalPoints || 0));
+  const url = avatarUrl(p);
+  const img = url
+    ? `<img class="ava-img" src="${url}" alt="" loading="lazy" onerror="this.style.display='none'">`
+    : '';
+  const uid = p.userId || p.user_id || p.id || '';
+  return `
+    <div class="pod ${cls}" data-uid="${uid}">
+      <div class="medal">${medal}</div>
+      <div class="ava-wrap">
+        <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+          <text x="24" y="31" text-anchor="middle" font-size="18" font-weight="600" fill="currentColor">${initialsOf(p.name)}</text>
+        </svg>
+        ${img}
+      </div>
+      <div class="pn">${nameBreak}</div>
+      <div class="pts tnum">${pts}</div>
+      <div class="u">Punkte</div>
+    </div>`;
+}
+
+function mvHTML(info) {
+  if (info && info.delta > 0) return `<span class="mv up">▲<b>${info.delta}</b></span>`;
+  if (info && info.delta < 0) return `<span class="mv down">▼<b>${-info.delta}</b></span>`;
+  return `<span class="mv flat">–</span>`;
+}
+
+function cupDetailHTML(p) {
+  const flights = [...(p.flights || [])].sort((a, b) =>
+    new Date(b.date || 0) - new Date(a.date || 0)
+  );
+  const rows = flights.map(f => {
+    const fid = f.rawData?.id;
+    const dateStr = formatDateForDisplay(f.date);
+    const dateCell = fid
+      ? `<a href="https://www.weglide.org/flight/${fid}" target="_blank" rel="noopener">${dateStr}</a>`
+      : dateStr;
+    return `<tr>
+        <td class="lft">${dateCell}</td>
+        <td class="lft">${f.aircraftType || '-'}</td>
+        <td class="tnum">${(f.km || 0).toFixed(1)}</td>
+        <td class="tnum">${f.pilotFactor != null ? f.pilotFactor.toFixed(1) : '-'}</td>
+        <td class="lft">${f.takeoffAirportName || '-'} <span class="taf">(${f.takeoffFactor != null ? f.takeoffFactor : 0.8})</span></td>
+        <td class="tnum"><strong>${(f.points || 0).toFixed(2)}</strong></td>
+      </tr>`;
+  }).join('') || '<tr><td colspan="6">Keine Flugdaten verfügbar</td></tr>';
+
+  return `
+    <div class="grp">Beste ${flights.length || 3} Flüge</div>
+    <div class="ftwrap">
+      <table class="ftable">
+        <thead><tr>
+          <th class="lft">Datum</th><th class="lft">Flugzeug</th><th>km</th>
+          <th title="Pilotenfaktor">P-Fkt</th><th class="lft">Startplatz</th><th>Punkte</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="cupsum">Pilotenfaktor <b class="tnum">${(p.pilotFactor != null ? p.pilotFactor : 0).toFixed(1)}</b>
+      <span class="dot"></span>Gesamtpunkte <b class="tnum">${formatNumber((p.totalPoints || 0).toFixed(2))}</b></div>`;
+}
+
+function cupRowHTML(p, rank, deltaInfo) {
+  const source = (p.allFlights && p.allFlights.length) ? p.allFlights : (p.flights || []);
+  const flightCount = source.length;
+  const totalKm = source.reduce((s, f) => s + (f.km || 0), 0);
+  const pts = formatNumber(Math.round(p.totalPoints || 0));
+  const topCls = rank <= 3 ? ` top${rank}` : '';
+  return `
+    <div class="rowcard${topCls}" aria-expanded="false">
+      <button class="prow" type="button" aria-label="${p.name} – Details">
+        <span class="rk tnum">${rank}</span>
+        ${mvHTML(deltaInfo)}
+        <span class="who">
+          <span class="nm">${p.name}</span>
+          <span class="cats"><span>${flightCount} Flüge · ${formatNumber(Math.round(totalKm))} km</span></span>
+        </span>
+        <span class="score">
+          <b class="tnum">${pts}</b><span>Pkt</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </span>
+      </button>
+      <div class="detail">${cupDetailHTML(p)}</div>
+    </div>`;
+}
+
+function setupCupToggles(container) {
+  container.querySelectorAll('.cup-list .prow').forEach(btn => {
+    if (btn.hasAttribute('data-cup-bound')) return;
+    btn.setAttribute('data-cup-bound', 'true');
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.rowcard');
+      const open = card.getAttribute('aria-expanded') === 'true';
+      card.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+  });
 }
 
 function createRankingTable(pilots, deltaMap = new Map()) {
@@ -231,7 +388,6 @@ function createDetailsRow(pilot) {
                         <th>Flugzeug</th>
                         <th>km</th>
                         <th>P-Faktor</th>
-                        <th>F-Faktor</th>
                         <th>Startplatz</th>
                         <th>Punkte</th>
                     </tr>
@@ -257,14 +413,13 @@ function createDetailsRow(pilot) {
                     <td>${flight.aircraftType || '-'}</td>
                     <td>${flight.km.toFixed(1)}</td>
                     <td>${flight.pilotFactor?.toFixed(1) || '-'}</td>
-                    <td>${flight.aircraftFactor?.toFixed(3) || '-'}</td>
                     <td>${flight.takeoffAirportName || '-'} (${flight.takeoffFactor || 0.8})</td>
                     <td><strong>${flight.points.toFixed(2)}</strong></td>
                 </tr>
             `;
     });
   } else {
-    detailsHTML += '<tr><td colspan="7">Keine Flugdaten verfügbar</td></tr>';
+    detailsHTML += '<tr><td colspan="6">Keine Flugdaten verfügbar</td></tr>';
   }
 
   detailsHTML += `
@@ -523,7 +678,8 @@ export function renderLatestClubFlights(pilots, limit = 10, offset = 0, containe
     infoContainer.style.padding = '15px';
     infoContainer.style.display = 'flex';
     infoContainer.style.justifyContent = 'space-between';
-    infoContainer.style.backgroundColor = '#fff';
+    infoContainer.style.backgroundColor = 'var(--background-card)';
+    infoContainer.style.color = 'var(--text-primary)';
 
     // Linke Spalte
     const leftInfo = document.createElement('div');
@@ -535,10 +691,10 @@ export function renderLatestClubFlights(pilots, limit = 10, offset = 0, containe
     punktePilot.style.marginBottom = '5px';
 
     const punkte = flight.originalPoints ? flight.originalPoints.toFixed(0) : '0';
-    punktePilot.innerHTML = `${punkte} · <a href="${flightUrl}" target="_blank" style="color: #3498db; text-decoration: none;">${flight.pilotName}</a>`;
+    punktePilot.innerHTML = `${punkte} · <a href="${flightUrl}" target="_blank" style="color: var(--accent-teal); text-decoration: none;">${flight.pilotName}</a>`;
 
     const ort = document.createElement('div');
-    ort.style.color = '#666';
+    ort.style.color = 'var(--text-secondary)';
     ort.style.fontSize = '14px';
     const ortName = flight.takeoffAirportName || 'Unbekannt';
     ort.textContent = ortName;
@@ -553,11 +709,11 @@ export function renderLatestClubFlights(pilots, limit = 10, offset = 0, containe
 
     const distanz = document.createElement('div');
     distanz.style.marginBottom = '10px';
-    distanz.innerHTML = `<span style="color: #666;">↔</span> ${flight.km.toFixed(0)} km`;
+    distanz.innerHTML = `<span style="color: var(--text-secondary);">↔</span> ${flight.km.toFixed(0)} km`;
 
     const geschwindigkeit = document.createElement('div');
     const speed = flight.speed ? flight.speed.toFixed(0) : '0';
-    geschwindigkeit.innerHTML = `<span style="color: #666;">⏱</span> ${speed} km/h`;
+    geschwindigkeit.innerHTML = `<span style="color: var(--text-secondary);">⏱</span> ${speed} km/h`;
 
     middleInfo.appendChild(distanz);
     middleInfo.appendChild(geschwindigkeit);

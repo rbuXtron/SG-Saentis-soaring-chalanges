@@ -1,0 +1,90 @@
+/* =========================================================================
+   SG Säntis Cup – Podium + Karten-Liste (Layout aus dem Prototyp)
+   -------------------------------------------------------------------------
+   Themefähig: nutzt die App-Tokens, daher Gold im Alpin-Theme und
+   Türkis im hellen Standard-Theme. Alles unter .cup-wrap gescoped.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+.cup-wrap { --cup-accent: var(--accent-teal, #0891b2); --cup-second: #5b9bd5; --cup-third: #4bbf87; }
+.cup-wrap .tnum { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.cup-wrap .dot { display:inline-block; width:3px; height:3px; border-radius:50%; background:currentColor; opacity:.5; margin:0 2px; vertical-align:middle; }
+
+/* Kopf */
+.cup-head { padding: 6px 2px 2px; }
+.cup-title { font-family:'Oswald',sans-serif; font-size:30px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; margin:0; color:var(--text-primary); }
+.cup-sub { color:var(--text-secondary); font-size:13px; margin-top:4px; display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.cup-climber { display:inline-flex; align-items:center; gap:7px; margin-top:10px; padding:7px 13px; border-radius:999px;
+  font-size:13px; font-weight:600; color:var(--cup-accent);
+  background:color-mix(in srgb, var(--cup-accent) 14%, transparent);
+  border:1px solid color-mix(in srgb, var(--cup-accent) 35%, transparent); }
+.cup-climber strong { color:var(--text-primary); }
+
+/* Abschnitts-Label */
+.cup-sectlabel { font-size:11px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-secondary); margin:24px 0 12px; display:flex; align-items:center; gap:10px; }
+.cup-sectlabel::after { content:""; flex:1; height:1px; background:var(--border-light); }
+
+/* Podium */
+.cup-podium { display:grid; grid-template-columns:1fr 1.18fr 1fr; gap:8px; align-items:end; }
+.cup-podium .pod { background:var(--background-card); border:1px solid var(--border-light); border-radius:16px; padding:14px 8px; text-align:center; }
+.cup-podium .pod.placeholder { background:transparent; border:0; }
+.cup-podium .pod.one { --pc:var(--cup-accent); border-color:var(--cup-accent); background:linear-gradient(180deg, color-mix(in srgb, var(--cup-accent) 14%, var(--background-card)), var(--background-card)); padding-top:18px; }
+.cup-podium .pod.two { --pc:var(--cup-second); border-color:color-mix(in srgb, var(--cup-second) 38%, var(--border-light)); background:linear-gradient(180deg, color-mix(in srgb, var(--cup-second) 8%, var(--background-card)), var(--background-card)); }
+.cup-podium .pod.three { --pc:var(--cup-third); border-color:color-mix(in srgb, var(--cup-third) 38%, var(--border-light)); background:linear-gradient(180deg, color-mix(in srgb, var(--cup-third) 8%, var(--background-card)), var(--background-card)); }
+.cup-podium .medal { font-family:'Oswald',sans-serif; font-size:13px; font-weight:600; color:var(--pc, var(--cup-accent)); }
+/* Avatar: runder Container fester Größe (für alle Plätze gleich). Foto wird
+   formatfüllend geclippt; die Initialen liegen dahinter (nur sichtbar ohne Foto). */
+.cup-podium .ava-wrap { position:relative; width:60px; height:60px; margin:8px auto; border-radius:50%; overflow:hidden; border:2.3px solid currentColor; background:var(--background-section); color:var(--pc, var(--cup-accent)); }
+.cup-podium .ava { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.cup-podium .ava text { font-family:'Oswald',sans-serif; }
+.cup-podium .ava-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.cup-podium .pn { font-family:'Oswald',sans-serif; font-size:14px; line-height:1.05; min-height:2.1em; display:flex; align-items:center; justify-content:center; color:var(--text-primary); }
+.cup-podium .pts { font-family:'Oswald',sans-serif; font-size:26px; line-height:1; margin-top:4px; color:var(--text-primary); }
+.cup-podium .pod.one .pts { font-size:34px; color:var(--cup-accent); }
+.cup-podium .pod.two .pts, .cup-podium .pod.three .pts { color:var(--pc); }
+.cup-podium .u { font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; }
+
+/* Wertung – Karten-Liste */
+.cup-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+.cup-list .rowcard { background:var(--background-card); border:1px solid var(--border-light); border-radius:14px; overflow:hidden; }
+.cup-list .rowcard.top1 { border-left:3px solid var(--cup-accent); }
+.cup-list .rowcard.top2 { border-left:3px solid var(--cup-second); }
+.cup-list .rowcard.top3 { border-left:3px solid var(--cup-third); }
+.cup-list .top1 .rk { color:var(--cup-accent); }
+.cup-list .top2 .rk { color:var(--cup-second); }
+.cup-list .top3 .rk { color:var(--cup-third); }
+.cup-list .prow { display:grid; grid-template-columns:28px 36px 1fr auto; align-items:center; gap:10px; padding:11px 13px; cursor:pointer; width:100%; text-align:left; background:none; border:0; color:inherit; font:inherit; }
+.cup-list .prow:hover { background:var(--background-section); }
+.cup-list .rk { font-family:'Oswald',sans-serif; font-size:19px; color:var(--text-secondary); text-align:center; }
+.cup-list .mv { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:2px; }
+.cup-list .mv.up { color:#16a34a; } .cup-list .mv.down { color:#dc2626; } .cup-list .mv.flat { color:var(--text-muted); }
+.cup-list .who { min-width:0; }
+.cup-list .who .nm { font-family:'Oswald',sans-serif; font-size:17px; font-weight:500; line-height:1.05; color:var(--text-primary); }
+.cup-list .who .cats { color:var(--text-secondary); font-size:11.5px; margin-top:3px; }
+.cup-list .score { text-align:right; display:flex; align-items:baseline; gap:4px; justify-content:flex-end; }
+.cup-list .score b { font-family:'Oswald',sans-serif; font-size:23px; line-height:1; color:var(--cup-accent); }
+.cup-list .score span { font-size:10px; color:var(--text-secondary); text-transform:uppercase; }
+.cup-list .chev { width:16px; height:16px; color:var(--text-muted); transition:transform .22s ease; margin-left:2px; }
+.cup-list .rowcard[aria-expanded="true"] .chev { transform:rotate(180deg); }
+
+/* Detail */
+.cup-list .detail { border-top:1px solid var(--border-light); padding:4px 13px 15px; display:none; background:var(--background-section); }
+.cup-list .rowcard[aria-expanded="true"] .detail { display:block; }
+.cup-list .grp { font-size:10.5px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--text-secondary); margin:14px 0 10px; }
+.cup-list .ftwrap { overflow-x:auto; }
+.cup-list .ftable { width:100%; border-collapse:collapse; font-size:12.5px; min-width:400px; }
+.cup-list .ftable th { text-align:right; color:var(--text-secondary); font-weight:600; font-size:9.5px; text-transform:uppercase; letter-spacing:.5px; padding:4px 6px; border-bottom:1px solid var(--border-light); }
+.cup-list .ftable th.lft, .cup-list .ftable td.lft { text-align:left; }
+.cup-list .ftable td { padding:7px 6px; border-bottom:1px solid var(--border-light); font-family:'IBM Plex Mono',monospace; text-align:right; color:var(--text-primary); }
+.cup-list .ftable tr:last-child td { border-bottom:0; }
+.cup-list .ftable a { color:var(--cup-accent); text-decoration:none; }
+.cup-list .ftable a:hover { text-decoration:underline; }
+.cup-list .taf { color:var(--text-muted); font-size:11px; }
+.cup-list .cupsum { margin-top:11px; font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cup-list .cupsum b { color:var(--text-primary); font-family:'IBM Plex Mono',monospace; }
+
+@media (max-width:480px) {
+  .cup-title { font-size:26px; }
+  .cup-podium .pod.one .pts { font-size:30px; }
+}

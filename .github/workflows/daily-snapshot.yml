@@ -1,25 +1,18 @@
-# .github/workflows/daily-snapshot.yml
-# ------------------------------------------------------------------
-# Erstellt jeden Morgen einen Ranglisten-Snapshot von der deployten
-# Seite und committet ihn nach snapshots/<saison>.json.
-#
-# Einmalige Einrichtung im Repo:
-#   Settings -> Secrets and variables -> Actions -> Variables ->
-#   New repository variable:  Name = SITE_URL
-#                             Value = https://dein-projekt.vercel.app
-# ------------------------------------------------------------------
-name: Daily ranking snapshot
+name: Daily Badge Snapshot
 
+# Taeglicher Snapshot des Club-Badgestands (Level-Verlauf + Saison-Punkte).
+# Ergaenzt die stuendliche Live-Wertung: diese Datei ist das "Gedaechtnis"
+# fuer Bewegung (▲/▼) und "Aufsteiger der Woche".
 on:
   schedule:
-    - cron: '0 5 * * *'      # täglich 05:00 UTC (= 06:00/07:00 CH)
-  workflow_dispatch:          # zusätzlich manuell auslösbar
+    - cron: "30 21 * * *"   # 21:30 UTC = 22:30/23:30 CH — nach Flugende
+  workflow_dispatch:         # manuell ausloesbar
 
 permissions:
-  contents: write             # nötig, um den Snapshot zu committen
+  contents: write
 
 concurrency:
-  group: snapshot
+  group: badge-snapshot
   cancel-in-progress: false
 
 jobs:
@@ -29,32 +22,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 20
+          python-version: "3.12"
 
-      - name: Install Playwright (Chromium)
-        run: |
-          npm init -y >/dev/null 2>&1 || true
-          npm install playwright@latest
-          npx playwright install --with-deps chromium
+      # Persistenter Cache: nach dem Erstlauf werden nur neue Fluege geladen.
+      - name: Restore WeGlide cache
+        uses: actions/cache@v4
+        with:
+          path: .weglide_cache
+          key: weglide-cache-${{ github.run_id }}
+          restore-keys: |
+            weglide-cache-
 
-      - name: Build snapshot
+      - name: Build snapshot (Saison-Datei + Light-Level-Snapshot + Rang-Snapshots)
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
-          SNAPSHOT_DIR: public/snapshots
-          WAIT_MS: "180000"
-        run: node scripts/snapshot.mjs
-
-      - name: Commit snapshot if changed
+          PROXY_URL: ${{ vars.PROXY_URL }}
         run: |
-          git config user.name  "sg-cup-bot"
+          python weglide_snapshot_club.py \
+            --club 1281 \
+            --proxy "${PROXY_URL:-https://sgsaentiscup.vercel.app/api/proxy}" \
+            --out-dir public/data
+
+      - name: Build badge history (Level-Verlauf aus dem Tagesarchiv)
+        run: |
+          python build_badge_history.py --data public/data
+
+      - name: Commit snapshot
+        run: |
+          git config user.name  "sg-saentis-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add snapshots/
+          git add public/data/badge-levels public/data/badge-history-latest.json public/data/season-badges-*.json public/data/season-points-*.json public/data/badge-rank-snapshots.json public/data/points-rank-snapshots.json
+          [ -f public/data/badge-history-backfill.json ] && git add public/data/badge-history-backfill.json || true
           if git diff --cached --quiet; then
-            echo "Keine Änderung am Snapshot."
+            echo "Keine Aenderungen."
           else
-            git commit -m "chore: Ranglisten-Snapshot $(date -u +%F)"
+            git commit -m "Badge-Snapshot $(date -u +%F)"
             git push
           fi

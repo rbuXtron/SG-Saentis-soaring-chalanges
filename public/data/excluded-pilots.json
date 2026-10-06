@@ -1,0 +1,4 @@
+{
+  "_hinweis": "Piloten, die ab einer Saison NICHT mehr gewertet werden (z.B. Vereinsaustritt). 'excludeFromSeason' = erste Saison, ab der sie wegfallen; fruehere Saisons bleiben erhalten. Fehlt das Feld, wird der Pilot in ALLEN Saisons ausgeschlossen. 'userId' ist die WeGlide-User-ID (gleich wie in der App / in der WeGlide-Profil-URL). 'name' dient nur der Lesbarkeit.",
+  "pilots": ["29953", "23604", "26526", "29411", "35019", "32926", "27275"]
+}

@@ -1,10 +1,62 @@
 /**
  * SG Säntis Cup - WeGlide Badges Komponente
- * Version 4.1 - mit Ranking-Deltas (Pfeile) im Badge-Award
+ * Version 4.3 - Fortschritt zum nächsten Level + Seltenheit pro Badge
+ * Version 4.2 - Multi-Level-Badges: Level-Verlauf aus badge-history-latest.json
+ *   (Klick auf ein Multi-Level-Badge zeigt die Stufen mit Datum + Flug-Link)
+ *   + generische Saison-Bezeichnung (N-1)/N
  */
 
 import { formatDateForDisplay } from '../utils/utils.js';
 import * as RankingDeltas from './ranking-deltas.js';
+
+// ---------------------------------------------------------------------------
+// Badge-Level-Verlauf (badge-history-latest.json)
+// ---------------------------------------------------------------------------
+// Wird einmal geladen und gecacht. Struktur:
+//   { pilots: { "<uid>": { name, badges: { "<badge_id>":
+//       { level, history: [[level, "YYYY-MM-DD", flight_id|null], ...] } } } } }
+let _badgeHistory = null;          // geparste Daten (oder {} wenn nicht vorhanden)
+let _badgeHistoryPromise = null;   // laufender Ladevorgang (verhindert Mehrfach-Fetch)
+
+// Seltenheit pro Badge in DIESER Saison: badge_id -> { count, total }
+// count = wie viele Piloten das Badge haben, total = Piloten mit mind. 1 Badge.
+let _rarityMap = new Map();
+
+function loadBadgeHistory() {
+    if (_badgeHistoryPromise) return _badgeHistoryPromise;
+
+    const candidates = [
+        './data/badge-history-latest.json',
+        'data/badge-history-latest.json',
+        '/data/badge-history-latest.json'
+    ];
+
+    _badgeHistoryPromise = (async () => {
+        for (const url of candidates) {
+            try {
+                const res = await fetch(url, { cache: 'no-cache' });
+                if (!res.ok) continue;
+                const data = await res.json();
+                _badgeHistory = (data && data.pilots) ? data : { pilots: {} };
+                return _badgeHistory;
+            } catch (_) { /* nächster Pfad */ }
+        }
+        // Datei (noch) nicht vorhanden – leer behandeln, App läuft normal weiter
+        _badgeHistory = { pilots: {} };
+        return _badgeHistory;
+    })();
+
+    return _badgeHistoryPromise;
+}
+
+function getBadgeLevelHistory(uid, badgeId) {
+    if (!_badgeHistory || !_badgeHistory.pilots) return null;
+    const p = _badgeHistory.pilots[String(uid)];
+    if (!p || !p.badges) return null;
+    const b = p.badges[badgeId];
+    if (!b || !Array.isArray(b.history)) return null;
+    return b.history;
+}
 
 // Hilfsfunktion für Saison-Information
 function getSeasonInfo(pilots) {
@@ -13,9 +65,9 @@ function getSeasonInfo(pilots) {
 
     return {
         year: seasonYear,
-        string: seasonYear === 2026 ? '2025/2026' : '2024/2025',
-        start: seasonYear === 2026 ? 'Oktober 2025' : 'Oktober 2024',
-        shortString: seasonYear === 2026 ? '25/26' : '24/25'
+        string: `${seasonYear - 1}/${seasonYear}`,
+        start: `Oktober ${seasonYear - 1}`,
+        shortString: `${String(seasonYear - 1).slice(-2)}/${String(seasonYear).slice(-2)}`
     };
 }
 
@@ -33,6 +85,9 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Level-Verlauf im Hintergrund laden, damit er beim ersten Badge-Klick bereit ist
+    loadBadgeHistory();
+
     container.innerHTML = '';
     const seasonInfo = getSeasonInfo(pilots);
 
@@ -44,17 +99,38 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     const pilotsWithBadges = pilots
         .filter(pilot => pilot.badgeCount > 0)
         .sort((a, b) =>
-            (b.badgeCount - a.badgeCount) ||
-            ((a.userId || 0) - (b.userId || 0))   // stabile Reihenfolge bei Gleichstand
+            (b.badgeCount - a.badgeCount) ||                              // 1. Badges Saison
+            ((b.allTimeBadgeCount || 0) - (a.allTimeBadgeCount || 0)) ||  // 2. Badges Gesamt
+            ((a.userId || 0) - (b.userId || 0))                          // 3. stabil bei Gleichstand
         );
+
+    // Seltenheit berechnen: pro Badge-Kategorie, wie viele Piloten es diese Saison haben.
+    _rarityMap = new Map();
+    const totalWithBadges = pilotsWithBadges.length;
+    pilotsWithBadges.forEach(p => {
+        const seen = new Set();
+        (Array.isArray(p.badges) ? p.badges : (p.seasonBadges || [])).forEach(b => {
+            if (!b.badge_id || seen.has(b.badge_id)) return;
+            seen.add(b.badge_id);
+            const cur = _rarityMap.get(b.badge_id) || { count: 0, total: totalWithBadges };
+            cur.count += 1;
+            cur.total = totalWithBadges;
+            _rarityMap.set(b.badge_id, cur);
+        });
+    });
 
     // Ranking-Deltas für das Badge-Ranking (eigener Namespace 'badges').
     // Nur für die aktuelle Saison — für alte Saisons gibt es keine Snapshots.
     const isCurrentSeason = seasonInfo.year === getCurrentSeasonYear();
     const deltaMap = isCurrentSeason ? RankingDeltas.prepare(pilotsWithBadges, 'badges') : new Map();
     const climber = isCurrentSeason ? RankingDeltas.climberOfWeek('badges') : null;
+    const climberChange = climber
+        ? (climber.isNew
+            ? (climber.currentRank === 1 ? 'neu an der Spitze' : `neu auf Platz ${climber.currentRank}`)
+            : `+${climber.delta} Plätze`)
+        : '';
     const climberHTML = climber
-        ? `<div class="climber-of-week">🚀 Grösster Sprung: <strong>${climber.name}</strong> (+${climber.delta} Plätze)</div>`
+        ? `<div class="climber-of-week">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (${climberChange})</div>`
         : '';
 
     if (pilotsWithBadges.length === 0) {
@@ -66,8 +142,8 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     const header = document.createElement('div');
     header.className = 'ranking-header';
     header.innerHTML = `
-        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award" 
-             class="section-logo" style="width: 82px; height: 87px; margin-bottom: var(--spacing-md); 
+        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award"
+             class="section-logo" style="width: 82px; height: 87px; margin-bottom: var(--spacing-md);
              display: block; margin-left: auto; margin-right: auto;">
         <h2 class="section-title">WeGlide Badge Award Saison ${seasonInfo.string}</h2>
         <div class="ranking-subtitle">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
@@ -219,8 +295,8 @@ function createBadgeTableRow(pilot, rank, seasonInfo, deltaMap = new Map()) {
             <span class="badges-total-value">${pilot.allTimeBadgeCount || 0}</span>
         </td>
         <td class="details-col">
-            <button class="toggle-badge-details" 
-                    data-pilot="${pilot.name}" 
+            <button class="toggle-badge-details"
+                    data-pilot="${pilot.name}"
                     data-safe-id="${safeId}"
                     aria-expanded="false">
                 Details
@@ -251,162 +327,188 @@ function createBadgeDetailsRow(pilot, seasonInfo) {
  * Erstellt HTML für die Badge-Galerie mit vereinfachter Sortierung
  * ANGEPASST: Gruppiert Multi-Level Badges zusammen
  */
-function createBadgeGalleryHTML(pilot) {
-    // Debug-Ausgabe
-    console.log(`🔍 Badge-Galerie für ${pilot.name}:`, {
-        badges: pilot.badges,
-        badgeCount: pilot.badgeCount,
-        seasonBadges: pilot.seasonBadges,
-        typeOfBadges: typeof pilot.badges,
-        flightsWithBadges: pilot.flightsWithBadges
-    });
+function createBadgeGalleryHTML(pilot, seasonInfo) {
+    const CDN = 'https://weglidefiles.b-cdn.net/';
+    const uid = pilot.userId || pilot.user_id || pilot.id || '';
+    let badges = Array.isArray(pilot.badges) ? pilot.badges
+               : Array.isArray(pilot.seasonBadges) ? pilot.seasonBadges : [];
 
     let html = `
         <div class="badge-gallery-header">
             <h4>Saison Badges für ${pilot.name}</h4>
             <div class="badge-summary-info">
                 <p class="badge-count-info">
-                    <strong>${pilot.badgeCount || 0}</strong> Badges aus 
-                    <strong>${pilot.flightsWithBadges || 0}</strong> von 
-                    <strong>${pilot.flightsAnalyzed || 0}</strong> Flügen
+                    <strong>${pilot.badgeCount || 0}</strong> Punkte aus
+                    <strong>${pilot.badgeCategoryCount || badges.length}</strong> Badge-Kategorien
                 </p>
-                ${pilot.badgeCategoryCount ?
-            `<p class="badge-category-info">
-                        <strong>${pilot.badgeCategoryCount}</strong> verschiedene Badge-Kategorien
-                        ${pilot.multiLevelBadgeCount > 0 ?
-                ` • <strong>${pilot.multiLevelBadgeCount}</strong> Multi-Level Badges` : ''
-            }
-                    </p>` : ''
-        }
             </div>
         </div>
     `;
 
-    // Sicherstellen, dass wir ein Array haben
-    let badges = [];
-
-    // Verschiedene Möglichkeiten prüfen
-    if (Array.isArray(pilot.badges)) {
-        badges = pilot.badges;
-    } else if (Array.isArray(pilot.seasonBadges)) {
-        badges = pilot.seasonBadges;
-    } else if (pilot.badges && typeof pilot.badges === 'object') {
-        // Falls es ein Objekt ist, versuche es in ein Array zu konvertieren
-        badges = Object.values(pilot.badges);
-    } else {
-        // Fallback: Leeres Array
-        badges = [];
-    }
-
-    console.log(`  → Badges nach Konvertierung: ${badges.length} Items`);
-
-    // Keine Badges gefunden
-    if (!badges || badges.length === 0) {
-        html += `
-            <div class="no-badges">
-                <p>Keine Badges in der Saison 2024/2025 gefunden</p>
-                <p class="no-badges-hint">
-                    ${pilot.flightsAnalyzed > 0 ?
-                `${pilot.flightsAnalyzed} Flüge wurden analysiert, aber keine enthielten Achievements.` :
-                'Keine Flüge seit Saisonbeginn (1. Oktober 2024) gefunden.'
-            }
-                </p>
-            </div>
-        `;
+    if (!badges.length) {
+        html += `<div class="no-badges"><p>Keine Badges in dieser Saison</p></div>`;
         return html;
     }
 
+    const emoji = (b) => getEmojiIcon(b);
+    const iconHTML = (b) => {
+        const logo = b.logo || (b.badge && b.badge.logo);
+        return logo
+            ? `<img src="${CDN}${logo}" alt="${b.name}" class="badge-image" onerror="this.style.display='none'; this.parentElement.innerHTML='${emoji(b)}';">`
+            : emoji(b);
+    };
+    const startLevel = (b) => {
+        const m = /Level\s+(\d+)\s*→\s*(\d+)/.exec(b.detail || '');
+        return m ? parseInt(m[1], 10) : 0;
+    };
+
+    // Fortschritt zum naechsten Level (nur Multi-Level): naechste Schwelle aus badge.values.
+    const progressHTML = (b) => {
+        const vals = (b.badge && b.badge.values) || [];
+        const end = b.level || 1;
+        const unit = getUnitForBadgeType(b.badge_id);
+        if (!vals.length) return '';
+        if (end >= vals.length) {
+            return `<div class="badge-progress badge-progress-max">🏆 Höchstes Level erreicht (Level ${end})</div>`;
+        }
+        const nextThreshold = vals[end]; // Level end+1 liegt bei Index end
+        return `<div class="badge-progress">Nächstes Level (${end + 1}) ab <strong>${nextThreshold}${unit ? ` ${unit}` : ''}</strong></div>`;
+    };
+
+    // Seltenheit: wie viele Piloten haben dieses Badge diese Saison.
+    const rarityHTML = (b) => {
+        const info = _rarityMap.get(b.badge_id);
+        if (!info || !info.total) return '';
+        const { count, total } = info;
+        const unique = count === 1;
+        const rare = !unique && (count / total) <= 0.25;
+        const cls = unique ? 'badge-rarity unique' : (rare ? 'badge-rarity rare' : 'badge-rarity');
+        const tag = unique ? 'Einzigartig im Club' : (rare ? 'Selten' : '');
+        return `<div class="${cls}">`
+            + (tag ? `<span class="badge-rarity-tag">${tag}</span>` : '')
+            + `<span class="badge-rarity-count">${count} von ${total} Piloten diese Saison</span></div>`;
+    };
+
+    const multiCard = (b) => {
+        const end = b.level || 1;
+        const gained = b.points || (end - startLevel(b));
+        const unit = getUnitForBadgeType(b.badge_id);
+        const vals = (b.badge && b.badge.values) || [];
+        const threshold = vals[end - 1];
+        let stacked = '';
+        for (let i = 0; i < end; i++) {
+            const offset = i * 8;
+            stacked += `<div class="stacked-badge-icon" style="left:${offset}px; z-index:${end - i};">${iconHTML(b)}</div>`;
+        }
+        return `
+            <div class="badge-item badge-verified badge-multi-level" title="${b.name} – Level-Verlauf anzeigen"
+                 data-badge-id="${b.badge_id}" data-pilot-uid="${uid}" style="cursor:pointer;">
+                <div class="badge-icon-stacked">${stacked}</div>
+                <div class="badge-info">
+                    <div class="badge-header-line">
+                        <span class="badge-name">${b.name}</span>
+                        <span class="badge-level-indicator">(Level ${end}${threshold ? ` – ${threshold} ${unit}` : ''})</span>
+                    </div>
+                    <div class="badge-description-indented">${b.description || ''}</div>
+                    <div class="badge-achieved-value">+${gained} ${gained === 1 ? 'Level' : 'Level'} diese Saison</div>
+                    ${progressHTML(b)}
+                    ${rarityHTML(b)}
+                    <div class="badge-level-timeline" data-filled="0" hidden></div>
+                </div>
+            </div>`;
+    };
+
+    const singleCard = (b) => `
+            <div class="badge-item badge-verified badge-single-level" title="${b.name}"
+                 data-badge-id="${b.badge_id}" data-pilot-uid="${uid}" data-flight-id="${b.flight_id || ''}" style="cursor:pointer;">
+                <div class="badge-icon-stacked">
+                    <div class="stacked-badge-icon" style="left:0; z-index:1;">${iconHTML(b)}</div>
+                </div>
+                <div class="badge-info">
+                    <div class="badge-header-line"><span class="badge-name">${b.name}</span></div>
+                    <div class="badge-description-indented">${b.description || ''}</div>
+                    <div class="badge-achieved-value">Badge erreicht diese Saison</div>
+                    ${rarityHTML(b)}
+                </div>
+            </div>`;
+
+    const multi = badges.filter(b => b.type === 'multi-level');
+    const single = badges.filter(b => b.type !== 'multi-level');
+
     html += '<div class="badge-gallery">';
-
-    // Gruppiere Badges nach badge_id für Multi-Level Zusammenfassung
-    const badgeGroups = new Map();
-
-    // Sicherstellen, dass forEach funktioniert
-    if (typeof badges.forEach === 'function') {
-        badges.forEach(badge => {
-            if (badge && badge.badge_id) {
-                const badgeId = badge.badge_id;
-                if (!badgeGroups.has(badgeId)) {
-                    badgeGroups.set(badgeId, []);
-                }
-                badgeGroups.get(badgeId).push(badge);
-            }
-        });
-    } else {
-        console.error('badges.forEach ist keine Funktion:', badges);
+    if (multi.length) {
+        multi.sort((a, b) => (b.points || 0) - (a.points || 0));
+        html += `<div class="badge-group"><h5 class="badge-group-title">Multi-Level Badges (${multi.length})</h5><div class="badge-grid badge-grid-multi-level">`;
+        multi.forEach(b => { html += multiCard(b); });
+        html += `</div></div>`;
     }
+    if (single.length) {
+        single.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        html += `<div class="badge-group"><h5 class="badge-group-title">Single-Level Badges (${single.length})</h5><div class="badge-grid">`;
+        single.forEach(b => { html += singleCard(b); });
+        html += `</div></div>`;
+    }
+    html += '</div>';
+    return html;
+}
 
-    // Separiere Multi-Level und Single-Level Badges
-    const multiLevelGroups = [];
-    const singleLevelBadges = [];
+// ---------------------------------------------------------------------------
+// Level-Verlauf-Panel (wird beim Klick auf ein Multi-Level-Badge aufgeklappt)
+// ---------------------------------------------------------------------------
+function renderTimelineHTML(history) {
+    if (!history || !history.length) {
+        return `<div class="btl-empty">Noch kein Level-Verlauf gespeichert – wird ab dem nächsten täglichen Snapshot aufgebaut.</div>`;
+    }
+    const rows = [...history]
+        .sort((a, b) => (a[0] || 0) - (b[0] || 0))
+        .map(([level, date, fid]) => {
+            const d = date ? formatDateForDisplay(date) : '—';
+            const link = fid
+                ? `<a class="btl-flight" href="https://www.weglide.org/flight/${fid}" target="_blank" rel="noopener">Flug ansehen ↗</a>`
+                : `<span class="btl-noflight">kein Flugbezug</span>`;
+            return `
+                <div class="btl-row">
+                    <span class="btl-level">Level ${level}</span>
+                    <span class="btl-date">${d}</span>
+                    ${link}
+                </div>`;
+        }).join('');
+    return `<div class="btl-title">Level-Verlauf</div>${rows}`;
+}
 
-    badgeGroups.forEach((badgeGroup, badgeId) => {
-        // KORRIGIERT: Prüfe ob das Badge selbst Multi-Level ist
-        const firstBadge = badgeGroup[0];
-        if (!firstBadge) return;
+async function fillTimeline(panel, uid, badgeId) {
+    if (!panel || panel.getAttribute('data-filled') === '1') return;
+    panel.setAttribute('data-filled', '1');
+    panel.innerHTML = `<div class="btl-loading">Lade Verlauf …</div>`;
+    await loadBadgeHistory();
+    const history = getBadgeLevelHistory(uid, badgeId);
+    panel.innerHTML = renderTimelineHTML(history);
+}
 
-        const isMultiLevel = firstBadge.type === 'multi-level' ||
-            firstBadge.is_multi_level ||
-            (firstBadge.badge && firstBadge.badge.values && Array.isArray(firstBadge.badge.values) && firstBadge.badge.values.length > 1) ||
-            (firstBadge.badge && firstBadge.badge.points && Array.isArray(firstBadge.badge.points) && firstBadge.badge.points.length > 1) ||
-            (firstBadge.seasonPoints && firstBadge.seasonPoints > 1);
+function toggleBadgeTimeline(item) {
+    const panel = item.querySelector('.badge-level-timeline');
+    if (!panel) return;
+    const willOpen = panel.hasAttribute('hidden');
 
-        if (isMultiLevel) {
-            // Multi-Level Badge (unabhängig davon, wie viele der Pilot hat)
-            multiLevelGroups.push({
-                badgeId: badgeId,
-                badges: badgeGroup.sort((a, b) => (a.level || a.value || 0) - (b.level || b.value || 0))
-            });
-        } else {
-            // Nur echte Single-Level Badges
-            singleLevelBadges.push(...badgeGroup);
+    // andere offene Panels in dieser Detail-Zeile schliessen
+    const detailsRow = item.closest('.badge-details-row') || document;
+    detailsRow.querySelectorAll('.badge-level-timeline').forEach(p => {
+        if (p !== panel) {
+            p.setAttribute('hidden', '');
+            p.closest('.badge-item')?.classList.remove('badge-timeline-open');
         }
     });
 
-    // Multi-Level Badges anzeigen (gruppiert)
-    if (multiLevelGroups.length > 0) {
-        html += `<div class="badge-group">`;
-        html += `<h5 class="badge-group-title">Multi-Level Badges (${multiLevelGroups.length})</h5>`;
-        html += `<div class="badge-grid badge-grid-multi-level">`;
-
-        multiLevelGroups.forEach(group => {
-            html += createBadgeItemHTML(group.badges[0], group.badges);
-        });
-
-        html += `</div></div>`;
+    if (willOpen) {
+        const uid = item.getAttribute('data-pilot-uid');
+        const badgeId = item.getAttribute('data-badge-id');
+        fillTimeline(panel, uid, badgeId);
+        panel.removeAttribute('hidden');
+        item.classList.add('badge-timeline-open');
+    } else {
+        panel.setAttribute('hidden', '');
+        item.classList.remove('badge-timeline-open');
     }
-
-    // Single-Level Badges anzeigen
-    if (singleLevelBadges.length > 0) {
-        html += `<div class="badge-group">`;
-        html += `<h5 class="badge-group-title">Single-Level Badges (${singleLevelBadges.length})</h5>`;
-        html += `<div class="badge-grid">`;
-
-        // Sortiere Single-Level Badges alphabetisch nach Name
-        singleLevelBadges.sort((a, b) => {
-            const nameA = (a && a.name) || (a && a.badge_id) || '';
-            const nameB = (b && b.name) || (b && b.badge_id) || '';
-            return nameA.localeCompare(nameB);
-        });
-
-        singleLevelBadges.forEach(badge => {
-            html += createBadgeItemHTML(badge);
-        });
-
-        html += `</div></div>`;
-    }
-
-    html += '</div>';
-
-    // Statistik-Bereich
-    if (pilot.badgeStats || pilot.stats) {
-        html += createBadgeStatisticsHTML(pilot);
-    }
-
-    // Zusammenfassung
-    html += createBadgeSummaryHTML(pilot);
-
-    return html;
 }
 
 /**
@@ -483,7 +585,7 @@ function createBadgeItemHTML(badge, allBadgesOfSameType = []) {
 
     // Single-Level Badge HTML (gleicher Style wie Multi-Level)
     return `
-        <div class="badge-item badge-verified badge-single-level" 
+        <div class="badge-item badge-verified badge-single-level"
              title="${badgeTitle}"
              data-badge-id="${badge.badge_id}"
              data-flight-id="${badge.flight_id || ''}"
@@ -492,8 +594,8 @@ function createBadgeItemHTML(badge, allBadgesOfSameType = []) {
             <div class="badge-icon-stacked">
                 <div class="stacked-badge-icon" style="left: 0; z-index: 1;">
                     ${(badge.logo || badge.badge?.logo) ?
-            `<img src="https://weglidefiles.b-cdn.net/${badge.logo || badge.badge?.logo}" 
-                              alt="${badgeTitle}" 
+            `<img src="https://weglidefiles.b-cdn.net/${badge.logo || badge.badge?.logo}"
+                              alt="${badgeTitle}"
                               class="badge-image"
                               onerror="this.style.display='none'; this.parentElement.innerHTML='${getEmojiIcon(badge)}';">` :
             getEmojiIcon(badge)
@@ -524,7 +626,7 @@ function createBadgeGalleryHTML_old(pilot, seasonInfo) {
         <div class="badge-gallery-header">
             <h4>Badges Saison ${seasonInfo.string} - ${pilot.name}</h4>
             <p class="badge-count-info">
-                <strong>${pilot.badgeCount || 0}</strong> Badges aus 
+                <strong>${pilot.badgeCount || 0}</strong> Badges aus
                 <strong>${pilot.flightsWithBadges || 0}</strong> Flügen
             </p>
         </div>
@@ -547,7 +649,7 @@ function createBadgeGalleryHTML_old(pilot, seasonInfo) {
         html += renderBadgeGroup('Multi-Level Badges', badgeGroups.multiLevel);
     }
 
-    // Single-Level Badges  
+    // Single-Level Badges
     if (badgeGroups.singleLevel.length > 0) {
         html += renderBadgeGroup('Single-Level Badges', badgeGroups.singleLevel);
     }
@@ -626,7 +728,7 @@ function createSingleBadgeCard(badge) {
     const value = badge.value ? `${badge.value} ${getUnitForBadgeType(badge.badge_id)}` : '';
 
     return `
-        <div class="badge-item badge-single-level" 
+        <div class="badge-item badge-single-level"
              data-flight-id="${badge.flight_id || ''}"
              title="${title}">
             <div class="badge-name">${title}</div>
@@ -691,8 +793,8 @@ function createMultiLevelBadgeCard(baseBadge, allLevels) {
         stackedIcons += `
       <div class="stacked-badge-icon" style="left: ${offset}px; z-index: ${levelNumber - i};">
         ${(baseBadge.badge?.logo || baseBadge.logo) ?
-                `<img src="https://weglidefiles.b-cdn.net/${baseBadge.badge?.logo || baseBadge.logo}" 
-                alt="${badgeTitle}" 
+                `<img src="https://weglidefiles.b-cdn.net/${baseBadge.badge?.logo || baseBadge.logo}"
+                alt="${badgeTitle}"
                 class="badge-image"
                 onerror="this.style.display='none'; this.parentElement.innerHTML='${getEmojiIcon(baseBadge)}';">` :
                 getEmojiIcon(baseBadge)
@@ -703,7 +805,7 @@ function createMultiLevelBadgeCard(baseBadge, allLevels) {
 
     // Erstelle die Badge-Card
     return `
-    <div class="badge-item badge-verified badge-multi-level" 
+    <div class="badge-item badge-verified badge-multi-level"
          title="${badgeTitle}"
          data-badge-id="${baseBadge.badge_id}"
          data-flight-id="${highestLevel.flight_id || ''}"
@@ -983,7 +1085,22 @@ function getBadgeTypeFromId(badgeId) {
 
 function makeBadgeItemsClickable(detailsRow) {
     detailsRow.querySelectorAll('.badge-item').forEach(item => {
-        item.addEventListener('click', function () {
+        if (item.hasAttribute('data-click-bound')) return;
+        item.setAttribute('data-click-bound', 'true');
+
+        item.addEventListener('click', function (e) {
+            // Klicks auf echte Links (z.B. "Flug ansehen" im Verlauf) durchlassen
+            if (e.target.closest('a')) return;
+
+            // Multi-Level: Level-Verlauf aus badge-history-latest.json aufklappen
+            if (this.classList.contains('badge-multi-level')) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleBadgeTimeline(this);
+                return;
+            }
+
+            // Single-Level: wie bisher den Flug öffnen
             const flightId = this.getAttribute('data-flight-id');
             if (flightId) {
                 window.open(`https://www.weglide.org/flight/${flightId}`, '_blank');

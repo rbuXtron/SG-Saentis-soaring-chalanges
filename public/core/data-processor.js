@@ -13,27 +13,62 @@ import { calculateUserSeasonBadgesWithConfig } from '../services/multi-level-bad
 // Saison-Punkte werden extern (Python-Skript) berechnet und hier gelesen.
 // Format pro userId = badgeAnalysis-kompatibel (badges[], seasonBadgeCount, ...).
 // ------------------------------------------------------------------
-let _seasonBadgeCache = null;
+let _seasonBadgePromise = null;
 let _seasonBadgeYear = null;
 
 async function loadPrecomputedBadges(userId, seasonYear) {
-  if (_seasonBadgeCache === null || _seasonBadgeYear !== seasonYear) {
+  // Lade-PROMISE pro Jahr cachen (nicht nur den fertigen Wert): so warten alle
+  // parallel verarbeiteten Piloten auf dieselbe Datei und bekommen konsistent
+  // die Daten der GEWAEHLTEN Saison - kein Race mit dem alten Cache mehr.
+  if (_seasonBadgePromise === null || _seasonBadgeYear !== seasonYear) {
     _seasonBadgeYear = seasonYear;
-    try {
-      const res = await fetch(`./data/season-badges-${seasonYear}.json`, { cache: 'no-store' });
-      _seasonBadgeCache = res.ok ? ((await res.json()).pilots || {}) : {};
-      console.log(`✅ Vorberechnete Badges geladen: ${Object.keys(_seasonBadgeCache).length} Piloten (Saison ${seasonYear})`);
-    } catch (e) {
-      console.warn('⚠️ season-badges-Datei nicht ladbar:', e);
-      _seasonBadgeCache = {};
-    }
+    _seasonBadgePromise = (async () => {
+      try {
+        const res = await fetch(`./data/season-badges-${seasonYear}.json`, { cache: 'no-store' });
+        const pilots = res.ok ? ((await res.json()).pilots || {}) : {};
+        console.log(`✅ Vorberechnete Badges geladen: ${Object.keys(pilots).length} Piloten (Saison ${seasonYear})`);
+        return pilots;
+      } catch (e) {
+        console.warn('⚠️ season-badges-Datei nicht ladbar:', e);
+        return {};
+      }
+    })();
   }
-  return _seasonBadgeCache[String(userId)] || {
+  const cache = await _seasonBadgePromise;
+  return cache[String(userId)] || {
     badges: [], seasonBadges: [], seasonBadgeCount: 0, badgeCount: 0,
     allTimeBadgeCount: 0, badgeCategoryCount: 0,
     multiLevelCount: 0, singleLevelCount: 0,
     flightsWithBadges: 0, flightsAnalyzed: 0
   };
+}
+
+// ------------------------------------------------------------------
+// Nicht zu wertende Piloten (Vereinsaustritt o.ä.) aus excluded-pilots.json.
+// Format: { "pilots": [ { "userId": 123, "excludeFromSeason": 2027 }, ... ] }
+//   excludeFromSeason = erste Saison, ab der NICHT mehr gewertet wird
+//   (frühere Saisons zählen weiter). Ohne das Feld: immer ausgeschlossen.
+// ------------------------------------------------------------------
+let _excludedCache = null;
+async function loadExcludedPilots() {
+  if (_excludedCache) return _excludedCache;
+  const m = new Map();
+  try {
+    const res = await fetch('./data/excluded-pilots.json', { cache: 'no-cache' });
+    if (res.ok) {
+      const d = await res.json();
+      for (const e of (d.pilots || [])) {
+        if (e && e.userId != null) {
+          m.set(Number(e.userId), e.excludeFromSeason != null ? Number(e.excludeFromSeason) : 0);
+        }
+      }
+      if (m.size) console.log(`🚫 Ausschlussliste: ${m.size} Piloten`);
+    }
+  } catch (e) {
+    console.warn('⚠️ excluded-pilots.json nicht ladbar:', e);
+  }
+  _excludedCache = m;
+  return m;
 }
 import { sprintDataService } from '../services/sprint-data-service.js';
 import {
@@ -80,8 +115,18 @@ export async function fetchAllWeGlideDataForSeason(seasonYear = '2026') {
 
     //debug('Mitglieder:', members);
     const clubData = await apiClient.fetchClubData();
-    const allMembers = clubData.user || [];
-    console.log(`📊 ${allMembers.length} Club-Mitglieder gefunden`);
+    const allMembersRaw = clubData.user || [];
+    console.log(`📊 ${allMembersRaw.length} Club-Mitglieder gefunden`);
+
+    // Ausgetretene / nicht zu wertende Piloten für diese Saison herausfiltern
+    const excluded = await loadExcludedPilots();
+    const sy = parseInt(seasonYear);
+    const keep = (mem) => !(excluded.has(mem.id) && sy >= excluded.get(mem.id));
+    const allMembers = allMembersRaw.filter(keep);
+    const membersActive = (members || []).filter(keep);
+    if (allMembersRaw.length !== allMembers.length) {
+      console.log(`🚫 ${allMembersRaw.length - allMembers.length} Pilot(en) in Saison ${seasonString} ausgeschlossen`);
+    }
 
     // 2. Lade NUR Flüge der gewählten Saison
     const seasonFlights = await loadFlightsForSeason(allMembers, parseInt(seasonYear), seasonString);
@@ -89,7 +134,7 @@ export async function fetchAllWeGlideDataForSeason(seasonYear = '2026') {
 
     // 3. Lade Sprint-Daten
     console.log('📊 Lade Sprint-Daten...');
-    const sprintData = await sprintDataService.loadAllMembersSprints(members, parseInt(seasonYear));
+    const sprintData = await sprintDataService.loadAllMembersSprints(membersActive, parseInt(seasonYear));
     console.log(`✅ ${sprintData.length} Sprints geladen`);
 
     // 4. Lade historische Pilotenfaktoren aus JSON
@@ -410,6 +455,7 @@ function processMemberData(member, flights, sprints, badgeAnalysis, startingFact
   return {
     name: member.name,
     userId: member.id,
+    avatar: member.image || member.avatar || member.picture || null,  // WeGlide-Pilotenfoto (für Podium)
     totalPoints,
     flights: bestFlights,
     allFlights: flightsWithFactors,

@@ -1,5 +1,7 @@
 /**
  * SG Säntis Cup - Hauptanwendung
+ * Version 4.1 - Saison-Dropdown dynamisch (rollt beim Saisonwechsel automatisch mit),
+ *   generische Saison-Bezeichnung (N-1)/N statt fester 2025/2026-Logik
  * Version 4.0 - Bereinigt mit Loading Manager
  */
 
@@ -9,11 +11,22 @@ import { fetchAllWeGlideDataForSeason } from '../core/data-processor.js';
 import { renderRankingTable, renderLatestClubFlights } from '../components/ranking-component.js';
 import { renderAllCharts } from '../components/chart-generators.js';
 import { renderBadgeRanking } from '../components/badges-component.js';
+import { renderMyYear } from '../components/my-year-component.js';
 import { dataLoadingManager } from '../services/data-loading-manager.js';
 import { SVG_ICONS } from './utils/svg-icons.js';
 import { getLoadingManager } from './utils/loading-manager.js';
 import * as RankingDeltas from '../components/ranking-deltas.js';
 
+
+// Erste Saison, für die Daten existieren. Das Saison-Dropdown reicht von hier
+// bis zur aktuellen Saison und waechst beim Saisonwechsel automatisch mit.
+const FIRST_SEASON_YEAR = 2025;
+
+// Generische Saison-Bezeichnung: Jahr N  ->  "(N-1)/N"  (z.B. 2027 -> "2026/2027")
+function seasonLabelFromYear(year) {
+  const y = parseInt(year, 10);
+  return `${y - 1}/${y}`;
+}
 
 
 /**
@@ -63,10 +76,15 @@ class SGSaentisCupApp {
     this.setupTabHandling();
     this.setupSearchHandling();
     this.setupSeasonSelector();
+    this.setupThemeToggle();
     this.updatePageTitle(this.currentSeason);
 
-    await RankingDeltas.loadSharedSnapshots();                     // Cup, Standard 7 Tage
-    await RankingDeltas.loadSharedSnapshots(undefined, 'badges');  // Badges
+    // Geteilte Rang-Snapshots laden -> Pfeile (▲/▼) + "Grösster Sprung".
+    // WICHTIG: loadSharedSnapshots nimmt EIN Options-Objekt; der Namespace muss
+    // darin stehen (frueher wurde 'badges' als 2. Argument uebergeben = ignoriert).
+    // Beide brauchen mind. 2 Tages-Snapshots, sonst gibt es (korrekt) keine Pfeile.
+    await RankingDeltas.loadSharedSnapshots({ url: './data/points-rank-snapshots.json', daysBack: 7 });                     // Cup (Namespace 'default')
+    await RankingDeltas.loadSharedSnapshots({ namespace: 'badges', url: './data/badge-rank-snapshots.json', daysBack: 7 }); // Badges
 
     // Initial Load mit Loading Manager
     await this.initialLoad();
@@ -116,11 +134,24 @@ class SGSaentisCupApp {
     const seasonSelector = document.getElementById('season-select');
     if (!seasonSelector) return;
 
+    // Saison-Optionen dynamisch aufbauen: von der aktuellen Saison abwaerts bis
+    // FIRST_SEASON_YEAR. Nach jedem Saisonwechsel (1. Oktober) erscheint so
+    // automatisch die neue Saison, ohne dass die HTML-Datei angepasst werden muss.
+    const current = parseInt(this.currentSeason, 10);
+    const newestSeason = Math.max(current, FIRST_SEASON_YEAR);
+    seasonSelector.innerHTML = '';
+    for (let y = newestSeason; y >= FIRST_SEASON_YEAR; y--) {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = seasonLabelFromYear(y);
+      seasonSelector.appendChild(opt);
+    }
+
     seasonSelector.value = this.currentSeason;
 
     seasonSelector.addEventListener('change', async (e) => {
       const newSeason = e.target.value;
-      const seasonString = newSeason === '2026' ? '2025/2026' : '2024/2025';
+      const seasonString = seasonLabelFromYear(newSeason);
       console.log(`🔄 Wechsle zu Saison ${seasonString}`);
 
       // Start Loading
@@ -161,6 +192,36 @@ class SGSaentisCupApp {
         );
       }
     });
+  }
+
+  /**
+   * Theme-Umschalter (hell <-> Alpin dunkel). Auswahl wird gemerkt.
+   */
+  setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+
+    const apply = (theme) => {
+      if (theme === 'alpine') {
+        document.documentElement.setAttribute('data-theme', 'alpine');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      if (btn) btn.textContent = theme === 'alpine' ? '☀️ Hell' : '🏔️ Alpin';
+    };
+
+    let current = 'default';
+    try {
+      current = localStorage.getItem('sgTheme') === 'alpine' ? 'alpine' : 'default';
+    } catch (e) { /* localStorage evtl. blockiert */ }
+    apply(current);
+
+    if (btn) {
+      btn.addEventListener('click', () => {
+        current = current === 'alpine' ? 'default' : 'alpine';
+        try { localStorage.setItem('sgTheme', current); } catch (e) { }
+        apply(current);
+      });
+    }
   }
 
   /**
@@ -225,7 +286,12 @@ class SGSaentisCupApp {
         break;
       case 'rangliste':
         renderRankingTable(filteredPilots);
-        setTimeout(() => this.addInfoIconToTitle(), 100);
+        // Hinweis: Der alte Punktesystem-Tooltip (addInfoIconToTitle) wird hier
+        // NICHT mehr injiziert — das neue Cup-Layout hat seinen eigenen Kopf
+        // ("3 beste Flüge × Faktoren"). Sonst erschien der Tooltip-Text als Fließtext.
+        break;
+      case 'mein-jahr':
+        renderMyYear(filteredPilots);
         break;
       case 'badges':
         renderBadgeRanking(filteredPilots);
@@ -434,6 +500,12 @@ class SGSaentisCupApp {
           this.closeAllTooltips();
         }
       });
+    } else {
+      // Saisonwechsel: Container besteht schon -> Tooltip-Inhalt (Pilot/Datum) neu aufbauen
+      const oldContent = tooltipContainer.querySelector('.tooltip-content');
+      const newContent = this.createTooltipContent(tooltipType);
+      if (oldContent) tooltipContainer.replaceChild(newContent, oldContent);
+      else tooltipContainer.appendChild(newContent);
     }
   }
 
@@ -475,8 +547,8 @@ class SGSaentisCupApp {
    * Aktualisiert den Seitentitel basierend auf der Saison
    */
   updatePageTitle(seasonYear) {
-    const seasonString = seasonYear === '2026' ? '2025/2026' : '2024/2025';
-    const yearDisplay = seasonYear === '2026' ? '2026' : '2025';
+    const seasonString = seasonLabelFromYear(seasonYear);
+    const yearDisplay = String(seasonYear);
 
     // Browser-Tab Titel
     document.title = `SG Säntis Soaring Challenge ${yearDisplay}`;

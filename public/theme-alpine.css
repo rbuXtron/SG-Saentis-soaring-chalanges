@@ -1,0 +1,178 @@
+/* =========================================================================
+   SG Säntis Cup – Theme "Alpin" (dunkel, Gold-Akzent)
+   -------------------------------------------------------------------------
+   Umschaltbar über  <html data-theme="alpine">.  Ohne dieses Attribut bleibt
+   das ursprüngliche (helle, blaue) Design vollständig unveraendert.
+
+   Das meiste Design laeuft ueber CSS-Variablen – wir ueberschreiben also vor
+   allem die Tokens. Zusaetzlich einige fest verdrahtete helle Stellen aus
+   styles.css (Tabellenkoepfe, .badge-details, .badge-item, Cup-Detailtabelle).
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+
+/* ---- Token-Overrides -------------------------------------------------- */
+:root[data-theme="alpine"] {
+  /* Warme Gold-/Amber-Akzente statt Blau */
+  --primary-dark:   #b4801a;   /* tiefes Amber – Ueberschriften, 2. Platz */
+  --primary-medium: #e0952a;   /* Gold – 3. Platz, Buttons */
+  --primary-light:  #f6c45c;   /* helles Gold */
+  --accent-teal:      #f4b02e; /* Haupt-Akzent (Saentis-Gold), 1. Platz */
+  --accent-teal-dark: #d4941f;
+  --secondary:        #e0952a;
+
+  /* Dunkle Flaechen */
+  --background-light:   #0f141a;  /* Seite */
+  --background-card:    #171e27;  /* Karten / Haupt-Container */
+  --background-section: #202a36;  /* Abschnitte / Detailzeilen */
+  --border-light:       #2c3744;
+
+  /* Text */
+  --text-primary:   #eef2f6;
+  --text-secondary: #aeb9c4;
+  --text-muted:     #7d8793;
+
+  /* Status */
+  --error:   #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
+
+  /* Schatten dunkler */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow:    0 2px 6px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 6px 14px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+/* ---- Typografie ------------------------------------------------------- */
+[data-theme="alpine"] body {
+  font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+}
+[data-theme="alpine"] h1,
+[data-theme="alpine"] h2,
+[data-theme="alpine"] h3,
+[data-theme="alpine"] .header-title,
+[data-theme="alpine"] .section-title,
+[data-theme="alpine"] .month-header {
+  font-family: 'Oswald', 'Segoe UI', sans-serif;
+  letter-spacing: 0.02em;
+}
+[data-theme="alpine"] .points-value,
+[data-theme="alpine"] .badges-value,
+[data-theme="alpine"] .km-value,
+[data-theme="alpine"] .stat-value {
+  font-family: 'IBM Plex Mono', 'Segoe UI', monospace;
+}
+
+/* ---- Statistik-Kacheln sichtbar machen (hatten blaue Schatten/keinen Rahmen) */
+[data-theme="alpine"] .stat-card {
+  background: #1a2230;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+[data-theme="alpine"] .stat-card:hover {
+  border-color: var(--accent-teal);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
+}
+/* Badge-Statistik-Kacheln und Tab-Karten ebenso klar abgrenzen */
+[data-theme="alpine"] .badge-stat-card,
+[data-theme="alpine"] .tab {
+  background: #1a2230;
+  border: 1px solid var(--border-light);
+}
+
+/* ---- Fest verdrahtete helle Stellen aus styles.css ueberschreiben ----- */
+
+/* Tabellen-Koepfe (Rangliste + Badges) */
+[data-theme="alpine"] .ranking-table th,
+[data-theme="alpine"] .badge-ranking-table th {
+  background: linear-gradient(135deg, #1d2530, #232e3b);
+  color: var(--accent-teal);
+  border-bottom-color: var(--border-light);
+}
+
+/* Badge-Detailzeile + Boxen */
+[data-theme="alpine"] .badge-details,
+[data-theme="alpine"] .badge-item {
+  background: var(--background-section);
+  border-color: var(--border-light);
+}
+
+/* Cup-Flugdetails (waren hell/weiss) */
+[data-theme="alpine"] .flight-details {
+  background: var(--background-section);
+}
+[data-theme="alpine"] .flight-details table,
+[data-theme="alpine"] .flight-details .details-table {
+  background: var(--background-card);
+  box-shadow: none;
+}
+[data-theme="alpine"] .flight-details th,
+[data-theme="alpine"] .flight-details .details-table th {
+  background-color: #1d2530 !important;
+  color: var(--accent-teal) !important;
+  border-bottom-color: var(--primary-medium);
+}
+[data-theme="alpine"] .flight-details td,
+[data-theme="alpine"] .flight-details .details-table td {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-light);
+}
+[data-theme="alpine"] .flight-details .details-table tbody tr:nth-child(even) {
+  background-color: rgba(244, 176, 46, 0.04);
+}
+[data-theme="alpine"] .flight-details .details-table tbody tr:hover {
+  background-color: rgba(244, 176, 46, 0.09);
+}
+[data-theme="alpine"] .flight-details .details-summary {
+  background: var(--background-card);
+  border-left-color: var(--accent-teal);
+}
+
+/* Details-Buttons (hatten helle Rahmen/Grautoene) */
+[data-theme="alpine"] .toggle-details,
+[data-theme="alpine"] .toggle-badge-details {
+  background: transparent;
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+[data-theme="alpine"] .toggle-details:hover,
+[data-theme="alpine"] .toggle-badge-details:hover,
+[data-theme="alpine"] .toggle-details[aria-expanded="true"],
+[data-theme="alpine"] .toggle-badge-details[aria-expanded="true"] {
+  background: var(--accent-teal);
+  border-color: var(--accent-teal);
+  color: #1a1200;
+}
+
+/* Saison-Dropdown lesbar auf Dunkel */
+[data-theme="alpine"] .season-dropdown,
+[data-theme="alpine"] select#season-select {
+  background: var(--background-section);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+/* ---- Theme-Umschalt-Knopf -------------------------------------------- */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-light, #cbd5e0);
+  color: var(--text-secondary, #64748b);
+  border-radius: var(--border-radius-sm, 4px);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.theme-toggle:hover {
+  border-color: var(--accent-teal, #0891b2);
+  color: var(--accent-teal, #0891b2);
+}
+[data-theme="alpine"] .theme-toggle {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+}

@@ -1,0 +1,475 @@
+{
+  "season": 2027,
+  "season_label": "2026/2027",
+  "generated": "2026-10-06 14:55",
+  "flights": [
+    {
+      "id": 1250544,
+      "scoring_date": "2026-10-04",
+      "takeoff_time": "2026-10-04T11:43:44+00:00",
+      "landing_time": "2026-10-04T12:49:03+00:00",
+      "contest": {
+        "distance": 37.37,
+        "speed": 43.45,
+        "points": 36.41
+      },
+      "aircraft": {
+        "name": "Discus 2cT 18m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 10830,
+        "name": "Marcel Spirig"
+      }
+    },
+    {
+      "id": 1248868,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T14:10:57+00:00",
+      "landing_time": "2026-10-01T14:32:03+00:00",
+      "contest": {
+        "distance": 13.22,
+        "speed": 111.2,
+        "points": 22.2
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 17293,
+        "name": "Andreas Graf"
+      }
+    },
+    {
+      "id": 1248869,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T15:58:25+00:00",
+      "landing_time": "2026-10-01T16:19:26+00:00",
+      "contest": {
+        "distance": 9.91,
+        "speed": 106.18,
+        "points": 16.51
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 17293,
+        "name": "Andreas Graf"
+      }
+    },
+    {
+      "id": 1250400,
+      "scoring_date": "2026-10-04",
+      "takeoff_time": "2026-10-04T12:04:09+00:00",
+      "landing_time": "2026-10-04T13:29:16+00:00",
+      "contest": {
+        "distance": 38.13,
+        "speed": 51.14,
+        "points": 39.63
+      },
+      "aircraft": {
+        "name": "DG 500 20m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [
+        "9793/images/vWSWiQc6nIsIJIP5WLw1DZdc_small.jpg",
+        "9793/images/T0j7XcURJUVFCrIqCsezjJa8_small.jpg",
+        "9793/images/zslA1sWhUYvzAjl5odO6r411_small.jpg"
+      ],
+      "user": {
+        "id": 9793,
+        "name": "Werner Rissi"
+      }
+    },
+    {
+      "id": 1250296,
+      "scoring_date": "2026-10-04",
+      "takeoff_time": "2026-10-04T12:35:30+00:00",
+      "landing_time": "2026-10-04T13:07:56+00:00",
+      "contest": {
+        "distance": 21.42,
+        "speed": 71.53,
+        "points": 20.21
+      },
+      "aircraft": {
+        "name": "Nimbus 2c"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 29951,
+        "name": "Johannes Widmer"
+      }
+    },
+    {
+      "id": 1250154,
+      "scoring_date": "2026-10-04",
+      "takeoff_time": "2026-10-04T09:48:07+00:00",
+      "landing_time": "2026-10-04T09:52:38+00:00",
+      "contest": {
+        "distance": 5.72,
+        "speed": 90.32,
+        "points": 6.13
+      },
+      "aircraft": {
+        "name": "Nimbus 2c"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 29951,
+        "name": "Johannes Widmer"
+      }
+    },
+    {
+      "id": 1250147,
+      "scoring_date": "2026-10-04",
+      "takeoff_time": "2026-10-04T09:36:44+00:00",
+      "landing_time": "2026-10-04T09:40:45+00:00",
+      "contest": {
+        "distance": 5.29,
+        "speed": 95.7,
+        "points": 5.68
+      },
+      "aircraft": {
+        "name": "Nimbus 2c"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 29951,
+        "name": "Johannes Widmer"
+      }
+    },
+    {
+      "id": 1249526,
+      "scoring_date": "2026-10-03",
+      "takeoff_time": "2026-10-03T11:38:54+00:00",
+      "landing_time": "2026-10-03T12:13:40+00:00",
+      "contest": {
+        "distance": 21.77,
+        "speed": 53.1,
+        "points": 22.91
+      },
+      "aircraft": {
+        "name": "DG 500 20m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [
+        "26179/images/2ByrAPaYDMwbQGfvlCIdDXeu_small.jpg",
+        "26179/images/HphywlFG7eroXnUPSHZkyBLP_small.jpg",
+        "26179/images/ei5T6zVOFSELZSdsiSzBRq52_small.jpg"
+      ],
+      "user": {
+        "id": 26179,
+        "name": "Stefan Volland"
+      }
+    },
+    {
+      "id": 1249523,
+      "scoring_date": "2026-10-03",
+      "takeoff_time": "2026-10-03T12:58:31+00:00",
+      "landing_time": "2026-10-03T13:38:57+00:00",
+      "contest": {
+        "distance": 22.74,
+        "speed": 96.77,
+        "points": 21.83
+      },
+      "aircraft": {
+        "name": "Discus 2cT 18m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [
+        "26179/images/xEHLQMOMeH5RWifssjU1KIxv_small.jpg",
+        "26179/images/5dNoiPlO3KEo53OZGgbVylwE_small.jpg"
+      ],
+      "user": {
+        "id": 26179,
+        "name": "Stefan Volland"
+      }
+    },
+    {
+      "id": 1248728,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T16:29:04+00:00",
+      "landing_time": "2026-10-01T16:48:42+00:00",
+      "contest": {
+        "distance": 13.54,
+        "speed": 147.71,
+        "points": 21.76
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 26179,
+        "name": "Stefan Volland"
+      }
+    },
+    {
+      "id": 1248727,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T15:29:32+00:00",
+      "landing_time": "2026-10-01T15:48:56+00:00",
+      "contest": {
+        "distance": 13.38,
+        "speed": 124.14,
+        "points": 21.16
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 26179,
+        "name": "Stefan Volland"
+      }
+    },
+    {
+      "id": 1249181,
+      "scoring_date": "2026-10-03",
+      "takeoff_time": "2026-10-03T08:33:49+00:00",
+      "landing_time": "2026-10-03T09:12:09+00:00",
+      "contest": {
+        "distance": 25.19,
+        "speed": 53.22,
+        "points": 27.66
+      },
+      "aircraft": {
+        "name": "DG 500 20m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": {
+        "name": "Mert Tasdemir"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1248868,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T14:10:57+00:00",
+      "landing_time": "2026-10-01T14:32:03+00:00",
+      "contest": {
+        "distance": 13.22,
+        "speed": 111.2,
+        "points": 22.2
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1248728,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T16:29:04+00:00",
+      "landing_time": "2026-10-01T16:48:42+00:00",
+      "contest": {
+        "distance": 13.54,
+        "speed": 147.71,
+        "points": 21.76
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1248727,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T15:29:32+00:00",
+      "landing_time": "2026-10-01T15:48:56+00:00",
+      "contest": {
+        "distance": 13.38,
+        "speed": 124.14,
+        "points": 21.16
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1248869,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T15:58:25+00:00",
+      "landing_time": "2026-10-01T16:19:26+00:00",
+      "contest": {
+        "distance": 9.91,
+        "speed": 106.18,
+        "points": 16.51
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Guido Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1248698,
+      "scoring_date": "2026-10-01",
+      "takeoff_time": "2026-10-01T14:58:47+00:00",
+      "landing_time": "2026-10-01T15:17:38+00:00",
+      "contest": {
+        "distance": 9.16,
+        "speed": 130.86,
+        "points": 14.72
+      },
+      "aircraft": {
+        "name": "MDM-1 Fox"
+      },
+      "takeoff_airport": {
+        "name": "Hohenems-Dornbirn"
+      },
+      "co_user": {
+        "name": "Susi Halter"
+      },
+      "story": [],
+      "user": {
+        "id": 9604,
+        "name": "Guido Halter"
+      }
+    },
+    {
+      "id": 1249758,
+      "scoring_date": "2026-10-03",
+      "takeoff_time": "2026-10-03T09:17:00+00:00",
+      "landing_time": "2026-10-03T09:42:04+00:00",
+      "contest": {
+        "distance": 21.58,
+        "speed": 79.84,
+        "points": 21.65
+      },
+      "aircraft": {
+        "name": "Discus 2cT 18m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 10842,
+        "name": "Herbert Stoffel"
+      }
+    },
+    {
+      "id": 1249759,
+      "scoring_date": "2026-10-03",
+      "takeoff_time": "2026-10-03T11:56:59+00:00",
+      "landing_time": "2026-10-03T12:33:28+00:00",
+      "contest": {
+        "distance": 15.15,
+        "speed": 67.58,
+        "points": 14.67
+      },
+      "aircraft": {
+        "name": "Discus 2cT 18m"
+      },
+      "takeoff_airport": {
+        "name": "St Gallen-Altenrhein"
+      },
+      "co_user": null,
+      "story": [],
+      "user": {
+        "id": 10842,
+        "name": "Herbert Stoffel"
+      }
+    }
+  ]
+}

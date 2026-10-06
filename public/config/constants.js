@@ -61,7 +61,12 @@ export const AIRCRAFT_DMST_INDEX = {
   "JS2 21m": 126,
   "MDM-1 Fox": 72,
   "Discus 2b": 108,
-  "K 8": 76
+  "K 8": 76,
+  "Discus 2T": 114,
+  "SG 38" : 22,
+  "Mg 23 SL":76,
+  "L-13 Blaník": 76,
+  "Pilatus B4 FG": 76
 };
 
 /**

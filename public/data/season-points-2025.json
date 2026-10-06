@@ -1,0 +1,135 @@
+{
+  "season": 2025,
+  "season_label": "2024/2025",
+  "generated": "2026-10-06 17:06",
+  "pilots": {
+    "10842": {
+      "name": "Herbert Stoffel",
+      "points": 608.19
+    },
+    "10830": {
+      "name": "Marcel Spirig",
+      "points": 734.58
+    },
+    "17293": {
+      "name": "Andreas Graf",
+      "points": 1307.06
+    },
+    "10758": {
+      "name": "Rainer Ender",
+      "points": 1983.33
+    },
+    "26179": {
+      "name": "Stefan Volland",
+      "points": 420.31
+    },
+    "9793": {
+      "name": "Werner Rissi",
+      "points": 468.99
+    },
+    "29951": {
+      "name": "Johannes Widmer",
+      "points": 456.52
+    },
+    "30072": {
+      "name": "Joel Morrone",
+      "points": 161.24
+    },
+    "9979": {
+      "name": "Wolfgang Rapp",
+      "points": 1466.98
+    },
+    "10518": {
+      "name": "Roman Andreas Buehler",
+      "points": 1304.42
+    },
+    "11468": {
+      "name": "Heinz Bärfuss",
+      "points": 1492.11
+    },
+    "21532": {
+      "name": "Philipp Lenhard",
+      "points": 350.08
+    },
+    "25790": {
+      "name": "Gabor Facsar",
+      "points": 223.7
+    },
+    "23559": {
+      "name": "Florian Sutter",
+      "points": 1068.54
+    },
+    "29960": {
+      "name": "Simon Widmer",
+      "points": 127.21
+    },
+    "33260": {
+      "name": "Evalena Widmer",
+      "points": 89.74
+    },
+    "35021": {
+      "name": "Levi Osmani",
+      "points": 55.86
+    },
+    "9604": {
+      "name": "Guido Halter",
+      "points": 1698.82
+    },
+    "23621": {
+      "name": "Urs Zeberli",
+      "points": 673.48
+    },
+    "25240": {
+      "name": "Lukas Thoma",
+      "points": 180.48
+    },
+    "18175": {
+      "name": "Stefan Gertsch",
+      "points": 1667.12
+    },
+    "35840": {
+      "name": "Angelo Milo",
+      "points": 54.4
+    },
+    "10847": {
+      "name": "Moritz Giger",
+      "points": 679.45
+    },
+    "32669": {
+      "name": "Paul Cordes",
+      "points": 1135.1
+    },
+    "21138": {
+      "name": "Pascal Rotach",
+      "points": 571.79
+    },
+    "35020": {
+      "name": "Jann Baumgartner",
+      "points": 61.76
+    },
+    "24415": {
+      "name": "Michel Bänziger",
+      "points": 444.79
+    },
+    "32914": {
+      "name": "Samuel Fischer",
+      "points": 104.49
+    },
+    "24353": {
+      "name": "Dominic Saladin",
+      "points": 861.23
+    },
+    "3503": {
+      "name": "Yves Bodenmann",
+      "points": 451.71
+    },
+    "824": {
+      "name": "Martin Prusak",
+      "points": 200.51
+    },
+    "1713": {
+      "name": "Rolf König",
+      "points": 3221.31
+    }
+  }
+}

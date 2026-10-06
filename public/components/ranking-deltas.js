@@ -1,5 +1,5 @@
 /**
- * ranking-deltas.js  —  SG Säntis Cup  (ES-Modul-Version)
+ * ranking-deltas.js  —  SG Säntis Cup  (ES-Modul, v2 mit Namespaces)
  * ------------------------------------------------------------------
  * Sichtbare Ranglisten-Bewegung:
  *   • Deltas mit Pfeilen  ▲ grün (hoch) / ▼ rot (runter)
@@ -7,14 +7,26 @@
  *   • Momentum-Indikator pro Pilot
  *   • FLIP-Animation beim Neuladen (Zeilen gleiten statt springen)
  *
- * Import in main-app.js (Pfad relativ zu main-app.js anpassen):
- *   import * as RankingDeltas from './components/ranking-deltas.js';
+ * NEU in v2 — NAMESPACES:
+ *   Mehrere unabhängige Ranglisten (z.B. 'points' und 'badges') teilen sich
+ *   nicht mehr denselben Zustand. Jeder Aufruf nimmt einen optionalen
+ *   Namespace als letztes Argument; fehlt er, gilt 'default'.
+ *     prepare(pilots)              -> Namespace 'default'
+ *     prepare(pilots, 'badges')    -> Namespace 'badges'
+ *     climberOfWeek('badges')      -> Aufsteiger der Badge-Liste
+ *     loadSharedSnapshots({namespace:'badges', url:'./data/badge-rank-snapshots.json', daysBack:7})
  *
  * Vertrag:
  *   Piloten IN ANZEIGE-REIHENFOLGE übergeben (oben = Index 0).
- *   Rang = Array-Position -> dein Scoring muss hier nicht bekannt sein.
- *   Schlüssel pro Pilot = pilot.name; jede Tabellenzeile trägt
- *   data-pilot="<name>" (für Animation und den Snapshot-Scraper).
+ *   Rang = Array-Position. Schlüssel pro Pilot = pilot.name.
+ *   Jede Tabellenzeile trägt data-pilot="<name>" (für Animation/Scraper).
+ *
+ * Datenquelle (empfohlen, server-seitig & für alle gleich):
+ *   loadSharedSnapshots({ namespace, url, daysBack }) lädt eine JSON-Datei
+ *   im Format  [ { "t": "2026-10-04T21:30:00Z", "ranks": { "Name": 1, ... } }, ... ]
+ *   (genau das, was weglide_snapshot_club.py als badge-rank-snapshots.json schreibt).
+ *   Ohne loadSharedSnapshots fällt die Liste auf lokalen localStorage-Verlauf
+ *   zurück (nur im eigenen Browser, baut sich via commit() auf).
  * ------------------------------------------------------------------
  */
 
@@ -34,19 +46,26 @@ export function currentSeasonKey(date = new Date()) {
   return `${startYear}-${startYear + 1}`;
 }
 
-// ---- Snapshot-Quelle ---------------------------------------------
-let _snapshotProvider = null; // optional externe (geteilte) Quelle
+// ---- Pro-Namespace-Zustand ---------------------------------------
+// ns -> { provider, deltaMap, climber }
+const _NS = new Map();
+function _ns(name) {
+  const key = name || 'default';
+  let s = _NS.get(key);
+  if (!s) { s = { provider: null, deltaMap: new Map(), climber: null }; _NS.set(key, s); }
+  return s;
+}
 
-function _storageKey() { return CONFIG.storageKeyPrefix + currentSeasonKey(); }
+function _storageKey(ns) { return CONFIG.storageKeyPrefix + (ns || 'default') + '_' + currentSeasonKey(); }
 
-function _loadHistory() {
+function _loadHistory(ns) {
   try {
-    const raw = localStorage.getItem(_storageKey());
+    const raw = localStorage.getItem(_storageKey(ns));
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
-function _saveHistory(hist) {
-  try { localStorage.setItem(_storageKey(), JSON.stringify(hist)); } catch {}
+function _saveHistory(ns, hist) {
+  try { localStorage.setItem(_storageKey(ns), JSON.stringify(hist)); } catch {}
 }
 function _ranksFromOrder(pilots) {
   const map = {};
@@ -55,24 +74,21 @@ function _ranksFromOrder(pilots) {
 }
 function _ageDays(iso) { return (Date.now() - new Date(iso).getTime()) / 86400000; }
 
-// ---- Zustand ------------------------------------------------------
-let _deltaMap = new Map();
-let _climber = null;
-
 /** Deltas gegen Baseline berechnen. VOR dem Rendern aufrufen. */
-export function prepare(pilots) {
+export function prepare(pilots, namespace) {
+  const S = _ns(namespace);
   const current = _ranksFromOrder(pilots);
-  const baseline = _getBaselineRanks();
-  const trend = _getTrendRanks();
+  const baseline = _getBaselineRanks(namespace);
+  const trend = _getTrendRanks(namespace);
 
-  _deltaMap = new Map();
+  S.deltaMap = new Map();
   pilots.forEach((p) => {
     const name = p.name;
     const cur = current[name];
     const prev = baseline ? baseline[name] : undefined;
     const isNew = baseline != null && prev === undefined;
     const delta = (prev === undefined) ? 0 : (prev - cur);
-    _deltaMap.set(name, {
+    S.deltaMap.set(name, {
       name,
       currentRank: cur,
       previousRank: prev === undefined ? null : prev,
@@ -81,26 +97,28 @@ export function prepare(pilots) {
       momentum: _momentum(cur, prev, trend ? trend[name] : undefined),
     });
   });
-  _climber = _computeClimber();
-  return _deltaMap;
+  S.climber = _computeClimber(namespace);
+  return S.deltaMap;
 }
 
 /** Aktuellen Stand lokal sichern. NACH dem Rendern. No-Op bei externem Provider. */
-export function commit(pilots) {
-  if (_snapshotProvider) return;
-  const hist = _loadHistory();
+export function commit(pilots, namespace) {
+  const S = _ns(namespace);
+  if (S.provider) return;
+  const hist = _loadHistory(namespace);
   const last = hist[hist.length - 1];
   if (last && _ageDays(last.t) * 24 < CONFIG.commitMinIntervalHours) return;
   hist.push({ t: new Date().toISOString(), ranks: _ranksFromOrder(pilots) });
   while (hist.length > CONFIG.maxHistory) hist.shift();
-  _saveHistory(hist);
+  _saveHistory(namespace, hist);
 }
 
-function _getBaselineRanks() {
-  if (_snapshotProvider) {
-    try { return _snapshotProvider(CONFIG.baselineAgeDays) || null; } catch { return null; }
+function _getBaselineRanks(namespace) {
+  const S = _ns(namespace);
+  if (S.provider) {
+    try { return S.provider(CONFIG.baselineAgeDays) || null; } catch { return null; }
   }
-  const hist = _loadHistory();
+  const hist = _loadHistory(namespace);
   if (!hist.length) return null;
   const eligible = hist.filter(s => _ageDays(s.t) >= CONFIG.baselineMinAgeDays);
   if (!eligible.length) return null;
@@ -110,12 +128,13 @@ function _getBaselineRanks() {
   return eligible[0].ranks;
 }
 
-function _getTrendRanks() {
+function _getTrendRanks(namespace) {
+  const S = _ns(namespace);
   const target = 2 * CONFIG.baselineAgeDays;
-  if (_snapshotProvider) {
-    try { return _snapshotProvider(target) || null; } catch { return null; }
+  if (S.provider) {
+    try { return S.provider(target) || null; } catch { return null; }
   }
-  const hist = _loadHistory();
+  const hist = _loadHistory(namespace);
   if (hist.length < 2) return null;
   const older = hist.filter(s => _ageDays(s.t) >= CONFIG.baselineAgeDays + 1);
   if (!older.length) return null;
@@ -134,17 +153,29 @@ function _momentum(cur, prevWeek, prevTrend) {
   return 'flat';
 }
 
-function _computeClimber() {
-  let best = null;
-  _deltaMap.forEach((d) => {
-    if (d.delta <= 0) return;
-    if (!best || d.delta > best.delta ||
-        (d.delta === best.delta && d.currentRank < best.currentRank)) best = d;
+function _computeClimber(namespace) {
+  const S = _ns(namespace);
+  // 1) Bester ECHTER Aufsteiger: grösster Platzgewinn (Delta > 0).
+  //    z.B. 5->2 (+3) schlägt 4->3 (+1); bei Gleichstand der höher Platzierte.
+  let bestMover = null;
+  S.deltaMap.forEach((d) => {
+    if (d.delta > 0 && (!bestMover || d.delta > bestMover.delta ||
+        (d.delta === bestMover.delta && d.currentRank < bestMover.currentRank))) {
+      bestMover = d;
+    }
   });
-  return best;
+  if (bestMover) return bestMover;
+
+  // 2) Fallback (niemand echt aufgestiegen, z.B. Saisonstart):
+  //    höchstplatzierter Neueinsteiger ("neu an der Spitze").
+  let bestNew = null;
+  S.deltaMap.forEach((d) => {
+    if (d.isNew && (!bestNew || d.currentRank < bestNew.currentRank)) bestNew = d;
+  });
+  return bestNew;
 }
 
-export function climberOfWeek() { return _climber; }
+export function climberOfWeek(namespace) { return _ns(namespace).climber; }
 
 // ---- Rendering ----------------------------------------------------
 export function badgeHTML(info) {
@@ -155,7 +186,7 @@ export function badgeHTML(info) {
     return `<span class="rd-badge rd-up" title="${info.delta} Plätze gut gemacht (war #${info.previousRank})">▲${info.delta}</span>`;
   if (info.delta < 0)
     return `<span class="rd-badge rd-down" title="${-info.delta} Plätze verloren (war #${info.previousRank})">▼${-info.delta}</span>`;
-  return ''; // unverändert -> kein Badge (leer, wie im Screenshot)
+  return ''; // unverändert -> kein Badge
 }
 
 export function momentumHTML(info) {
@@ -204,23 +235,25 @@ export function animateReorder(container, renderFn, opts = {}) {
   });
 }
 
-export function setSnapshotProvider(fn) { _snapshotProvider = fn; }
+/** Externer Snapshot-Provider für einen Namespace. */
+export function setSnapshotProvider(fn, namespace) { _ns(namespace).provider = fn; }
 export function configure(patch) { Object.assign(CONFIG, patch || {}); }
 
 /**
- * loadSharedSnapshots(opts): lädt die geteilten Snapshots und richtet
- * den Provider ein. Wählt den Vergleichsstand nach KALENDERTAG.
- *   opts.daysBack : wie viele Tage zurück verglichen wird (1 = gestern)
- *   opts.url      : optional abweichender JSON-Pfad
- * Rückwärtskompatibel: loadSharedSnapshots('/pfad.json') geht weiterhin.
+ * loadSharedSnapshots(opts): lädt geteilte Snapshots und richtet den
+ * Provider für einen Namespace ein. Wählt den Vergleichsstand nach KALENDERTAG.
+ *   opts.namespace : Ziel-Namespace (z.B. 'badges'); Default 'default'
+ *   opts.url       : JSON-Pfad (Default ./snapshots/<season>.json)
+ *   opts.daysBack  : wie viele Tage zurück verglichen wird (Default CONFIG.baselineAgeDays)
+ * Rückwärtskompatibel: loadSharedSnapshots('/pfad.json') geht weiterhin (Namespace 'default').
+ * Dateiformat:  [ { "t": ISO-Zeit, "ranks": { "<Name>": <rang>, ... } }, ... ]
  */
-
 export async function loadSharedSnapshots(opts = {}) {
   if (typeof opts === 'string') opts = { url: opts };
-  const { url, daysBack } = opts;
+  const { url, daysBack, namespace } = opts;
   if (Number.isFinite(daysBack)) configure({ baselineAgeDays: daysBack });
 
-  const target = url || `/snapshots/${currentSeasonKey()}.json`;
+  const target = url || `./snapshots/${currentSeasonKey()}.json`;
   let history = [];
   try {
     const res = await fetch(target, { cache: 'no-store' });
@@ -235,12 +268,21 @@ export async function loadSharedSnapshots(opts = {}) {
     const cutoff = new Date();
     cutoff.setUTCDate(cutoff.getUTCDate() - back);
     const cutoffDay = cutoff.toISOString().slice(0, 10);
-    // neuester Snapshot, der mindestens 'back' Kalendertage alt ist
+    const todayDay = new Date().toISOString().slice(0, 10);
+
+    // Bevorzugt: jüngster Stand, der mind. 'back' Tage alt ist (echter Wochenvergleich)
     const candidates = history
       .filter(s => dayOf(s.t) <= cutoffDay)
       .sort((a, b) => new Date(b.t) - new Date(a.t));
-    return candidates.length ? candidates[0].ranks : null;
-  });
+    if (candidates.length) return candidates[0].ranks;
+
+    // Fallback (Saisonstart, noch kein 'back' Tage alter Stand):
+    // ältester verfügbarer Stand, der nicht von heute ist -> Vergleich schon ab Tag 2.
+    const older = history
+      .filter(s => dayOf(s.t) < todayDay)
+      .sort((a, b) => new Date(a.t) - new Date(b.t));
+    return older.length ? older[0].ranks : null;
+  }, namespace);
   return history.length;
 }
 

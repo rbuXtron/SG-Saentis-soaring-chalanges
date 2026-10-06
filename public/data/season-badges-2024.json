@@ -10,14 +10,14 @@
         {
           "badge_id": "nomad",
           "name": "Nomad",
-          "points": 3,
+          "points": 1,
           "type": "multi-level",
           "detail": "Level 0→3"
         },
         {
           "badge_id": "sprinter",
           "name": "Sprinter",
-          "points": 3,
+          "points": 1,
           "type": "multi-level",
           "detail": "Level 0→3"
         },
@@ -138,14 +138,14 @@
         {
           "badge_id": "nomad",
           "name": "Nomad",
-          "points": 3,
+          "points": 2,
           "type": "multi-level",
           "detail": "Level 0→3"
         },
         {
           "badge_id": "sprinter",
           "name": "Sprinter",
-          "points": 3,
+          "points": 2,
           "type": "multi-level",
           "detail": "Level 0→3"
         },
