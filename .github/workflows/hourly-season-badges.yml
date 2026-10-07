@@ -14,7 +14,7 @@ name: Hourly season badges
 
 on:
   schedule:
-    - cron: '0 * * * *'      # jede volle Stunde (UTC)
+    - cron: '0 */2 * * *'      # jede volle Stunde (UTC)
   workflow_dispatch:          # zusätzlich manuell auslösbar
 
 permissions:
