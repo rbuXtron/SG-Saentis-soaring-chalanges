@@ -289,13 +289,14 @@ export function renderQualityChart(pilots, containerId = 'quality-chart') {
   });
 }
 
-// ---------------------------------------------------------------- Saisonverlauf (Balken + km-Linien)
-export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progress-chart') {
-  const container = document.getElementById(containerId); if (!container) return;
-  container.innerHTML = '';
+// ---------------------------------------------------------------- Saisonverlauf (zwei Kacheln: Flüge-Balken + km-Linien)
+export function renderMonthlyProgressChart(pilots, flightsId = 'weekly-flights-chart', kmId = 'weekly-km-chart') {
   if (!window.Chart) return;
   const t = T();
   const s = getSeasonString(getSeasonFromPilots(pilots));
+  const cFlights = document.getElementById(flightsId);
+  const cKm = document.getElementById(kmId);
+  if (!cFlights && !cKm) return;
 
   const weekly = {};
   (pilots || []).forEach(p => {
@@ -310,7 +311,12 @@ export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progre
     });
   });
   const weeks = Object.keys(weekly).sort();
-  if (!weeks.length) { container.innerHTML = `<div class="no-data">Keine Daten für Saisonverlauf ${s}</div>`; return; }
+  if (!weeks.length) {
+    const msg = `<div class="no-data">Keine Daten für Saisonverlauf ${s}</div>`;
+    if (cFlights) cFlights.innerHTML = msg;
+    if (cKm) cKm.innerHTML = msg;
+    return;
+  }
 
   const labels = weeks.map(w => `${weekly[w].week}/${String(weekly[w].year).slice(-2)}`);
   const flights = weeks.map(w => weekly[w].flights);
@@ -319,99 +325,92 @@ export function renderMonthlyProgressChart(pilots, containerId = 'monthly-progre
   const activePilots = weeks.map(w => weekly[w].pilots.size);
   const iPeak = flights.indexOf(Math.max(...flights));
   const yWidth = sc => { sc.width = 46; };
+  const xAxis = () => ({ grid: { display: false }, ticks: { color: t.ink2, maxRotation: 0, autoSkip: false, callback: (v, i) => (i % 3 === 0 ? labels[i].split('/')[0] : '') } });
 
-  // zwei gestapelte Canvases in denselben Container (eine gemeinsame Zeitachse)
-  // Block + auto-Höhe: der Flex-Container würde die Canvas sonst auf 0 Breite kollabieren
-  container.style.display = 'block';
-  container.style.height = 'auto';
-  const box1 = document.createElement('div'); box1.style.cssText = 'position:relative;height:190px';
-  const box2 = document.createElement('div'); box2.style.cssText = 'position:relative;height:250px;margin-top:8px';
-  const cv1 = document.createElement('canvas'); box1.appendChild(cv1);
-  const cv2 = document.createElement('canvas'); box2.appendChild(cv2);
-  container.appendChild(box1); container.appendChild(box2);
-
-  // Balken: Anzahl Flüge, Spitzenwoche beschriftet
-  const peakLabel = {
-    id: 'peakLabel',
-    afterDatasetsDraw(ch) {
-      const bar = ch.getDatasetMeta(0).data[iPeak]; if (!bar) return; const ctx = ch.ctx; ctx.save();
-      ctx.fillStyle = t.ink; ctx.textAlign = 'center'; ctx.font = "700 13px 'IBM Plex Sans', system-ui, sans-serif";
-      ctx.fillText(flights[iPeak], bar.x, bar.y - 16);
-      ctx.fillStyle = t.muted; ctx.font = "600 10px 'IBM Plex Sans', system-ui, sans-serif";
-      ctx.fillText('KW ' + labels[iPeak].split('/')[0], bar.x, bar.y - 5); ctx.restore();
-    }
-  };
-  new Chart(cv1.getContext('2d'), {
-    type: 'bar',
-    data: { labels, datasets: [{ label: 'Anzahl Flüge', data: flights, backgroundColor: t.wkBar, borderRadius: 4, categoryPercentage: 0.78, barPercentage: 0.92 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 26, right: 30 } },
-      plugins: {
-        legend: { display: false },
-        title: { display: true, text: `Anzahl Flüge pro Woche – Saison ${s}`, color: t.ink, font: { size: 15, weight: 'bold' }, padding: { top: 2, bottom: 10 } },
-        tooltip: {
-          mode: 'index', intersect: false, backgroundColor: t.ink, titleColor: t.surface, bodyColor: t.surface, padding: 10, cornerRadius: 8, displayColors: false,
-          callbacks: { title: it => 'KW ' + labels[it[0].dataIndex], label: it => ` ${it.parsed.y} Flüge`, afterLabel: it => `Aktive Piloten: ${activePilots[it.dataIndex]}` }
-        }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { display: false } },
-        y: { beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.ink2, maxTicksLimit: 5 }, afterFit: yWidth }
+  // --- Kachel 1: Anzahl Flüge pro Woche (Balken) ---
+  if (cFlights) {
+    cFlights.innerHTML = ''; cFlights.style.display = 'block';
+    const cv = document.createElement('canvas'); cFlights.appendChild(cv);
+    const peakLabel = {
+      id: 'peakLabel',
+      afterDatasetsDraw(ch) {
+        const bar = ch.getDatasetMeta(0).data[iPeak]; if (!bar) return; const ctx = ch.ctx; ctx.save();
+        ctx.fillStyle = t.ink; ctx.textAlign = 'center'; ctx.font = "700 13px 'IBM Plex Sans', system-ui, sans-serif";
+        ctx.fillText(flights[iPeak], bar.x, bar.y - 16);
+        ctx.fillStyle = t.muted; ctx.font = "600 10px 'IBM Plex Sans', system-ui, sans-serif";
+        ctx.fillText('KW ' + labels[iPeak].split('/')[0], bar.x, bar.y - 5); ctx.restore();
       }
-    },
-    plugins: [peakLabel]
-  });
-
-  // Linien: Längster (durchgezogen) + Ø Strecke (gestrichelt), eine km-Achse
-  const endLabels = {
-    id: 'endLabels',
-    afterDatasetsDraw(ch) {
-      const ctx = ch.ctx;
-      const items = ch.data.datasets.map((ds, di) => {
-        const m = ch.getDatasetMeta(di), pt = m.data[m.data.length - 1];
-        return pt ? { ds, x: Math.min(pt.x + 8, ch.chartArea.right + 6), y: pt.y } : null;
-      }).filter(Boolean);
-      const gap = 15; items.sort((a, b) => a.y - b.y);
-      for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < gap) items[i].y = items[i - 1].y + gap;
-      const over = items.length ? items[items.length - 1].y - (ch.chartArea.bottom - 4) : 0;
-      if (over > 0) items.forEach(it => it.y -= over);
-      ctx.save();
-      items.forEach(it => {
-        ctx.strokeStyle = it.ds.borderColor; ctx.lineWidth = 2.5;
-        ctx.setLineDash(it.ds.borderDash && it.ds.borderDash.length ? it.ds.borderDash : []);
-        ctx.beginPath(); ctx.moveTo(it.x, it.y); ctx.lineTo(it.x + 14, it.y); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = t.ink2; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = "600 11px 'IBM Plex Sans', system-ui, sans-serif"; ctx.fillText(it.ds.label, it.x + 18, it.y);
-      });
-      ctx.restore();
-    }
-  };
-  new Chart(cv2.getContext('2d'), {
-    type: 'line',
-    data: {
-      labels, datasets: [
-        { label: 'Längster', data: maxKm, borderColor: t.longest, backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: t.longest },
-        { label: 'Ø Strecke', data: avgKm, borderColor: t.avg, backgroundColor: 'transparent', borderWidth: 2, borderDash: [5, 4], tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: t.avg }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 8, right: 84 } },
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: t.ink2, usePointStyle: true, pointStyle: 'line', boxWidth: 24, padding: 16 } },
-        title: { display: true, text: `Streckenleistung pro Woche – Kilometer`, color: t.ink, font: { size: 15, weight: 'bold' }, padding: { top: 2, bottom: 8 } },
-        tooltip: {
-          mode: 'index', intersect: false, backgroundColor: t.ink, titleColor: t.surface, bodyColor: t.surface, padding: 10, cornerRadius: 8, usePointStyle: true, boxWidth: 9, boxHeight: 9,
-          callbacks: { title: it => 'KW ' + labels[it[0].dataIndex], label: it => ` ${it.dataset.label}: ${Math.round(it.parsed.y)} km` }
-        }
+    };
+    new Chart(cv.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Anzahl Flüge', data: flights, backgroundColor: t.wkBar, borderRadius: 4, categoryPercentage: 0.78, barPercentage: 0.92 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, layout: { padding: { top: 26, right: 20 } },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: `Anzahl Flüge pro Woche – Saison ${s}`, color: t.ink, font: { size: 15, weight: 'bold' }, padding: { top: 2, bottom: 10 } },
+          tooltip: {
+            mode: 'index', intersect: false, backgroundColor: t.ink, titleColor: t.surface, bodyColor: t.surface, padding: 10, cornerRadius: 8, displayColors: false,
+            callbacks: { title: it => 'KW ' + labels[it[0].dataIndex], label: it => ` ${it.parsed.y} Flüge`, afterLabel: it => `Aktive Piloten: ${activePilots[it.dataIndex]}` }
+          }
+        },
+        scales: { x: xAxis(), y: { beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.ink2, maxTicksLimit: 5 }, afterFit: yWidth } }
       },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: t.ink2, maxRotation: 0, autoSkip: false, callback: (v, i) => (i % 3 === 0 ? labels[i].split('/')[0] : '') } },
-        y: { beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.ink2, maxTicksLimit: 5 }, afterFit: yWidth }
+      plugins: [peakLabel]
+    });
+  }
+
+  // --- Kachel 2: Streckenleistung pro Woche (Linien) ---
+  if (cKm) {
+    cKm.innerHTML = ''; cKm.style.display = 'block';
+    const cv = document.createElement('canvas'); cKm.appendChild(cv);
+    const endLabels = {
+      id: 'endLabels',
+      afterDatasetsDraw(ch) {
+        const ctx = ch.ctx;
+        const items = ch.data.datasets.map((ds, di) => {
+          const m = ch.getDatasetMeta(di), pt = m.data[m.data.length - 1];
+          return pt ? { ds, x: Math.min(pt.x + 8, ch.chartArea.right + 6), y: pt.y } : null;
+        }).filter(Boolean);
+        const gap = 15; items.sort((a, b) => a.y - b.y);
+        for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < gap) items[i].y = items[i - 1].y + gap;
+        const over = items.length ? items[items.length - 1].y - (ch.chartArea.bottom - 4) : 0;
+        if (over > 0) items.forEach(it => it.y -= over);
+        ctx.save();
+        items.forEach(it => {
+          ctx.strokeStyle = it.ds.borderColor; ctx.lineWidth = 2.5;
+          ctx.setLineDash(it.ds.borderDash && it.ds.borderDash.length ? it.ds.borderDash : []);
+          ctx.beginPath(); ctx.moveTo(it.x, it.y); ctx.lineTo(it.x + 14, it.y); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = t.ink2; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.font = "600 11px 'IBM Plex Sans', system-ui, sans-serif"; ctx.fillText(it.ds.label, it.x + 18, it.y);
+        });
+        ctx.restore();
       }
-    },
-    plugins: [endLabels]
-  });
+    };
+    new Chart(cv.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels, datasets: [
+          { label: 'Längster', data: maxKm, borderColor: t.longest, backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: t.longest },
+          { label: 'Ø Strecke', data: avgKm, borderColor: t.avg, backgroundColor: 'transparent', borderWidth: 2, borderDash: [5, 4], tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: t.avg }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, layout: { padding: { top: 8, right: 84 } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top', align: 'end', labels: { color: t.ink2, usePointStyle: true, pointStyle: 'line', boxWidth: 24, padding: 16 } },
+          title: { display: true, text: `Streckenleistung pro Woche – Kilometer`, color: t.ink, font: { size: 15, weight: 'bold' }, padding: { top: 2, bottom: 8 } },
+          tooltip: {
+            mode: 'index', intersect: false, backgroundColor: t.ink, titleColor: t.surface, bodyColor: t.surface, padding: 10, cornerRadius: 8, usePointStyle: true, boxWidth: 9, boxHeight: 9,
+            callbacks: { title: it => 'KW ' + labels[it[0].dataIndex], label: it => ` ${it.dataset.label}: ${Math.round(it.parsed.y)} km` }
+          }
+        },
+        scales: { x: xAxis(), y: { beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.ink2, maxTicksLimit: 5 }, afterFit: yWidth } }
+      },
+      plugins: [endLabels]
+    });
+  }
 }
 
 // ---------------------------------------------------------------- Wochennummer-Helfer
