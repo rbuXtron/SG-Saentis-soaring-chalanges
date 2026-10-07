@@ -50,9 +50,13 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
     ((a.userId || 0) - (b.userId || 0))
   );
 
+  // Nur gewertete Piloten (Punkte > 0) — gilt für Anzeige UND Aufsteiger-/Delta-Berechnung,
+  // sonst taucht ein 0-Punkte-Mitglied als Phantom-"Neueinsteiger" auf.
+  const ranked = sortedPilots.filter(p => (p.totalPoints || 0) > 0);
+
   // Ranking-Deltas nur für die aktuelle Saison (sonst keine passenden Snapshots)
   const isCurrentSeason = seasonInfo.year === getCurrentSeasonYear();
-  const deltaMap = isCurrentSeason ? RankingDeltas.prepare(sortedPilots) : new Map();
+  const deltaMap = isCurrentSeason ? RankingDeltas.prepare(ranked) : new Map();
   const climber = isCurrentSeason ? RankingDeltas.climberOfWeek() : null;
   const climberChange = climber
     ? (climber.isNew
@@ -63,7 +67,6 @@ export function renderRankingTable(pilots, containerId = 'rangliste') {
     ? `<div class="cup-climber">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (${climberChange})</div>`
     : '';
 
-  const ranked = sortedPilots.filter(p => (p.totalPoints || 0) > 0);
   const top3 = ranked.slice(0, 3);
 
   const podiumHTML = top3.length
