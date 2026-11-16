@@ -1,6 +1,6 @@
 {
-  "generated": "2026-10-07T00:50:58Z",
-  "date": "2026-10-07",
+  "generated": "2026-11-16T01:11:14Z",
+  "date": "2026-11-16",
   "pilots": {
     "9793": {
       "name": "Werner Rissi",
@@ -1664,11 +1664,21 @@
               null
             ]
           ]
+        },
+        "nomad": {
+          "level": 1,
+          "history": [
+            [
+              1,
+              "2026-10-10",
+              1252544
+            ]
+          ]
         }
       }
     },
     "10518": {
-      "name": "Roman Andreas Buehler",
+      "name": "Roman A. Buehler",
       "badges": {
         "astronaut": {
           "level": 2,
