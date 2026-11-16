@@ -1,27 +1,27 @@
 {
   "season": 2027,
   "season_label": "2026/2027",
-  "generated": "2026-11-15 01:08",
+  "generated": "2026-11-16 01:11",
   "pilots": {
-    "10830": {
-      "name": "Marcel Spirig",
-      "points": 57.51
-    },
-    "10842": {
-      "name": "Herbert Stoffel",
-      "points": 56.53
-    },
     "37273": {
       "name": "Stefanie  Hautle",
       "points": 5.03
+    },
+    "26179": {
+      "name": "Stefan Volland",
+      "points": 104.33
+    },
+    "10830": {
+      "name": "Marcel Spirig",
+      "points": 57.51
     },
     "17293": {
       "name": "Andreas Graf",
       "points": 42.83
     },
-    "26179": {
-      "name": "Stefan Volland",
-      "points": 104.33
+    "10842": {
+      "name": "Herbert Stoffel",
+      "points": 56.53
     },
     "9793": {
       "name": "Werner Rissi",
@@ -29,11 +29,11 @@
     },
     "29951": {
       "name": "Johannes Widmer",
-      "points": 91.82
+      "points": 101.09
     },
     "9604": {
       "name": "Guido Halter",
-      "points": 102.32
+      "points": 117.57
     }
   }
 }
