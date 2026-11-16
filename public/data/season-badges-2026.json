@@ -1021,7 +1021,8 @@
       "multiLevelCount": 12,
       "singleLevelCount": 4,
       "flightsWithBadges": 13,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 49.7
     },
     "9793": {
       "userId": 9793,
@@ -1425,7 +1426,8 @@
       "multiLevelCount": 5,
       "singleLevelCount": 1,
       "flightsWithBadges": 5,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 6.5
     },
     "17293": {
       "userId": 17293,
@@ -1557,7 +1559,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 1,
       "flightsWithBadges": 2,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 3.4
     },
     "37273": {
       "userId": 37273,
@@ -1689,7 +1692,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 1,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 2.1
     },
     "10842": {
       "userId": 10842,
@@ -2181,7 +2185,8 @@
       "multiLevelCount": 7,
       "singleLevelCount": 0,
       "flightsWithBadges": 6,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 7.7
     },
     "10830": {
       "userId": 10830,
@@ -2697,7 +2702,8 @@
       "multiLevelCount": 6,
       "singleLevelCount": 2,
       "flightsWithBadges": 6,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 8.6
     },
     "26179": {
       "userId": 26179,
@@ -3329,7 +3335,8 @@
       "multiLevelCount": 7,
       "singleLevelCount": 3,
       "flightsWithBadges": 9,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 12.0
     },
     "42698": {
       "userId": 42698,
@@ -3343,7 +3350,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "10758": {
       "userId": 10758,
@@ -3427,7 +3435,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 0,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 1.1
     },
     "40366": {
       "userId": 40366,
@@ -3763,7 +3772,8 @@
       "multiLevelCount": 4,
       "singleLevelCount": 1,
       "flightsWithBadges": 3,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 6.7
     },
     "43076": {
       "userId": 43076,
@@ -3777,7 +3787,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "30072": {
       "userId": 30072,
@@ -3929,7 +3940,8 @@
       "multiLevelCount": 2,
       "singleLevelCount": 0,
       "flightsWithBadges": 2,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 2.2
     },
     "42582": {
       "userId": 42582,
@@ -3943,7 +3955,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "21532": {
       "userId": 21532,
@@ -4275,7 +4288,8 @@
       "multiLevelCount": 4,
       "singleLevelCount": 1,
       "flightsWithBadges": 4,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 5.4
     },
     "29951": {
       "userId": 29951,
@@ -5159,7 +5173,8 @@
       "multiLevelCount": 10,
       "singleLevelCount": 4,
       "flightsWithBadges": 11,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 27.1
     },
     "23559": {
       "userId": 23559,
@@ -5339,7 +5354,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 2,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 3.1
     },
     "25790": {
       "userId": 25790,
@@ -5423,7 +5439,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 0,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 1.1
     },
     "11468": {
       "userId": 11468,
@@ -5999,7 +6016,8 @@
       "multiLevelCount": 4,
       "singleLevelCount": 6,
       "flightsWithBadges": 7,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 13.0
     },
     "42586": {
       "userId": 42586,
@@ -6013,11 +6031,12 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "10518": {
       "userId": 10518,
-      "userName": "Roman Andreas Buehler",
+      "userName": "Roman A. Buehler",
       "badges": [
         {
           "badge_id": "sprinter",
@@ -6929,7 +6948,8 @@
       "multiLevelCount": 9,
       "singleLevelCount": 6,
       "flightsWithBadges": 12,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 23.9
     },
     "18175": {
       "userId": 18175,
@@ -7741,7 +7761,8 @@
       "multiLevelCount": 11,
       "singleLevelCount": 1,
       "flightsWithBadges": 7,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 25.2
     },
     "10687": {
       "userId": 10687,
@@ -8257,7 +8278,8 @@
       "multiLevelCount": 6,
       "singleLevelCount": 2,
       "flightsWithBadges": 6,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 9.9
     },
     "33260": {
       "userId": 33260,
@@ -8709,7 +8731,8 @@
       "multiLevelCount": 5,
       "singleLevelCount": 2,
       "flightsWithBadges": 4,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 8.8
     },
     "40718": {
       "userId": 40718,
@@ -8773,7 +8796,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 1,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 1.0
     },
     "23621": {
       "userId": 23621,
@@ -8973,7 +8997,8 @@
       "multiLevelCount": 2,
       "singleLevelCount": 1,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 3.2
     },
     "29960": {
       "userId": 29960,
@@ -9309,7 +9334,8 @@
       "multiLevelCount": 4,
       "singleLevelCount": 1,
       "flightsWithBadges": 3,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 6.7
     },
     "9979": {
       "userId": 9979,
@@ -9709,7 +9735,8 @@
       "multiLevelCount": 5,
       "singleLevelCount": 1,
       "flightsWithBadges": 5,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 10.4
     },
     "35021": {
       "userId": 35021,
@@ -9889,7 +9916,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 2,
       "flightsWithBadges": 2,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 3.1
     },
     "25240": {
       "userId": 25240,
@@ -9903,7 +9931,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "35840": {
       "userId": 35840,
@@ -10171,7 +10200,8 @@
       "multiLevelCount": 3,
       "singleLevelCount": 1,
       "flightsWithBadges": 3,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 4.3
     },
     "10847": {
       "userId": 10847,
@@ -10185,7 +10215,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "32669": {
       "userId": 32669,
@@ -10269,7 +10300,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 0,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 1.1
     },
     "38317": {
       "userId": 38317,
@@ -10333,7 +10365,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 1,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 1.0
     },
     "35020": {
       "userId": 35020,
@@ -10485,7 +10518,8 @@
       "multiLevelCount": 2,
       "singleLevelCount": 0,
       "flightsWithBadges": 2,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 2.2
     },
     "21138": {
       "userId": 21138,
@@ -10617,7 +10651,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 1,
       "flightsWithBadges": 2,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 2.1
     },
     "23681": {
       "userId": 23681,
@@ -10749,7 +10784,8 @@
       "multiLevelCount": 1,
       "singleLevelCount": 1,
       "flightsWithBadges": 1,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 2.1
     },
     "24415": {
       "userId": 24415,
@@ -10763,7 +10799,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "24353": {
       "userId": 24353,
@@ -10777,7 +10814,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "32914": {
       "userId": 32914,
@@ -10791,7 +10829,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "824": {
       "userId": 824,
@@ -10805,7 +10844,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "3503": {
       "userId": 3503,
@@ -10819,7 +10859,8 @@
       "multiLevelCount": 0,
       "singleLevelCount": 0,
       "flightsWithBadges": 0,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 0.0
     },
     "1713": {
       "userId": 1713,
@@ -11155,7 +11196,8 @@
       "multiLevelCount": 4,
       "singleLevelCount": 1,
       "flightsWithBadges": 3,
-      "flightsAnalyzed": 0
+      "flightsAnalyzed": 0,
+      "weightedBadgeCount": 9.3
     }
   }
 }

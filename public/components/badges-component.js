@@ -97,9 +97,9 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     }
 
     const pilotsWithBadges = pilots
-        .filter(pilot => pilot.badgeCount > 0)
+        .filter(pilot => pilotScore(pilot, seasonInfo) > 0)
         .sort((a, b) =>
-            (b.badgeCount - a.badgeCount) ||                              // 1. Badges Saison
+            (pilotScore(b, seasonInfo) - pilotScore(a, seasonInfo)) ||    // 1. Wertung (gewichtet ab 2027)
             ((b.allTimeBadgeCount || 0) - (a.allTimeBadgeCount || 0)) ||  // 2. Badges Gesamt
             ((a.userId || 0) - (b.userId || 0))                          // 3. stabil bei Gleichstand
         );
@@ -130,7 +130,7 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
             : `+${climber.delta} Plätze`)
         : '';
     const climberHTML = climber
-        ? `<div class="climber-of-week">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (${climberChange})</div>`
+        ? `<div class="cup-climber">🚀 Aufsteiger der Woche: <strong>${climber.name}</strong> (${climberChange})</div>`
         : '';
 
     if (pilotsWithBadges.length === 0) {
@@ -140,20 +140,28 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
 
     // Header
     const header = document.createElement('div');
-    header.className = 'ranking-header';
+    header.className = 'cup-wrap';
     header.innerHTML = `
-        <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award"
-             class="section-logo" style="width: 82px; height: 87px; margin-bottom: var(--spacing-md);
-             display: block; margin-left: auto; margin-right: auto;">
-        <h2 class="section-title">WeGlide Badge Award Saison ${seasonInfo.string}</h2>
-        <div class="ranking-subtitle">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
-        ${climberHTML}
+        <div class="cup-head">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
+                <div>
+                    <h2 class="cup-title" style="margin:0;">WeGlide Badge Award</h2>
+                    <div class="cup-sub">Saison ${seasonInfo.string} <span class="dot"></span> ${isWeightedSeason(seasonInfo) ? 'Gewichtete Wertung (Level × Faktor)' : 'Gesammelte Badge-Level'}</div>
+                </div>
+                <img src="./images/weglide-badge-logo.png" alt="WeGlide Badge Award"
+                     class="section-logo" style="width: 114px; height: auto; display:block; flex:none;">
+            </div>
+            ${climberHTML}
+        </div>
     `;
     container.appendChild(header);
 
-    // Tabelle
-    const table = createBadgeTable(pilotsWithBadges, seasonInfo, deltaMap);
-    container.appendChild(table);
+    const allTimeBand = createAllTimeBand(pilots);
+    if (allTimeBand) container.appendChild(allTimeBand);
+
+    // Rangliste als Karten (gleicher Stil wie der Säntis Cup)
+    const list = createBadgeList(pilotsWithBadges, seasonInfo, deltaMap);
+    container.appendChild(list);
 
     // Statistiken
     const statsBox = createBadgeStatsBox(pilots, seasonInfo);
@@ -168,7 +176,7 @@ export function renderBadgeRanking(pilots, containerId = 'badge-ranking-containe
     container.appendChild(infoBox);
 
     // Event Listener
-    setTimeout(() => addBadgeDetailsEventListeners(), 100);
+    setTimeout(() => setupBadgeToggles(container), 100);
 }
 
 function renderNoBadgesMessage(container, pilots, seasonInfo) {
@@ -188,6 +196,201 @@ function renderNoBadgesMessage(container, pilots, seasonInfo) {
             </p>
         </div>
     `;
+}
+
+// ---- Gewichtete Badge-Wertung (R2) ab Saison 2027 ---------------------------
+const WEIGHTED_BADGES_FROM_SEASON = 2027; // Gewichtung gilt ab Saison 2026/2027 (Reglement)
+function weightedFromSeason() {
+    // Test-Schalter: ?weightedFrom=2026 aktiviert die Gewichtung lokal, ohne Code zu ändern.
+    try {
+        const u = new URLSearchParams(window.location.search).get('weightedFrom');
+        if (u) return parseInt(u, 10) || WEIGHTED_BADGES_FROM_SEASON;
+    } catch (e) {}
+    return WEIGHTED_BADGES_FROM_SEASON;
+}
+function isWeightedSeason(seasonInfo) {
+    return ((seasonInfo && seasonInfo.year) || 0) >= weightedFromSeason();
+}
+function weightedScore(p) {
+    // Fallback: Punkte direkt aus den Badge-Einträgen rechnen, falls weightedBadgeCount (noch) fehlt.
+    // Level-Faktor w(L)=L*(1+0.1*L), Level 1 = 1.0 -> 1/2.4/3.9/5.6/7.5. Pro Multi-Level-Badge zählt die
+    // SUMME aller in dieser Saison neu erreichten Level (pre = level - seasonPoints); Single = 1.
+    const w1 = (L) => (L <= 1 ? 1 : L * (1 + 0.02 * L));
+    const list = (p && Array.isArray(p.badges)) ? p.badges : ((p && p.seasonBadges) || []);
+    let s = 0;
+    for (const b of list) {
+        if (b && b.type === 'multi-level') {
+            const cur = b.level || 0;
+            const sp = b.seasonPoints || 0;
+            const start = Math.max(1, cur - sp + 1);
+            for (let L = start; L <= cur; L++) s += w1(L);
+        } else { s += 1; }
+    }
+    return Math.round(s * 100) / 100;
+}
+function pilotScore(p, seasonInfo) {
+    if (isWeightedSeason(seasonInfo)) {
+        if (p && p.weightedBadgeCount != null) return p.weightedBadgeCount;
+        return weightedScore(p);
+    }
+    return (p && p.badgeCount) || 0;
+}
+function fmtScore(v, seasonInfo) {
+    return isWeightedSeason(seasonInfo) ? Number(v || 0).toFixed(1) : String(v || 0);
+}
+// "Über alles"-Top-3 (ungewichtete Gesamt-Badges) als Podium — gleicher Stil
+// wie das Säntis-Cup-Podium (Klassen aus cup-layout.css, .cup-wrap liefert die Tokens).
+function _btInitials(name) {
+    const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    const first = parts[0][0] || '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
+}
+function _btAvatarUrl(p) {
+    const a = p.avatar || p.image;
+    if (!a) return null;
+    if (/^https?:\/\//.test(a)) return a;
+    return 'https://weglidefiles.b-cdn.net/' + String(a).replace(/^\/+/, '');
+}
+function _btPodCard(p, cls, medal) {
+    const nameBreak = (p.name || '').replace(/ (?=[^ ]+$)/, '<br>');
+    const val = p.allTimeBadgeCount || 0;
+    const uid = p.userId || p.user_id || p.id || '';
+    const url = _btAvatarUrl(p);
+    const img = url
+        ? `<img class="ava-img" src="${url}" alt="" loading="lazy" onerror="this.style.display='none'">`
+        : '';
+    return `
+        <div class="pod ${cls}" data-uid="${uid}">
+          <div class="medal">${medal}</div>
+          <div class="ava-wrap">
+            <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+              <text x="24" y="31" text-anchor="middle" font-size="18" font-weight="600" fill="currentColor">${_btInitials(p.name)}</text>
+            </svg>
+            ${img}
+          </div>
+          <div class="pn">${nameBreak}</div>
+          <div class="pts tnum">${val}</div>
+          <div class="u">Badges</div>
+        </div>`;
+}
+// Podium-Fotos nachladen (Club-Liste liefert kein image -> user/<id> via Proxy),
+// identisch zum Cup-Podium.
+async function _btEnrichAvatars(el, top) {
+    for (const p of (top || [])) {
+        if (!p) continue;
+        const uid = p.userId || p.user_id || p.id;
+        if (!uid) continue;
+        if (!(p.avatar || p.image)) {
+            try {
+                const res = await fetch(`/api/proxy?path=user/${uid}`, { cache: 'force-cache' });
+                if (!res.ok) continue;
+                const u = await res.json();
+                if (u && u.image) p.avatar = u.image;
+            } catch (_) { continue; }
+        }
+        const url = _btAvatarUrl(p);
+        if (!url) continue;
+        const wrap = el.querySelector(`.cup-podium .pod[data-uid="${uid}"] .ava-wrap`);
+        if (!wrap || wrap.querySelector('.ava-img')) continue;
+        const img = document.createElement('img');
+        img.className = 'ava-img';
+        img.loading = 'lazy';
+        img.alt = '';
+        img.onerror = () => img.remove();
+        img.src = url;
+        wrap.appendChild(img);
+    }
+}
+function createAllTimeBand(pilots) {
+    const top = [...pilots]
+        .filter(p => (p.allTimeBadgeCount || 0) > 0)
+        .sort((a, b) => ((b.allTimeBadgeCount || 0) - (a.allTimeBadgeCount || 0)) || ((a.userId || 0) - (b.userId || 0)))
+        .slice(0, 3);
+    if (!top.length) return null;
+
+    const el = document.createElement('div');
+    el.className = 'cup-wrap badge-alltime-podium';
+    el.style.marginBottom = '28px';
+    el.innerHTML = `
+        <div class="cup-sectlabel">Über alles · meiste Badges seit Beginn</div>
+        <div class="cup-podium">
+          ${top[1] ? _btPodCard(top[1], 'two', '2.') : '<div class="pod placeholder"></div>'}
+          ${_btPodCard(top[0], 'one', '1.')}
+          ${top[2] ? _btPodCard(top[2], 'three', '3.') : '<div class="pod placeholder"></div>'}
+        </div>`;
+
+    setTimeout(() => _btEnrichAvatars(el, top), 50);
+    return el;
+}
+
+// ---------------------------------------------------------------------------
+// Rangliste als Karten — identischer Stil wie der Säntis Cup (cup-list / rowcard).
+// Die Badge-Detail-Galerie (Multi-/Single-Level, Level-Verlauf) bleibt unverändert
+// und wird in die aufklappbare .detail-Zone der Karte gelegt.
+// ---------------------------------------------------------------------------
+function _btMv(info) {
+    if (info && info.delta > 0) return `<span class="mv up">▲<b>${info.delta}</b></span>`;
+    if (info && info.delta < 0) return `<span class="mv down">▼<b>${-info.delta}</b></span>`;
+    return `<span class="mv flat">–</span>`;
+}
+
+function createBadgeCard(pilot, rank, seasonInfo, deltaMap = new Map()) {
+    const topCls = rank <= 3 ? ` top${rank}` : '';
+    const pts = fmtScore(pilotScore(pilot, seasonInfo), seasonInfo);
+    const unit = isWeightedSeason(seasonInfo) ? 'Pkt' : 'Badges';
+    const cats = pilot.badgeCategoryCount || 0;
+    const total = pilot.allTimeBadgeCount || 0;
+    const sub = `${cats} Kategorien · ${total} Badges`;
+    const mv = _btMv(deltaMap.get(pilot.name));
+    const gallery = createBadgeGalleryHTML(pilot, seasonInfo);
+    return `
+        <div class="rowcard${topCls}" aria-expanded="false">
+          <button class="prow" type="button" aria-label="${pilot.name} – Details">
+            <span class="rk tnum">${rank}</span>
+            ${mv}
+            <span class="who">
+              <span class="nm">${pilot.name}</span>
+              <span class="cats"><span>${sub}</span></span>
+            </span>
+            <span class="score">
+              <b class="tnum">${pts}</b><span>${unit}</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </button>
+          <div class="detail">${gallery}</div>
+        </div>`;
+}
+
+function createBadgeList(pilotsWithBadges, seasonInfo, deltaMap = new Map()) {
+    const rows = pilotsWithBadges.map((p, i) => createBadgeCard(p, i + 1, seasonInfo, deltaMap)).join('');
+    const wrap = document.createElement('div');
+    wrap.className = 'cup-wrap';
+    wrap.innerHTML = `
+        <div class="cup-sectlabel">Gesammelte Abzeichen seit ${seasonInfo.start}</div>
+        <div class="cup-list">${rows || '<div class="no-data">Keine gewerteten Badges in dieser Saison</div>'}</div>`;
+    return wrap;
+}
+
+function setupBadgeToggles(container) {
+    container.querySelectorAll('.cup-list .prow').forEach(btn => {
+        if (btn.hasAttribute('data-badge-bound')) return;
+        btn.setAttribute('data-badge-bound', 'true');
+        btn.addEventListener('click', () => {
+            const card = btn.closest('.rowcard');
+            const open = card.getAttribute('aria-expanded') === 'true';
+            // andere offene Karten schliessen
+            container.querySelectorAll('.cup-list .rowcard[aria-expanded="true"]').forEach(c => {
+                if (c !== card) c.setAttribute('aria-expanded', 'false');
+            });
+            card.setAttribute('aria-expanded', open ? 'false' : 'true');
+            if (!open) {
+                const detail = card.querySelector('.detail');
+                if (detail) setTimeout(() => makeBadgeItemsClickable(detail), 50);
+            }
+        });
+    });
 }
 
 function createBadgeTable(pilotsWithBadges, seasonInfo, deltaMap = new Map()) {
@@ -222,7 +425,7 @@ function createBadgeTable(pilotsWithBadges, seasonInfo, deltaMap = new Map()) {
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
                 </span>
-                Badges Saison
+                ${isWeightedSeason(seasonInfo) ? 'Punkte' : 'Badges Saison'}
             </th>
             <th class="badges-categories-col">
                 <span class="table-header-icon table-header-svg-icon" aria-hidden="true">
@@ -286,7 +489,7 @@ function createBadgeTableRow(pilot, rank, seasonInfo, deltaMap = new Map()) {
             <span class="pilot-name">${pilot.name}</span>
         </td>
         <td class="badges-count-col">
-            <span class="badges-value">${pilot.badgeCount || 0}</span>
+            <span class="badges-value">${fmtScore(pilotScore(pilot, seasonInfo), seasonInfo)}</span>
         </td>
         <td class="badges-categories-col">
             <span class="badges-categories-value">${pilot.badgeCategoryCount || 0}</span>

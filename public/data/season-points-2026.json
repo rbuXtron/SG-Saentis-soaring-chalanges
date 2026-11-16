@@ -1,12 +1,8 @@
 {
   "season": 2026,
   "season_label": "2025/2026",
-  "generated": "2026-10-06 17:06",
+  "generated": "2026-11-01 10:29",
   "pilots": {
-    "37273": {
-      "name": "Stefanie  Hautle",
-      "points": 494.29
-    },
     "10830": {
       "name": "Marcel Spirig",
       "points": 977.42
@@ -19,29 +15,21 @@
       "name": "Werner Rissi",
       "points": 1133.54
     },
-    "17293": {
-      "name": "Andreas Graf",
-      "points": 1467.16
-    },
     "26179": {
       "name": "Stefan Volland",
       "points": 1111.59
     },
-    "42698": {
-      "name": "Nio Struhs",
-      "points": 130.17
+    "17293": {
+      "name": "Andreas Graf",
+      "points": 1467.16
     },
-    "30072": {
-      "name": "Joel Morrone",
-      "points": 746.23
+    "37273": {
+      "name": "Stefanie  Hautle",
+      "points": 494.29
     },
     "40366": {
       "name": "Milos Savanovic",
       "points": 805.7
-    },
-    "43076": {
-      "name": "Urs Steiner",
-      "points": 118.75
     },
     "10758": {
       "name": "Rainer Ender",
@@ -51,29 +39,45 @@
       "name": "Johannes Widmer",
       "points": 1349.37
     },
+    "42698": {
+      "name": "Nio Struhs",
+      "points": 267.49
+    },
+    "30072": {
+      "name": "Joel Morrone",
+      "points": 746.23
+    },
     "42582": {
       "name": "Patrick ONeill",
-      "points": 107.97
+      "points": 235.55
+    },
+    "43076": {
+      "name": "Urs Steiner",
+      "points": 118.75
+    },
+    "11468": {
+      "name": "Heinz Bärfuss",
+      "points": 1278.94
     },
     "9979": {
       "name": "Wolfgang Rapp",
       "points": 1749.34
-    },
-    "23559": {
-      "name": "Florian Sutter",
-      "points": 976.74
     },
     "21532": {
       "name": "Philipp Lenhard",
       "points": 762.23
     },
     "10518": {
-      "name": "Roman Andreas Buehler",
-      "points": 1775.51
+      "name": "Roman A. Buehler",
+      "points": 1999.9
     },
     "25790": {
       "name": "Gabor Facsar",
       "points": 480.85
+    },
+    "23559": {
+      "name": "Florian Sutter",
+      "points": 976.74
     },
     "9604": {
       "name": "Guido Halter",
@@ -83,10 +87,6 @@
       "name": "Jeremias Bachmann",
       "points": 16.11
     },
-    "11468": {
-      "name": "Heinz Bärfuss",
-      "points": 1278.94
-    },
     "10687": {
       "name": "Pius Stolz",
       "points": 1155.27
@@ -94,6 +94,10 @@
     "18175": {
       "name": "Stefan Gertsch",
       "points": 2205.76
+    },
+    "33260": {
+      "name": "Evalena Widmer",
+      "points": 659.92
     },
     "29960": {
       "name": "Simon Widmer",
@@ -107,41 +111,33 @@
       "name": "David Corrêa",
       "points": 30.92
     },
-    "33260": {
-      "name": "Evalena Widmer",
-      "points": 659.92
+    "35021": {
+      "name": "Levi Osmani",
+      "points": 595.26
     },
     "25240": {
       "name": "Lukas Thoma",
       "points": 676.79
     },
-    "35021": {
-      "name": "Levi Osmani",
-      "points": 541.27
-    },
     "35840": {
       "name": "Angelo Milo",
-      "points": 223.28
-    },
-    "38317": {
-      "name": "Brian Polugic",
-      "points": 90.97
-    },
-    "23681": {
-      "name": "Rahela Kissling",
-      "points": 282.4
+      "points": 401.78
     },
     "10847": {
       "name": "Moritz Giger",
       "points": 127.05
     },
+    "23681": {
+      "name": "Rahela Kissling",
+      "points": 282.4
+    },
+    "38317": {
+      "name": "Brian Polugic",
+      "points": 90.97
+    },
     "32669": {
       "name": "Paul Cordes",
-      "points": 1834.04
-    },
-    "24353": {
-      "name": "Dominic Saladin",
-      "points": 429.33
+      "points": 1873.58
     },
     "21138": {
       "name": "Pascal Rotach",
@@ -150,6 +146,10 @@
     "35020": {
       "name": "Jann Baumgartner",
       "points": 45.0
+    },
+    "24353": {
+      "name": "Dominic Saladin",
+      "points": 429.33
     },
     "824": {
       "name": "Martin Prusak",

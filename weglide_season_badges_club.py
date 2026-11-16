@@ -510,6 +510,17 @@ def main():
                     "badge": bd,                         # voller Katalog-Eintrag (name, logo, description, values, points)
                 }
             badges_out = [_enrich(r) for r in rows]
+            # Gewichtete Saisonwertung (ab Saison 2027): Level-Faktor w(L)=L*(1+0.1*L), Level 1 = 1.0 -> 1/2.4/3.9/5.6/7.5.
+            # Pro Multi-Level-Badge zaehlt die SUMME aller in dieser Saison neu erreichten Level (pre = level - seasonPoints);
+            # Single-Level = 1.
+            def _badge_weight(b):
+                if b["type"] != "multi-level":
+                    return 1.0
+                cur = b.get("level") or 0
+                sp = b.get("seasonPoints") or 0
+                start = max(1, cur - sp + 1)
+                return sum((1.0 if L <= 1 else L * (1 + 0.02 * L)) for L in range(start, cur + 1))
+            weighted = round(sum(_badge_weight(b) for b in badges_out), 2)
             tool[str(uid)] = {
                 "userId": uid,
                 "userName": name,
@@ -517,6 +528,7 @@ def main():
                 "seasonBadges": badges_out,
                 "seasonBadgeCount": total,
                 "badgeCount": total,
+                "weightedBadgeCount": weighted,
                 "allTimeBadgeCount": extra["allTimeBadgeCount"],
                 "badgeCategoryCount": extra["badgeCategoryCount"],
                 "multiLevelCount": extra["multiLevelCount"],

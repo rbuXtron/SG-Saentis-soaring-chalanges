@@ -265,7 +265,21 @@ def build_app_pilot(uid, name, achievements, base_uid, multi, defs, window):
                       "values": vals, "points": d.get("points")},
         })
 
-    season_pts = sum(e["points"] for e in entries)   # badgeCount
+    season_pts = sum(e["points"] for e in entries)   # badgeCount (flach, bis Saison 2026)
+    # Gewichtete Saisonwertung — ab Saison 2027 in der UI genutzt. Level-Faktor w(L)=L*(1+0.1*L),
+    # Level 1 = 1.0 -> 1/2.4/3.9/5.6/7.5. Pro Multi-Level-Badge zaehlt die SUMME aller in dieser
+    # Saison neu erreichten Level (pre = level - points); Single -> Basiswert 1.
+    weighted = 0.0
+    for e in entries:
+        if e["type"] == "multi-level":
+            sp = e["points"] or 0
+            if sp > 0:
+                cur = e["level"] or 0
+                start = max(1, cur - sp + 1)
+                weighted += sum((1.0 if L <= 1 else L * (1 + 0.02 * L)) for L in range(start, cur + 1))
+        else:
+            weighted += 1.0
+    weighted = round(weighted, 2)
     cats = len(entries)                              # badgeCategoryCount
     mlc = sum(1 for e in entries if e["type"] == "multi-level")
     slc = cats - mlc
@@ -275,6 +289,7 @@ def build_app_pilot(uid, name, achievements, base_uid, multi, defs, window):
         "userId": uid, "userName": name,
         "badges": entries, "seasonBadges": entries,
         "seasonBadgeCount": season_pts, "badgeCount": season_pts,
+        "weightedBadgeCount": weighted,
         "badgeCategoryCount": cats, "allTimeBadgeCount": alltime,
         "multiLevelCount": mlc, "singleLevelCount": slc,
         "flightsWithBadges": fwb, "flightsAnalyzed": 0,

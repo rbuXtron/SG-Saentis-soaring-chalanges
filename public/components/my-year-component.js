@@ -162,6 +162,28 @@ export function renderMyYear(pilots, containerId = 'mein-jahr') {
   draw(selected); // Sofort zeichnen (Vergleich erscheint, sobald geladen)
 }
 
+// Gewichtete Badge-Saisonpunkte (gleiche Regel wie der Badge-Award-Tab, f=0,02).
+// Gilt erst ab Saison 2026/2027 (Reglement); davor flache Zählung (ein Punkt pro Level).
+const MY_WEIGHTED_FROM_SEASON = 2027;
+function badgeSeasonPoints(p, seasonYear) {
+  if ((seasonYear || 0) < MY_WEIGHTED_FROM_SEASON) return (p && p.badgeCount) || 0;
+  if (p && p.weightedBadgeCount != null) return p.weightedBadgeCount;
+  const w1 = (L) => (L <= 1 ? 1 : L * (1 + 0.02 * L));
+  const list = (p && Array.isArray(p.badges)) ? p.badges : [];
+  let s = 0;
+  for (const b of list) {
+    if (b && b.type === 'multi-level') {
+      const cur = b.level || 0, sp = b.seasonPoints || 0;
+      for (let L = Math.max(1, cur - sp + 1); L <= cur; L++) s += w1(L);
+    } else { s += 1; }
+  }
+  return Math.round(s * 100) / 100;
+}
+function badgeSeasonPointsStr(p, seasonYear) {
+  const v = badgeSeasonPoints(p, seasonYear);
+  return (seasonYear || 0) >= MY_WEIGHTED_FROM_SEASON ? Number(v).toFixed(1) : String(v);
+}
+
 function renderDetail(host, p, rank, seasonYear) {
   if (!host) return;
   const m = metrics(p);
@@ -242,7 +264,7 @@ function renderDetail(host, p, rank, seasonYear) {
         <h3>Gegenüber der Vorsaison</h3>
         <div class="my-kv"><span class="lab">Cup-Punkte</span><span class="val">${nf(Math.round(p.totalPoints || 0))} ${prevPts ? deltaBadge(p.totalPoints || 0, prevPts) : '<span class="my-faint" style="font-size:11px">kein Vorjahr</span>'}</span></div>
         <div class="my-kv"><span class="lab">Weiteste Distanz</span><span class="val">${nf(Math.round(m.bestDist))} km ${deltaBadge(m.bestDist, m.prevBestDist)}</span></div>
-        <div class="my-kv"><span class="lab">Badges (Saison)</span><span class="val">${p.badgeCount || 0} Pkt</span></div>
+        <div class="my-kv"><span class="lab">Badges (Saison)</span><span class="val">${badgeSeasonPointsStr(p, seasonYear)} Pkt</span></div>
         <div class="my-x" style="margin-top:12px;color:var(--text-secondary)">${seasonKmDelta > 0
           ? `Du bist dieses Jahr <b style="color:var(--my-green)">${nf(Math.round(seasonKmDelta))} km</b> weiter geflogen als letzte Saison.`
           : `Noch Luft nach oben – letzte Saison standen ${nf(Math.round(m.prevBestDist))} km.`}</div>
@@ -252,7 +274,7 @@ function renderDetail(host, p, rank, seasonYear) {
     <div class="my-sectlabel">Badges dieses Jahr</div>
     <div class="my-badgewrap">
       <div class="my-bsum">
-        <div class="s"><b class="tnum">${p.badgeCount || 0}</b><small>Punkte Saison</small></div>
+        <div class="s"><b class="tnum">${badgeSeasonPointsStr(p, seasonYear)}</b><small>Punkte Saison</small></div>
         <div class="s"><b class="tnum">${p.badgeCategoryCount || 0}</b><small>Kategorien</small></div>
         <div class="s"><b class="tnum">${p.allTimeBadgeCount || 0}</b><small>Badges gesamt</small></div>
       </div>
